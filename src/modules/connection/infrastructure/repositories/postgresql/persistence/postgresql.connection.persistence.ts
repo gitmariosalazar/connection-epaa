@@ -1,0 +1,433 @@
+import { Injectable } from '@nestjs/common';
+import { DatabaseServicePostgreSQL } from '../../../../../../shared/connections/database/postgresql/postgresql.service';
+import { InterfaceConnectionRepository } from '../../../../domain/contracts/connection.interface.repository';
+import { ConnectionAndPropertyResponse, ConnectionResponse } from '../../../../domain/schemas/dto/response/connection.response';
+import { ConnectionPostgreSqlAdapter } from '../adapters/postgresql.connection.adapter';
+import { RpcException } from '@nestjs/microservices';
+import { statusCode } from '../../../../../../settings/environments/status-code';
+import { ConnectionModel } from '../../../../domain/schemas/models/connection.model';
+import { Exists } from '../../../../../../shared/interfaces/verify-exists';
+
+@Injectable()
+export class PostgresqlConnectionPersistence
+  implements InterfaceConnectionRepository {
+  constructor(private readonly postgresqlService: DatabaseServicePostgreSQL) { }
+
+  // Implementation of InterfaceConnectionRepository methods
+  async verifyConnectionExists(connectionId: string): Promise<boolean> {
+    try {
+      const query: string = `SELECT EXISTS (SELECT 1 FROM acometida WHERE acometidaid = $1)`;
+      const params: string[] = [connectionId];
+      const result = await this.postgresqlService.query<Exists>(query, params);
+      return result[0].exists;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getConnectionById(
+    connectionId: string,
+  ): Promise<ConnectionResponse | null> {
+    try {
+      const query: string = `
+        SELECT
+            a.acometidaid as "connectionId",
+            a.clienteid as "clientId",
+            a.tarifaid as "connectionRateId",
+            t.nombre as "connectionRateName",
+            a.numeromedidor as "connectionMeterNumber",
+            a.sector as "connectionSector",
+            a.cuenta as "connectionAccount",
+            a.clavecatastral as "connectionCadastralKey",
+            a.numerocontrato as "connectionContractNumber",
+            a.alcantarillado as "connectionSewerage",
+            a.estado as "connectionStatus",
+            a.direccion as "connectionAddress",
+            a.fechainstalacion as "connectionInstallationDate",
+            a.numeropersonas as "connectionPeopleNumbers",
+            a.zona as "connectionZone",
+            a.coordenadas as "connectionCoordinates",
+            a.referencia as "connectionReference",
+            a.metadata as "connectionMetadata",
+            a.altitud as "connectionAltitude",
+            a.precision as "connectionPrecision",
+            a.fechageolocalizacion as "connectionGeolocationDate",
+            a.zona_geometrica as "connectionGeometricZone",
+            a.predioClaveCatastral as "propertyCadastralKey"
+        FROM acometida a INNER JOIN cliente c ON c.clienteid = a.clienteid
+        INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
+        WHERE a.acometidaid = $1;
+      `;
+      const params: string[] = [connectionId];
+      const result = await this.postgresqlService.query<ConnectionResponse>(
+        query,
+        params,
+      );
+
+      const response: ConnectionResponse[] = result.map((connection) =>
+        ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+          connection,
+        ),
+      );
+
+      if (response.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection with ID ${connectionId} not found.`,
+        });
+      }
+
+      return response[0];
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllConnections(
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]> {
+    try {
+      const query: string = `
+        SELECT
+            a.acometidaid as "connectionId",
+            a.clienteid as "clientId",
+            a.tarifaid as "connectionRateId",
+            t.nombre as "connectionRateName",
+            a.numeromedidor as "connectionMeterNumber",
+            a.sector as "connectionSector",
+            a.cuenta as "connectionAccount",
+            a.clavecatastral as "connectionCadastralKey",
+            a.numerocontrato as "connectionContractNumber",
+            a.alcantarillado as "connectionSewerage",
+            a.estado as "connectionStatus",
+            a.direccion as "connectionAddress",
+            a.fechainstalacion as "connectionInstallationDate",
+            a.numeropersonas as "connectionPeopleNumbers",
+            a.zona as "connectionZone",
+            a.coordenadas as "connectionCoordinates",
+            a.referencia as "connectionReference",
+            a.metadata as "connectionMetadata",
+            a.altitud as "connectionAltitude",
+            a.precision as "connectionPrecision",
+            a.fechageolocalizacion as "connectionGeolocationDate",
+            a.zona_geometrica as "connectionGeometricZone",
+            a.predioClaveCatastral as "propertyCadastralKey"
+        FROM acometida a
+        INNER JOIN cliente c ON c.clienteid = a.clienteid
+        INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
+        ORDER BY a.acometidaid
+        LIMIT $1 OFFSET $2;
+      `;
+      const params: number[] = [limit, offset];
+      const result = await this.postgresqlService.query<ConnectionResponse>(
+        query,
+        params,
+      );
+
+      const response: ConnectionResponse[] = result.map((connection) =>
+        ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+          connection,
+        ),
+      );
+
+      if (response.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found.`,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteConnection(connectionId: string): Promise<boolean> {
+    try {
+      const query: string = `
+        DELETE FROM acometida WHERE acometidaid = $1;
+      `;
+      const params: string[] = [connectionId];
+      const result = await this.postgresqlService.query(query, params);
+
+      return result.length > 0;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createConnection(
+    connection: ConnectionModel,
+  ): Promise<ConnectionResponse | null> {
+    try {
+
+      console.log(`Connection Model`, connection)
+
+      const query: string = `
+        INSERT INTO acometida (
+          acometidaid,
+          clienteid,
+          tarifaid,
+          numeromedidor,
+          sector,
+          cuenta,
+          clavecatastral,
+          numerocontrato,
+          alcantarillado,
+          estado,
+          direccion,
+          fechainstalacion,
+          numeropersonas,
+          zona,
+          coordenadas,
+          referencia,
+          metadata,
+          altitud,
+          precision,
+          fechageolocalizacion,
+          zona_geometrica,
+          predioClaveCatastral
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+        )
+        RETURNING
+          acometidaid as "connectionId",
+          clienteid as "clientId",
+          tarifaid as "connectionRateId",
+          numeromedidor as "connectionMeterNumber",
+          sector as "connectionSector",
+          cuenta as "connectionAccount",
+          clavecatastral as "connectionCadastralKey",
+          numerocontrato as "connectionContractNumber",
+          alcantarillado as "connectionSewerage",
+          estado as "connectionStatus",
+          direccion as "connectionAddress",
+          fechainstalacion as "connectionInstallationDate",
+          numeropersonas as "connectionPeopleNumbers",
+          zona as "connectionZone",
+          coordenadas as "connectionCoordinates",
+          referencia as "connectionReference",
+          metadata as "connectionMetadata",
+          altitud as "connectionAltitude",
+          precision as "connectionPrecision",
+          fechageolocalizacion as "connectionGeolocationDate",
+          zona_geometrica as "connectionGeometricZone",
+          predioClaveCatastral as "propertyCadastralKey";
+      `;
+      const params: any[] = [
+        connection.getConnectionId(),
+        connection.getClientId(),
+        connection.getConnectionRateId(),
+        connection.getConnectionMeterNumber(),
+        connection.getConnectionSector(),
+        connection.getConnectionAccount(),
+        connection.getConnectionCadastralKey(),
+        connection.getConnectionContractNumber(),
+        connection.getConnectionSewerage(),
+        connection.getConnectionStatus(),
+        connection.getConnectionAddress(),
+        connection.getConnectionInstallationDate(),
+        connection.getConnectionPeopleNumber(),
+        connection.getConnectionZone(),
+        connection.getConnectionCoordinates(),
+        connection.getConnectionReference(),
+        connection.getConnectionMetaData(),
+        connection.getConnectionAltitude(),
+        connection.getConnectionPrecision(),
+        connection.getConnectionGeolocationDate(),
+        connection.getConnectionGeometricZone(),
+        connection.getPropertyCadastralKey(),
+      ];
+
+      const result = await this.postgresqlService.query<ConnectionResponse>(
+        query,
+        params,
+      );
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.INTERNAL_SERVER_ERROR,
+          message: `Failed to create connection.`,
+        });
+      }
+      return ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+        result[0],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateConnection(
+    connectionId: string,
+    connection: ConnectionModel,
+  ): Promise<ConnectionResponse | null> {
+    try {
+      console.log(`Connection Model: `, connection)
+      const query: string = `
+        UPDATE acometida SET
+          clienteid = $2,
+          tarifaid = $3,
+          numeromedidor = $4,
+          sector = $5,
+          cuenta = $6,
+          clavecatastral = $7,
+          numerocontrato = $8,
+          alcantarillado = $9,
+          estado = $10,
+          direccion = $11,
+          fechainstalacion = $12,
+          numeropersonas = $13,
+          zona = $14,
+          coordenadas = $15,
+          referencia = $16,
+          metadata = $17,
+          altitud = $18,
+          precision = $19,
+          fechageolocalizacion = $20,
+          predioClaveCatastral = $21
+        WHERE acometidaid = $1
+        RETURNING
+          acometidaid as "connectionId",
+          clienteid as "clientId",
+          tarifaid as "connectionRateId",
+          numeromedidor as "connectionMeterNumber",
+          sector as "connectionSector",
+          cuenta as "connectionAccount",
+          clavecatastral as "connectionCadastralKey",
+          numerocontrato as "connectionContractNumber",
+          alcantarillado as "connectionSewerage",
+          estado as "connectionStatus",
+          direccion as "connectionAddress",
+          fechainstalacion as "connectionInstallationDate",
+          numeropersonas as "connectionPeopleNumbers",
+          zona as "connectionZone",
+          coordenadas as "connectionCoordinates",
+          referencia as "connectionReference",
+          metadata as "connectionMetadata",
+          altitud as "connectionAltitude",
+          precision as "connectionPrecision",
+          fechageolocalizacion as "connectionGeolocationDate",
+          zona_geometrica as "connectionGeometricZone",
+          predioClaveCatastral as "propertyCadastralKey";
+      `;
+      const params: any[] = [
+        connectionId,
+        connection.getClientId(),
+        connection.getConnectionRateId(),
+        connection.getConnectionMeterNumber(),
+        connection.getConnectionSector(),
+        connection.getConnectionAccount(),
+        connection.getConnectionCadastralKey(),
+        connection.getConnectionContractNumber(),
+        connection.getConnectionSewerage(),
+        connection.getConnectionStatus(),
+        connection.getConnectionAddress(),
+        connection.getConnectionInstallationDate(),
+        connection.getConnectionPeopleNumber(),
+        connection.getConnectionZone(),
+        connection.getConnectionCoordinates(),
+        connection.getConnectionReference(),
+        connection.getConnectionMetaData(),
+        connection.getConnectionAltitude(),
+        connection.getConnectionPrecision(),
+        connection.getConnectionGeolocationDate(),
+        connection.getPropertyCadastralKey(),
+      ];
+
+      const result = await this.postgresqlService.query<ConnectionResponse>(
+        query,
+        params,
+      );
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.INTERNAL_SERVER_ERROR,
+          message: `Failed to update connection with ID ${connectionId}.`,
+        });
+      }
+      return ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+        result[0],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findConnectionAndPropertyByCadastralKey(propertyCadastralKey: string): Promise<ConnectionAndPropertyResponse | null> {
+    try {
+
+      const query: string = `
+SELECT
+    -- Connection Data
+    a.acometidaid                AS "connectionId",
+    a.clienteid                  AS "clientId",
+    a.tarifaid                   AS "connectionRateId",
+    t.nombre                     AS "connectionRateName",
+    a.numeromedidor              AS "connectionMeterNumber",
+    a.sector                     AS "connectionSector",
+    a.cuenta                     AS "connectionAccount",
+    a.clavecatastral             AS "connectionCadastralKey",
+    a.numerocontrato             AS "connectionContractNumber",
+    a.alcantarillado             AS "connectionSewerage",
+    a.estado                     AS "connectionStatus",
+    a.direccion                  AS "connectionAddress",
+    a.fechainstalacion           AS "connectionInstallationDate",
+    a.numeropersonas             AS "connectionPeopleNumber",
+    a.zona                       AS "connectionZone",
+    a.coordenadas                AS "connectionCoordinates",
+    a.referencia                 AS "connectionReference",
+    a.metadata                   AS "connectionMetadata",
+    a.altitud                    AS "connectionAltitude",
+    a.precision                  AS "connectionPrecision",
+    a.fechageolocalizacion       AS "connectionGeolocationDate",
+    a.zona_geometrica            AS "connectionGeometricZone",
+    a.predioclavecatastral       AS "propertyCadastralKey",
+    -- Client Data
+    c.clienteid                  AS "clientId",
+    COALESCE(ci.nombres || ' ' || ci.apellidos, e.razonsocial) AS "clientName",
+    COALESCE(ci.direccion, e.direccion)                        AS "clientAddress",
+    cc.phones                    AS "clientPhones",
+    cc.emails                    AS "clientEmails",
+    -- Property Data
+    p.predioid                   AS "propertyId",
+    p.callejon                   AS "propertyAlleyway",
+    p.sector                     AS "propertySector",
+    p.direccion                  AS "propertyAddress",
+    p.coordenadas                AS "propertyCoordinates",
+    p.referencia                 AS "propertyReference",
+    p.altitud                    AS "propertyAltitude",
+    p.precision                  AS "propertyPrecision",
+    p.zona_geometrica            AS "propertyGeometricZone",
+    tp.tipopredioid              AS "propertyTypeId",
+    tp.nombre                    AS "propertyTypeName"
+FROM acometida a
+INNER JOIN cliente c       ON c.clienteid = a.clienteid
+LEFT JOIN predio p         ON p.clavecatastral = a.predioclavecatastral
+LEFT JOIN ciudadano ci     ON ci.ciudadanoid = c.clienteid
+LEFT JOIN empresa e        ON e.ruc = c.clienteid
+LEFT JOIN cliente_contacto cc ON cc.clienteid = c.clienteid
+INNER JOIN tarifa t        ON t.tarifaid = a.tarifaid
+LEFT JOIN tipopredio tp    ON tp.tipopredioid = p.tipopredioid
+WHERE a.acometidaid = $1;
+      `;
+      const params: string[] = [propertyCadastralKey];
+      const result = await this.postgresqlService.query<ConnectionAndPropertyResponse>(
+        query,
+        params,
+      );
+
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connection found for property cadastral key ${propertyCadastralKey}`,
+        });
+      }
+
+      return ConnectionPostgreSqlAdapter.fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(result[0]);
+    } catch (error) {
+      throw error;
+    }
+  }
+}

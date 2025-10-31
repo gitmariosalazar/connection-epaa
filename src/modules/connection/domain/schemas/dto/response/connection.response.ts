@@ -1,0 +1,72 @@
+import { UUID } from "crypto";
+
+export interface ConnectionResponse {
+  connectionId: string;
+  clientId: string;
+  connectionRateId: number;
+  connectionRateName: string;
+  connectionMeterNumber: string;
+  connectionSector: number;
+  connectionAccount: number;
+  connectionCadastralKey: string;
+  connectionContractNumber: string;
+  connectionSewerage: boolean;
+  connectionStatus: boolean;
+  connectionAddress: string;
+  connectionInstallationDate: Date;
+  connectionPeopleNumber: number;
+  connectionZone: number;
+  connectionCoordinates: string;
+  connectionReference: string;
+  ConnectionMetaData: Record<string, any>;
+  connectionAltitude: number;
+  connectionPrecision: number;
+  connectionGeolocationDate: Date;
+  connectionGeometricZone: string;
+  propertyCadastralKey: string;
+}
+
+
+export interface ConnectionAndPropertyResponse {
+  // Connection Data
+  connectionId: string;
+  clientId: string;
+  connectionRateId: string;
+  connectionRateName: string;
+  connectionMeterNumber: string | null;
+  connectionSector: string | null;
+  connectionAccount: string | null;
+  connectionCadastralKey: string | null;
+  connectionContractNumber: string | null;
+  connectionSewerage: boolean | null;
+  connectionStatus: string | null;
+  connectionAddress: string | null;
+  connectionInstallationDate: string | Date | null;
+  connectionPeopleNumbers: number | null;
+  connectionZone: string | null;
+  connectionCoordinates: string | null;
+  connectionReference: string | null;
+  connectionMetadata: Record<string, any> | null;
+  connectionAltitude: number | null;
+  connectionPrecision: number | null;
+  connectionGeolocationDate: string | Date | null;
+  connectionGeometricZone: string | null;
+  propertyCadastralKey: string | null;
+  // Client Data
+  clientName: string;
+  clientAddress: string | null;
+  phones: string[] | null;
+  emails: string[] | null;
+  // Property Data
+  propertyId: UUID | null;
+  alleyway: string | null;
+  propertySector: string | null;
+  propertyAddress: string | null;
+  propertyCoordinates: string | null; // o { lat: number; lng: number }
+  propertyReference: string | null;
+  propertyAltitude: number | null;
+  propertyPrecision: number | null;
+  propertyGeometricZone: string | null;
+  propertyTypeName: string | null;
+  propertyTypeId: string | null;
+}
