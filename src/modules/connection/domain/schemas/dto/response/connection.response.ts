@@ -70,3 +70,77 @@ export interface ConnectionAndPropertyResponse {
   propertyTypeName: string | null;
   propertyTypeId: string | null;
 }
+
+
+export interface PropertyResponse {
+  propertyId: UUID,
+  propertySector: string | null,
+  propertyTypeId: number | null,
+  propertyAddress: string | null,
+  propertyAlleyway: string | null,
+  propertyAltitude: number | null,
+  propertyTypeName: string | null,
+  propertyPrecision: number | null,
+  propertyReference: string | null,
+  propertyCoordinates: string | null,
+  propertyCadastralKey: string | null,
+  propertyGeometricZone: string | null
+}
+
+export interface ConnectionWithPropertyResponse {
+  // Connection Data
+  connectionId: string;
+  clientId: string;
+  connectionRateId: string;
+  connectionRateName: string;
+  connectionMeterNumber: string | null;
+  connectionSector: string | null;
+  connectionAccount: string | null;
+  connectionCadastralKey: string | null;
+  connectionContractNumber: string | null;
+  connectionSewerage: boolean | null;
+  connectionStatus: string | null;
+  connectionAddress: string | null;
+  connectionInstallationDate: string | Date | null;
+  connectionPeopleNumbers: number | null;
+  connectionZone: string | null;
+  connectionCoordinates: string | null;
+  connectionReference: string | null;
+  connectionMetadata: Record<string, any> | null;
+  connectionAltitude: number | null;
+  connectionPrecision: number | null;
+  connectionGeolocationDate: string | Date | null;
+  connectionGeometricZone: string | null;
+  propertyCadastralKey: string | null;
+  // Client Data
+  company: Company | null;
+  person: Client | null;
+  // Property Data
+  properties: PropertyResponse[];
+}
+
+
+export interface Client {
+  address: string,
+  country: string,
+  genderId: number,
+  lastName: string,
+  parishId: string,
+  personId: string,
+  birthDate: string,
+  firstName: string,
+  isDeceased: boolean,
+  professionId: number,
+  civilStatusId: number
+}
+
+export interface Company {
+  ruc: string,
+  address: string,
+  country: string,
+  clientId: string,
+  parishId: string,
+  companyId: number,
+  businessName: string,
+  commercialName: string
+}

@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseServicePostgreSQL } from '../../../../../../shared/connections/database/postgresql/postgresql.service';
 import { InterfaceConnectionRepository } from '../../../../domain/contracts/connection.interface.repository';
-import { ConnectionAndPropertyResponse, ConnectionResponse } from '../../../../domain/schemas/dto/response/connection.response';
+import {
+  ConnectionAndPropertyResponse,
+  ConnectionResponse,
+  ConnectionWithPropertyResponse,
+} from '../../../../domain/schemas/dto/response/connection.response';
 import { ConnectionPostgreSqlAdapter } from '../adapters/postgresql.connection.adapter';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../../../settings/environments/status-code';
 import { ConnectionModel } from '../../../../domain/schemas/models/connection.model';
 import { Exists } from '../../../../../../shared/interfaces/verify-exists';
+import { ConnectionWithPropertySqlResponse } from '../../../interfaces/sql/connection.sql.response';
 
 @Injectable()
 export class PostgresqlConnectionPersistence
@@ -162,8 +167,7 @@ export class PostgresqlConnectionPersistence
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-
-      console.log(`Connection Model`, connection)
+      console.log(`Connection Model`, connection);
 
       const query: string = `
         INSERT INTO acometida (
@@ -265,7 +269,7 @@ export class PostgresqlConnectionPersistence
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      console.log(`Connection Model: `, connection)
+      console.log(`Connection Model: `, connection);
       const query: string = `
         UPDATE acometida SET
           clienteid = $2,
@@ -355,9 +359,10 @@ export class PostgresqlConnectionPersistence
     }
   }
 
-  async findConnectionAndPropertyByCadastralKey(propertyCadastralKey: string): Promise<ConnectionAndPropertyResponse | null> {
+  async findConnectionAndPropertyByCadastralKey(
+    propertyCadastralKey: string,
+  ): Promise<ConnectionAndPropertyResponse | null> {
     try {
-
       const query: string = `
 SELECT
     -- Connection Data
@@ -413,10 +418,11 @@ LEFT JOIN tipopredio tp    ON tp.tipopredioid = p.tipopredioid
 WHERE a.acometidaid = $1;
       `;
       const params: string[] = [propertyCadastralKey];
-      const result = await this.postgresqlService.query<ConnectionAndPropertyResponse>(
-        query,
-        params,
-      );
+      const result =
+        await this.postgresqlService.query<ConnectionAndPropertyResponse>(
+          query,
+          params,
+        );
 
       if (result.length === 0) {
         throw new RpcException({
@@ -425,7 +431,135 @@ WHERE a.acometidaid = $1;
         });
       }
 
-      return ConnectionPostgreSqlAdapter.fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(result[0]);
+      return ConnectionPostgreSqlAdapter.fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(
+        result[0],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findConnectionWithPropertyByCadastralKey(
+    cadastralKey: string,
+  ): Promise<ConnectionWithPropertyResponse | null> {
+    try {
+      const query: string = `
+        SELECT
+            -- Connection Data
+            a.acometidaid                AS "connectionId",
+            a.clienteid                  AS "clientId",
+            a.tarifaid                   AS "connectionRateId",
+            t.nombre                     AS "connectionRateName",
+            a.numeromedidor              AS "connectionMeterNumber",
+            a.sector                     AS "connectionSector",
+            a.cuenta                     AS "connectionAccount",
+            a.clavecatastral             AS "connectionCadastralKey",
+            a.numerocontrato             AS "connectionContractNumber",
+            a.alcantarillado             AS "connectionSewerage",
+            a.estado                     AS "connectionStatus",
+            a.direccion                  AS "connectionAddress",
+            a.fechainstalacion           AS "connectionInstallationDate",
+            a.numeropersonas             AS "connectionPeopleNumber",
+            a.zona                       AS "connectionZone",
+            a.coordenadas                AS "connectionCoordinates",
+            a.referencia                 AS "connectionReference",
+            a.metadata                   AS "connectionMetadata",
+            a.altitud                    AS "connectionAltitude",
+            a.precision                  AS "connectionPrecision",
+            a.fechageolocalizacion       AS "connectionGeolocationDate",
+            a.zona_geometrica            AS "connectionGeometricZone",
+            a.predioclavecatastral       AS "propertyCadastralKey",
+
+            -- Contact Data
+            cc.phones                    AS "clientPhones",
+            cc.emails                    AS "clientEmails",
+
+            -- Company Data (if applicable)
+            CASE
+                WHEN e.ruc IS NOT NULL THEN
+                    jsonb_build_object(
+                        'companyId', e.empresaid,
+                        'commercialName', e.nombrecomercial,
+                        'businessName', e.razonsocial,
+                        'ruc', e.ruc,
+                        'address', e.direccion,
+                        'parishId', e.parroquiaid,
+                        'country', e.pais,
+                        'clientId', e.clienteid
+                    )
+                ELSE NULL
+            END AS "company",
+
+            -- Person Data (if applicable)
+            CASE
+                WHEN ci.ciudadanoid IS NOT NULL THEN
+                    jsonb_build_object(
+                        'personId', ci.ciudadanoid,
+                        'firstName', ci.nombres,
+                        'lastName', ci.apellidos,
+                        'birthDate', ci.fechanacimiento,
+                        'isDeceased', ci.fallecido,
+                        'genderId', ci.sexoid,
+                        'civilStatusId', ci.estadocivilid,
+                        'professionId', ci.profesionid,
+                        'parishId', ci.parroquiaid,
+                        'address', ci.direccion,
+                        'country', ci.paisorigen
+                    )
+                ELSE NULL
+            END AS "person",
+
+            -- Properties (JSON array)
+            COALESCE(
+                (
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'propertyId', p.predioid,
+                            'propertyCadastralKey', p.clavecatastral,
+                            'propertyAlleyway', p.callejon,
+                            'propertySector', p.sector,
+                            'propertyAddress', p.direccion,
+                            'propertyCoordinates', p.coordenadas,
+                            'propertyReference', p.referencia,
+                            'propertyAltitude', p.altitud,
+                            'propertyPrecision', p.precision,
+                            'propertyGeometricZone', p.zona_geometrica,
+                            'propertyTypeId', tp.tipopredioid,
+                            'propertyTypeName', tp.nombre
+                        )
+                    )
+                    FROM predio p
+                    LEFT JOIN tipopredio tp ON tp.tipopredioid = p.tipopredioid
+                    WHERE p.clienteid = a.clienteid
+                ),
+                '[]'::jsonb
+            ) AS "properties"
+
+        FROM acometida a
+        INNER JOIN cliente c           ON c.clienteid = a.clienteid
+        LEFT JOIN ciudadano ci         ON ci.ciudadanoid = c.clienteid
+        LEFT JOIN empresa e            ON e.ruc = c.clienteid
+        LEFT JOIN cliente_contacto cc  ON cc.clienteid = c.clienteid
+        INNER JOIN tarifa t            ON t.tarifaid = a.tarifaid
+        WHERE a.acometidaid = $1;
+      `;
+      const params: string[] = [cadastralKey];
+      const result =
+        await this.postgresqlService.query<ConnectionWithPropertySqlResponse>(
+          query,
+          params,
+        );
+
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connection found for cadastral key ${cadastralKey}`,
+        });
+      }
+
+      return ConnectionPostgreSqlAdapter.fromConnectionWithPropertySqlResponseToConnectionWithPropertyResponse(
+        result[0],
+      );
     } catch (error) {
       throw error;
     }

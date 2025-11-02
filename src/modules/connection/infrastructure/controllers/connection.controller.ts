@@ -67,4 +67,14 @@ export class ConnectionController {
       propertyCadastralKey,
     );
   }
+
+  @Get('find-connection-with-property-by-cadastral-key/:cadastralKey')
+  @MessagePattern('connections.find-connection-with-property-by-cadastral-key')
+  async getConnectionWithPropertyByCadastralKey(
+    @Payload() cadastralKey: string,
+  ) {
+    return this.connectionService.findConnectionWithPropertyByCadastralKey(
+      cadastralKey,
+    );
+  }
 }

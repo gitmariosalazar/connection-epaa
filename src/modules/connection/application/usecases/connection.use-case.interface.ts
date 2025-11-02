@@ -1,6 +1,6 @@
 import { CreateConnectionRequest } from "../../domain/schemas/dto/request/create.connection.request";
 import { UpdateConnectionRequest } from "../../domain/schemas/dto/request/update.connection.request";
-import { ConnectionAndPropertyResponse, ConnectionResponse } from "../../domain/schemas/dto/response/connection.response";
+import { ConnectionAndPropertyResponse, ConnectionResponse, ConnectionWithPropertyResponse } from "../../domain/schemas/dto/response/connection.response";
 
 export interface InterfaceConnectionUseCase {
   updateConnection(connectionId: string, connection: Partial<UpdateConnectionRequest>): Promise<ConnectionResponse | null>;
@@ -10,4 +10,5 @@ export interface InterfaceConnectionUseCase {
   verifyConnectionExists(connectionId: string): Promise<boolean>;
   findAllConnections(limit: number, offset: number): Promise<ConnectionResponse[]>;
   findConnectionAndPropertyByCadastralKey(propertyCadastralKey: string): Promise<ConnectionAndPropertyResponse | null>;
+  findConnectionWithPropertyByCadastralKey(cadastralKey: string): Promise<ConnectionWithPropertyResponse | null>;
 }

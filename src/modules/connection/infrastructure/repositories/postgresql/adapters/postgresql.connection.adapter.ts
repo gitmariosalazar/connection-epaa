@@ -1,8 +1,18 @@
-import { ConnectionAndPropertyResponse, ConnectionResponse } from "../../../../domain/schemas/dto/response/connection.response";
-import { ConnectionAndPropertySqlResponse, ConnectionSqlResponse } from "../../../interfaces/sql/connection.sql.response";
+import {
+  ConnectionAndPropertyResponse,
+  ConnectionResponse,
+  ConnectionWithPropertyResponse,
+} from '../../../../domain/schemas/dto/response/connection.response';
+import {
+  ConnectionAndPropertySqlResponse,
+  ConnectionSqlResponse,
+  ConnectionWithPropertySqlResponse,
+} from '../../../interfaces/sql/connection.sql.response';
 
 export class ConnectionPostgreSqlAdapter {
-  static fromConnectionSqlResponseToConnectionResponse(connection: ConnectionSqlResponse): ConnectionResponse {
+  static fromConnectionSqlResponseToConnectionResponse(
+    connection: ConnectionSqlResponse,
+  ): ConnectionResponse {
     return {
       connectionId: connection.connectionId,
       clientId: connection.clientId,
@@ -30,7 +40,9 @@ export class ConnectionPostgreSqlAdapter {
     };
   }
 
-  static fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(connection: ConnectionAndPropertySqlResponse): ConnectionAndPropertyResponse {
+  static fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(
+    connection: ConnectionAndPropertySqlResponse,
+  ): ConnectionAndPropertyResponse {
     return {
       // Connection Data
       connectionId: connection.connectionId,
@@ -72,7 +84,43 @@ export class ConnectionPostgreSqlAdapter {
       propertyPrecision: connection.propertyPrecision,
       propertyGeometricZone: connection.propertyGeometricZone,
       propertyTypeName: connection.propertyTypeName,
-      propertyTypeId: connection.propertyTypeId
+      propertyTypeId: connection.propertyTypeId,
+    };
+  }
+
+  static fromConnectionWithPropertySqlResponseToConnectionWithPropertyResponse(
+    connection: ConnectionWithPropertySqlResponse,
+  ): ConnectionWithPropertyResponse {
+    return {
+      // Connection Data
+      connectionId: connection.connectionId,
+      clientId: connection.clientId,
+      connectionRateId: connection.connectionRateId,
+      connectionRateName: connection.connectionRateName,
+      connectionMeterNumber: connection.connectionMeterNumber,
+      connectionSector: connection.connectionSector,
+      connectionAccount: connection.connectionAccount,
+      connectionCadastralKey: connection.connectionCadastralKey,
+      connectionContractNumber: connection.connectionContractNumber,
+      connectionSewerage: connection.connectionSewerage,
+      connectionStatus: connection.connectionStatus,
+      connectionAddress: connection.connectionAddress,
+      connectionInstallationDate: connection.connectionInstallationDate,
+      connectionPeopleNumbers: connection.connectionPeopleNumbers,
+      connectionZone: connection.connectionZone,
+      connectionCoordinates: connection.connectionCoordinates,
+      connectionReference: connection.connectionReference,
+      connectionMetadata: connection.connectionMetadata,
+      connectionAltitude: connection.connectionAltitude,
+      connectionPrecision: connection.connectionPrecision,
+      connectionGeolocationDate: connection.connectionGeolocationDate,
+      connectionGeometricZone: connection.connectionGeometricZone,
+      propertyCadastralKey: connection.propertyCadastralKey,
+      // Client Data
+      company: connection.company,
+      person: connection.person,
+      // Property Data
+      properties: connection.properties,
     };
   }
 }

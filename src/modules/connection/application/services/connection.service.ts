@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { InterfaceConnectionRepository } from "../../domain/contracts/connection.interface.repository";
 import { InterfaceConnectionUseCase } from "../usecases/connection.use-case.interface";
-import { ConnectionAndPropertyResponse, ConnectionResponse } from "../../domain/schemas/dto/response/connection.response";
+import { ConnectionAndPropertyResponse, ConnectionResponse, ConnectionWithPropertyResponse } from "../../domain/schemas/dto/response/connection.response";
 import { RpcException } from "@nestjs/microservices";
 import { statusCode } from "../../../../settings/environments/status-code";
 import { CreateConnectionRequest } from "../../domain/schemas/dto/request/create.connection.request";
@@ -196,6 +196,32 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return connectionAndProperty;
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findConnectionWithPropertyByCadastralKey(cadastralKey: string): Promise<ConnectionWithPropertyResponse | null> {
+    try {
+
+      if (!cadastralKey || cadastralKey.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid cadastralKey provided',
+        });
+      }
+
+      const connectionWithProperty = await this.connectionRepository.findConnectionWithPropertyByCadastralKey(cadastralKey);
+
+      if (!connectionWithProperty) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connection with property found with cadastral key ${cadastralKey}`,
+        });
+      }
+
+      return connectionWithProperty;
 
     } catch (error) {
       throw error;
