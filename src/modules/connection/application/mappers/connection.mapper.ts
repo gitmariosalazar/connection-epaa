@@ -63,7 +63,7 @@ export class ConnectionMapper {
     if (connection.ConnectionMetaData !== undefined) connectionModel.setConnectionMetaData(connection.ConnectionMetaData);
     if (connection.connectionAltitude !== undefined) connectionModel.setConnectionAltitude(connection.connectionAltitude);
     if (connection.connectionPrecision !== undefined) connectionModel.setConnectionPrecision(connection.connectionPrecision);
-    if (connection.connectionGeolocationDate !== undefined) connectionModel.setConnectionGeolocationDate(connection.connectionGeolocationDate);
+    if (connection.connectionGeolocationDate !== undefined) connectionModel.setConnectionGeolocationDate(connection.connectionGeolocationDate || new Date());
     if (connection.connectionGeometricZone !== undefined) connectionModel.setConnectionGeometricZone(connection.connectionGeometricZone);
     if (connection.propertyCadastralKey !== undefined) connectionModel.setPropertyCadastralKey(connection.propertyCadastralKey);
 
