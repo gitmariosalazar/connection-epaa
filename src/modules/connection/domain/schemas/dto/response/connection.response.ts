@@ -102,7 +102,7 @@ export interface ConnectionWithPropertyResponse {
   connectionStatus: string | null;
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
-  connectionPeopleNumbers: number | null;
+  connectionPeopleNumber: number | null;
   connectionZone: string | null;
   connectionCoordinates: string | null;
   connectionReference: string | null;
@@ -131,7 +131,9 @@ export interface Client {
   firstName: string,
   isDeceased: boolean,
   professionId: number,
-  civilStatusId: number
+  civilStatusId: number,
+  phones: Phone[],
+  emails: Email[]
 }
 
 export interface Company {
@@ -142,5 +144,17 @@ export interface Company {
   parishId: string,
   companyId: number,
   businessName: string,
-  commercialName: string
+  commercialName: string,
+  phones: Phone[],
+  emails: Email[]
+}
+
+interface Phone {
+  telefonoid: number;
+  numero: string;
+}
+
+interface Email {
+  emailid: number;
+  email: string;
 }

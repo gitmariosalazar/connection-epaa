@@ -103,7 +103,7 @@ export interface ConnectionWithPropertySqlResponse {
   connectionStatus: string | null;
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
-  connectionPeopleNumbers: number | null;
+  connectionPeopleNumber: number | null;
   connectionZone: string | null;
   connectionCoordinates: string | null;
   connectionReference: string | null;
@@ -132,7 +132,9 @@ export interface ClientSqlResponse {
   firstName: string,
   isDeceased: boolean,
   professionId: number,
-  civilStatusId: number
+  civilStatusId: number,
+  phones: PhoneSqlResponse[],
+  emails: EmailSqlResponse[]
 }
 
 export interface CompanySqlResponse {
@@ -143,5 +145,17 @@ export interface CompanySqlResponse {
   parishId: string,
   companyId: number,
   businessName: string,
-  commercialName: string
+  commercialName: string,
+  phones: PhoneSqlResponse[],
+  emails: EmailSqlResponse[]
+}
+
+export interface PhoneSqlResponse {
+  telefonoid: number;
+  numero: string;
+}
+
+export interface EmailSqlResponse {
+  emailid: number;
+  email: string;
 }

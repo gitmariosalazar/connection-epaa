@@ -471,8 +471,8 @@ WHERE a.acometidaid = $1;
             a.predioclavecatastral       AS "propertyCadastralKey",
 
             -- Contact Data
-            cc.phones                    AS "clientPhones",
-            cc.emails                    AS "clientEmails",
+            --cc.phones                    AS "clientPhones",
+            --cc.emails                    AS "clientEmails",
 
             -- Company Data (if applicable)
             CASE
@@ -485,7 +485,9 @@ WHERE a.acometidaid = $1;
                         'address', e.direccion,
                         'parishId', e.parroquiaid,
                         'country', e.pais,
-                        'clientId', e.clienteid
+                        'clientId', e.clienteid,
+                        'phones', cc.phones,
+                        'emails', cc.emails
                     )
                 ELSE NULL
             END AS "company",
@@ -504,7 +506,9 @@ WHERE a.acometidaid = $1;
                         'professionId', ci.profesionid,
                         'parishId', ci.parroquiaid,
                         'address', ci.direccion,
-                        'country', ci.paisorigen
+                        'country', ci.paisorigen,
+                        'phones', cc.phones,
+                        'emails', cc.emails
                     )
                 ELSE NULL
             END AS "person",

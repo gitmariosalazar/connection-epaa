@@ -106,7 +106,7 @@ export class ConnectionPostgreSqlAdapter {
       connectionStatus: connection.connectionStatus,
       connectionAddress: connection.connectionAddress,
       connectionInstallationDate: connection.connectionInstallationDate,
-      connectionPeopleNumbers: connection.connectionPeopleNumbers,
+      connectionPeopleNumber: connection.connectionPeopleNumber,
       connectionZone: connection.connectionZone,
       connectionCoordinates: connection.connectionCoordinates,
       connectionReference: connection.connectionReference,
