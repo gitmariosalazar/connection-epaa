@@ -58,7 +58,8 @@ export class PostgresqlConnectionPersistence
             a.precision as "connectionPrecision",
             a.fechageolocalizacion as "connectionGeolocationDate",
             a.zona_geometrica as "connectionGeometricZone",
-            a.predioClaveCatastral as "propertyCadastralKey"
+            a.predioClaveCatastral as "propertyCadastralKey",
+            a.zona_id as "zoneId"
         FROM acometida a INNER JOIN cliente c ON c.clienteid = a.clienteid
         INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
         WHERE a.acometidaid = $1;
@@ -117,7 +118,8 @@ export class PostgresqlConnectionPersistence
             a.precision as "connectionPrecision",
             a.fechageolocalizacion as "connectionGeolocationDate",
             a.zona_geometrica as "connectionGeometricZone",
-            a.predioClaveCatastral as "propertyCadastralKey"
+            a.predioClaveCatastral as "propertyCadastralKey",
+            a.zona_id as "zoneId"
         FROM acometida a
         INNER JOIN cliente c ON c.clienteid = a.clienteid
         INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
@@ -191,8 +193,8 @@ export class PostgresqlConnectionPersistence
           altitud,
           precision,
           fechageolocalizacion,
-          zona_geometrica,
-          predioClaveCatastral
+          predioClaveCatastral,
+          zona_id
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
@@ -219,7 +221,8 @@ export class PostgresqlConnectionPersistence
           precision as "connectionPrecision",
           fechageolocalizacion as "connectionGeolocationDate",
           zona_geometrica as "connectionGeometricZone",
-          predioClaveCatastral as "propertyCadastralKey";
+          predioClaveCatastral as "propertyCadastralKey",
+          zona_id as "zoneId";
       `;
       const params: any[] = [
         connection.getConnectionId(),
@@ -242,8 +245,8 @@ export class PostgresqlConnectionPersistence
         connection.getConnectionAltitude(),
         connection.getConnectionPrecision(),
         connection.getConnectionGeolocationDate(),
-        connection.getConnectionGeometricZone(),
         connection.getPropertyCadastralKey(),
+        connection.getZoneId(),
       ];
 
       const result = await this.postgresqlService.query<ConnectionResponse>(
@@ -272,26 +275,27 @@ export class PostgresqlConnectionPersistence
       console.log(`Connection Model: `, connection);
       const query: string = `
         UPDATE acometida SET
-          clienteid = $2,
-          tarifaid = $3,
-          numeromedidor = $4,
-          sector = $5,
-          cuenta = $6,
-          clavecatastral = $7,
-          numerocontrato = $8,
-          alcantarillado = $9,
-          estado = $10,
-          direccion = $11,
-          fechainstalacion = $12,
-          numeropersonas = $13,
-          zona = $14,
-          coordenadas = $15,
-          referencia = $16,
-          metadata = $17,
-          altitud = $18,
-          precision = $19,
-          fechageolocalizacion = $20,
-          predioClaveCatastral = $21
+          clienteid = COALESCE($2, clienteid),
+          tarifaid = COALESCE($3, tarifaid),
+          numeromedidor = COALESCE($4, numeromedidor),
+          sector = COALESCE($5, sector),
+          cuenta = COALESCE($6, cuenta),
+          clavecatastral = COALESCE($7, clavecatastral),
+          numerocontrato = COALESCE($8, numerocontrato),
+          alcantarillado = COALESCE($9, alcantarillado),
+          estado = COALESCE($10, estado),
+          direccion = COALESCE($11, direccion),
+          fechainstalacion = COALESCE($12, fechainstalacion),
+          numeropersonas = COALESCE($13, numeropersonas),
+          zona = COALESCE($14, zona),
+          coordenadas = COALESCE($15, coordenadas),
+          referencia = COALESCE($16, referencia),
+          metadata = COALESCE($17, metadata),
+          altitud = COALESCE($18, altitud),
+          precision = COALESCE($19, precision),
+          fechageolocalizacion = COALESCE($20, fechageolocalizacion),
+          predioClaveCatastral = COALESCE($21, predioClaveCatastral),
+          zona_id = COALESCE($22, zona_id)
         WHERE acometidaid = $1
         RETURNING
           acometidaid as "connectionId",
@@ -315,7 +319,8 @@ export class PostgresqlConnectionPersistence
           precision as "connectionPrecision",
           fechageolocalizacion as "connectionGeolocationDate",
           zona_geometrica as "connectionGeometricZone",
-          predioClaveCatastral as "propertyCadastralKey";
+          predioClaveCatastral as "propertyCadastralKey",
+          zona_id as "zoneId";
       `;
       const params: any[] = [
         connectionId,
@@ -339,6 +344,7 @@ export class PostgresqlConnectionPersistence
         connection.getConnectionPrecision(),
         connection.getConnectionGeolocationDate(),
         connection.getPropertyCadastralKey(),
+        connection.getZoneId(),
       ];
 
       const result = await this.postgresqlService.query<ConnectionResponse>(
@@ -389,6 +395,9 @@ SELECT
     a.fechageolocalizacion       AS "connectionGeolocationDate",
     a.zona_geometrica            AS "connectionGeometricZone",
     a.predioclavecatastral       AS "propertyCadastralKey",
+    a.zona_id                    AS "zoneId",
+    z.codigo                     AS "zoneCode",
+    z.nombre                     AS "zoneName",
     -- Client Data
     c.clienteid                  AS "clientId",
     COALESCE(ci.nombres || ' ' || ci.apellidos, e.razonsocial) AS "clientName",
@@ -415,6 +424,7 @@ LEFT JOIN empresa e        ON e.ruc = c.clienteid
 LEFT JOIN cliente_contacto cc ON cc.clienteid = c.clienteid
 INNER JOIN tarifa t        ON t.tarifaid = a.tarifaid
 LEFT JOIN tipopredio tp    ON tp.tipopredioid = p.tipopredioid
+INNER JOIN public.zona z    ON z.zona_id = a.zona_id
 WHERE a.acometidaid = $1;
       `;
       const params: string[] = [propertyCadastralKey];
@@ -469,12 +479,9 @@ WHERE a.acometidaid = $1;
             a.fechageolocalizacion       AS "connectionGeolocationDate",
             a.zona_geometrica            AS "connectionGeometricZone",
             a.predioclavecatastral       AS "propertyCadastralKey",
-
-            -- Contact Data
-            --cc.phones                    AS "clientPhones",
-            --cc.emails                    AS "clientEmails",
-
-            -- Company Data (if applicable)
+            a.zona_id                    AS "zoneId",
+            z.codigo                     AS "zoneCode",
+            z.nombre                     AS "zoneName",
             CASE
                 WHEN e.ruc IS NOT NULL THEN
                     jsonb_build_object(
@@ -545,6 +552,7 @@ WHERE a.acometidaid = $1;
         LEFT JOIN empresa e            ON e.ruc = c.clienteid
         LEFT JOIN cliente_contacto cc  ON cc.clienteid = c.clienteid
         INNER JOIN tarifa t            ON t.tarifaid = a.tarifaid
+        INNER JOIN public.zona z on z.zona_id = a.zona_id
         WHERE a.acometidaid = $1;
       `;
       const params: string[] = [cadastralKey];

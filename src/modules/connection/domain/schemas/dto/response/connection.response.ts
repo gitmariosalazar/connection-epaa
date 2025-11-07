@@ -24,6 +24,7 @@ export interface ConnectionResponse {
   connectionGeolocationDate: Date;
   connectionGeometricZone: string;
   propertyCadastralKey: string;
+  zoneId: number;
 }
 
 
@@ -52,6 +53,9 @@ export interface ConnectionAndPropertyResponse {
   connectionGeolocationDate: string | Date | null;
   connectionGeometricZone: string | null;
   propertyCadastralKey: string | null;
+  zoneId: number;
+  zoneCode: string;
+  zoneName: string;
   // Client Data
   clientName: string;
   clientAddress: string | null;
@@ -112,6 +116,9 @@ export interface ConnectionWithPropertyResponse {
   connectionGeolocationDate: string | Date | null;
   connectionGeometricZone: string | null;
   propertyCadastralKey: string | null;
+  zoneId: number;
+  zoneCode: string;
+  zoneName: string;
   // Client Data
   company: Company | null;
   person: Client | null;

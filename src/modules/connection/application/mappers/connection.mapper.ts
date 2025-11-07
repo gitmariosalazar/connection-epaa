@@ -1,4 +1,5 @@
 import { CreateConnectionRequest } from "../../domain/schemas/dto/request/create.connection.request";
+import { ConnectionResponse } from "../../domain/schemas/dto/response/connection.response";
 import { ConnectionModel } from "../../domain/schemas/models/connection.model";
 
 export class ConnectionMapper {
@@ -30,44 +31,67 @@ export class ConnectionMapper {
       connection.connectionGeolocationDate,
       connection.connectionGeometricZone,
       connection.propertyCadastralKey,
+      connection.zoneId,
     );
   }
 
-  static fromUpdateConnectionRequestToConnectionModel(connection: Partial<CreateConnectionRequest>): ConnectionModel {
-    const connectionModel = new ConnectionModel();
-
-    if (connection.connectionId !== undefined) connectionModel.setConnectionId(connection.connectionId);
-    if (connection.clientId !== undefined) connectionModel.setClientId(connection.clientId);
-    if (connection.connectionRateId !== undefined) connectionModel.setConnectionRateId(connection.connectionRateId);
-    if (connection.connectionRateName !== undefined) connectionModel.setConnectionRateName(connection.connectionRateName);
-    if (connection.connectionMeterNumber !== undefined) connectionModel.setConnectionMeterNumber(connection.connectionMeterNumber);
-
-    if (connection.connectionId !== undefined) {
-      const [sector, account] = connection.connectionId.split('-').map(Number);
-      connectionModel.setConnectionSector(sector || 0);
-      connectionModel.setConnectionAccount(account || 0);
-      connectionModel.setConnectionCadastralKey(connection.connectionId);
-    }
-
-    if (connection.connectionContractNumber !== undefined) connectionModel.setConnectionContractNumber(connection.connectionContractNumber);
-    if (connection.connectionSewerage !== undefined) connectionModel.setConnectionSewerage(connection.connectionSewerage);
-    if (connection.connectionStatus !== undefined) connectionModel.setConnectionStatus(connection.connectionStatus);
-    if (connection.connectionAddress !== undefined) connectionModel.setConnectionAddress(connection.connectionAddress);
-    if (connection.connectionInstallationDate !== undefined) connectionModel.setConnectionInstallationDate(connection.connectionInstallationDate);
-    if (connection.connectionPeopleNumber !== undefined) connectionModel.setConnectionPeopleNumber(connection.connectionPeopleNumber);
-    if (connection.connectionZone !== undefined) connectionModel.setConnectionZone(connection.connectionZone);
-    if (connection.longitude !== undefined && connection.latitude !== undefined) {
-      connectionModel.setConnectionCoordinates(`POINT(${connection.longitude} ${connection.latitude})`);
-    }
-    if (connection.connectionReference !== undefined) connectionModel.setConnectionReference(connection.connectionReference);
-    if (connection.ConnectionMetaData !== undefined) connectionModel.setConnectionMetaData(connection.ConnectionMetaData);
-    if (connection.connectionAltitude !== undefined) connectionModel.setConnectionAltitude(connection.connectionAltitude);
-    if (connection.connectionPrecision !== undefined) connectionModel.setConnectionPrecision(connection.connectionPrecision);
-    if (connection.connectionGeolocationDate !== undefined) connectionModel.setConnectionGeolocationDate(connection.connectionGeolocationDate || new Date());
-    if (connection.connectionGeometricZone !== undefined) connectionModel.setConnectionGeometricZone(connection.connectionGeometricZone);
-    if (connection.propertyCadastralKey !== undefined) connectionModel.setPropertyCadastralKey(connection.propertyCadastralKey);
-
+  static fromUpdateConnectionRequestToConnectionModel(connection: Partial<CreateConnectionRequest>, existingConnection: ConnectionModel): ConnectionModel {
+    const connectionModel = new ConnectionModel(
+      connection.connectionId || existingConnection['connectionId'],
+      connection.clientId || existingConnection['clientId'],
+      connection.connectionRateId || existingConnection['connectionRateId'],
+      connection.connectionRateName || existingConnection['connectionRateName'],
+      connection.connectionMeterNumber || existingConnection['connectionMeterNumber'],
+      connection.connectionId ? parseInt(connection.connectionId.split('-')[0]) : existingConnection['connectionSector'],
+      connection.connectionId ? parseInt(connection.connectionId.split('-')[1]) : existingConnection['connectionAccount'],
+      connection.connectionId || existingConnection['connectionCadastralKey'],
+      connection.connectionContractNumber || existingConnection['connectionContractNumber'],
+      connection.connectionSewerage !== undefined ? connection.connectionSewerage : existingConnection['connectionSewerage'],
+      connection.connectionStatus !== undefined ? connection.connectionStatus : existingConnection['connectionStatus'],
+      connection.connectionAddress || existingConnection['connectionAddress'],
+      connection.connectionInstallationDate || existingConnection['connectionInstallationDate'],
+      connection.connectionPeopleNumber || existingConnection['connectionPeopleNumber'],
+      connection.connectionZone || existingConnection['connectionZone'],
+      `POINT(${connection.longitude || existingConnection['longitude']} ${connection.latitude || existingConnection['latitude']})`,
+      connection.connectionReference || existingConnection['connectionReference'],
+      connection.ConnectionMetaData || existingConnection['connectionMetaData'],
+      connection.connectionAltitude || existingConnection['connectionAltitude'],
+      connection.connectionPrecision || existingConnection['connectionPrecision'],
+      connection.connectionGeolocationDate || existingConnection['connectionGeolocationDate'],
+      connection.connectionGeometricZone || existingConnection['connectionGeometricZone'],
+      connection.propertyCadastralKey || existingConnection['propertyCadastralKey'],
+      connection.zoneId || existingConnection['zoneId'],
+    );
     return connectionModel;
+  }
+
+  static fromResponseToModel(response: ConnectionResponse): ConnectionModel {
+    return new ConnectionModel(
+      response.connectionId,
+      response.clientId,
+      response.connectionRateId,
+      response.connectionRateName,
+      response.connectionMeterNumber,
+      response.connectionSector,
+      response.connectionAccount,
+      response.connectionCadastralKey,
+      response.connectionContractNumber,
+      response.connectionSewerage,
+      response.connectionStatus,
+      response.connectionAddress,
+      response.connectionInstallationDate,
+      response.connectionPeopleNumber,
+      response.connectionZone,
+      response.connectionCoordinates,
+      response.connectionReference,
+      response.ConnectionMetaData,
+      response.connectionAltitude,
+      response.connectionPrecision,
+      response.connectionGeolocationDate,
+      response.connectionGeometricZone,
+      response.propertyCadastralKey,
+      response.zoneId,
+    );
   }
 
 }

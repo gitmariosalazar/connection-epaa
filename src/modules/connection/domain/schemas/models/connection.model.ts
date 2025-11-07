@@ -23,6 +23,7 @@ export class ConnectionModel {
   private connectionGeolocationDate: Date;
   private connectionGeometricZone: string;
   private propertyCadastralKey: string;
+  private zoneId: number;
 
   // ✅ Único constructor (simula vacío o completo)
   constructor(
@@ -49,6 +50,7 @@ export class ConnectionModel {
     connectionGeolocationDate: Date = new Date(),
     connectionGeometricZone: string = '',
     propertyCadastralKey: string = '',
+    zoneId: number = 0,
   ) {
     this.connectionId = connectionId;
     this.clientId = clientId;
@@ -73,6 +75,7 @@ export class ConnectionModel {
     this.connectionGeolocationDate = connectionGeolocationDate;
     this.connectionGeometricZone = connectionGeometricZone;
     this.propertyCadastralKey = propertyCadastralKey;
+    this.zoneId = zoneId;
   }
 
   // --- Getters y Setters ---
@@ -144,6 +147,9 @@ export class ConnectionModel {
 
   public getPropertyCadastralKey(): string { return this.propertyCadastralKey; }
   public setPropertyCadastralKey(value: string): void { this.propertyCadastralKey = value; }
+
+  public getZoneId(): number { return this.zoneId; }
+  public setZoneId(value: number): void { this.zoneId = value; }
 
   // --- Conversión a JSON ---
   public toJSON(): Record<string, any> {

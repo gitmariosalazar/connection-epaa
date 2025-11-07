@@ -23,6 +23,7 @@ export class UpdateConnectionRequest {
   connectionGeolocationDate: Date;
   connectionGeometricZone: string;
   propertyCadastralKey: string;
+  zoneId: number;
 
   constructor(
     connectionId: string,
@@ -49,6 +50,7 @@ export class UpdateConnectionRequest {
     connectionGeolocationDate: Date,
     connectionGeometricZone: string,
     propertyCadastralKey: string,
+    zoneId: number,
   ) {
     this.connectionId = connectionId;
     this.clientId = clientId;
@@ -74,5 +76,6 @@ export class UpdateConnectionRequest {
     this.connectionGeolocationDate = connectionGeolocationDate;
     this.connectionGeometricZone = connectionGeometricZone;
     this.propertyCadastralKey = propertyCadastralKey;
+    this.zoneId = zoneId;
   }
 }

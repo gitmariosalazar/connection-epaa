@@ -104,6 +104,7 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         'connectionGeolocationDate',
         //'connectionGeometricZone',
         'propertyCadastralKey',
+        'zoneId',
       ];
 
       const missingFieldMessages: string[] = validateFields(connection, requiredFields);
@@ -159,7 +160,17 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      const connectionModel: ConnectionModel = ConnectionMapper.fromUpdateConnectionRequestToConnectionModel(connection) as ConnectionModel;
+      const existingConnection = await this.connectionRepository.getConnectionById(connectionId);
+      if (!existingConnection) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection with id ${connectionId} not found`,
+        });
+      }
+
+      const existingConnectionModel = ConnectionMapper.fromResponseToModel(existingConnection);
+
+      const connectionModel: ConnectionModel = ConnectionMapper.fromUpdateConnectionRequestToConnectionModel(connection, existingConnectionModel);
 
       const updatedConnection = await this.connectionRepository.updateConnection(connectionId, connectionModel);
 

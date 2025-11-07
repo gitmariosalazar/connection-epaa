@@ -37,6 +37,7 @@ export class ConnectionPostgreSqlAdapter {
       connectionGeolocationDate: connection.connectionGeolocationDate,
       connectionGeometricZone: connection.connectionGeometricZone,
       propertyCadastralKey: connection.propertyCadastralKey,
+      zoneId: connection.zoneId,
     };
   }
 
@@ -68,6 +69,9 @@ export class ConnectionPostgreSqlAdapter {
       connectionGeolocationDate: connection.connectionGeolocationDate,
       connectionGeometricZone: connection.connectionGeometricZone,
       propertyCadastralKey: connection.propertyCadastralKey,
+      zoneId: connection.zoneId,
+      zoneCode: connection.zoneCode,
+      zoneName: connection.zoneName,
       // Client Data
       clientName: connection.clientName,
       clientAddress: connection.clientAddress,
@@ -116,6 +120,9 @@ export class ConnectionPostgreSqlAdapter {
       connectionGeolocationDate: connection.connectionGeolocationDate,
       connectionGeometricZone: connection.connectionGeometricZone,
       propertyCadastralKey: connection.propertyCadastralKey,
+      zoneId: connection.zoneId,
+      zoneCode: connection.zoneCode,
+      zoneName: connection.zoneName,
       // Client Data
       company: connection.company,
       person: connection.person,
