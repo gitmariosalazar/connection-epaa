@@ -530,7 +530,7 @@ WHERE a.acometidaid = $1;
                             'propertyAlleyway', p.callejon,
                             'propertySector', p.sector,
                             'propertyAddress', p.direccion,
-                            'propertyCoordinates', p.coordenadas,
+                            'propertyCoordinates', p.coordenadas::text,
                             'propertyReference', p.referencia,
                             'propertyAltitude', p.altitud,
                             'propertyPrecision', p.precision,
