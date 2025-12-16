@@ -6,7 +6,7 @@ import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update
 
 @Controller('connections')
 export class ConnectionController {
-  constructor(private readonly connectionService: ConnectionService) { }
+  constructor(private readonly connectionService: ConnectionService) {}
 
   // Implementation of controller methods
   @Post('create-connection')
