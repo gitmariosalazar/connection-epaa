@@ -1,6 +1,7 @@
 import {
   ConnectionAndPropertyResponse,
   ConnectionResponse,
+  ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../schemas/dto/response/connection.response';
 import { ConnectionModel } from '../schemas/models/connection.model';
@@ -25,4 +26,16 @@ export interface InterfaceConnectionRepository {
   findConnectionWithPropertyByCadastralKey(
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null>;
+
+  findAllConnectionsWithProperty(params: {
+    limit: number;
+    offset: number;
+    query?: string;
+  }): Promise<ConnectionWithoutPropertyResponse[]>;
+
+  getConnectionsPaginated(params: {
+    limit: number;
+    offset: number;
+    query?: string;
+  }): Promise<ConnectionResponse[]>;
 }

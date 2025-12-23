@@ -77,4 +77,25 @@ export class ConnectionController {
       cadastralKey,
     );
   }
+
+  @Get('get-all-connections-with-property')
+  @MessagePattern('connections.get-all-connections-with-property')
+  async getAllConnectionsWithProperty(
+    @Payload() params: { limit: number; offset: number; query?: string },
+  ) {
+    return await this.connectionService.findAllConnectionsWithProperty(params);
+  }
+
+  @Get('get-connections-paginated')
+  @MessagePattern('connections.get-connections-paginated')
+  async getConnectionsPaginated(
+    @Payload()
+    params: {
+      limit: number;
+      offset: number;
+      query?: string;
+    },
+  ) {
+    return this.connectionService.getConnectionsPaginated(params);
+  }
 }

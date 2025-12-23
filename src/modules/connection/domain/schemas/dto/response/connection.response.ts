@@ -1,4 +1,4 @@
-import { UUID } from "crypto";
+import { UUID } from 'crypto';
 
 export interface ConnectionResponse {
   connectionId: string;
@@ -26,7 +26,6 @@ export interface ConnectionResponse {
   propertyCadastralKey: string;
   zoneId: number;
 }
-
 
 export interface ConnectionAndPropertyResponse {
   // Connection Data
@@ -75,20 +74,19 @@ export interface ConnectionAndPropertyResponse {
   propertyTypeId: string | null;
 }
 
-
 export interface PropertyResponse {
-  propertyId: UUID,
-  propertySector: string | null,
-  propertyTypeId: number | null,
-  propertyAddress: string | null,
-  propertyAlleyway: string | null,
-  propertyAltitude: number | null,
-  propertyTypeName: string | null,
-  propertyPrecision: number | null,
-  propertyReference: string | null,
-  propertyCoordinates: string | null,
-  propertyCadastralKey: string | null,
-  propertyGeometricZone: string | null
+  propertyId: UUID;
+  propertySector: string | null;
+  propertyTypeId: number | null;
+  propertyAddress: string | null;
+  propertyAlleyway: string | null;
+  propertyAltitude: number | null;
+  propertyTypeName: string | null;
+  propertyPrecision: number | null;
+  propertyReference: string | null;
+  propertyCoordinates: string | null;
+  propertyCadastralKey: string | null;
+  propertyGeometricZone: string | null;
 }
 
 export interface ConnectionWithPropertyResponse {
@@ -126,34 +124,66 @@ export interface ConnectionWithPropertyResponse {
   properties: PropertyResponse[];
 }
 
+export interface ConnectionWithoutPropertyResponse {
+  // Connection Data
+  connectionId: string;
+  clientId: string;
+  connectionRateId: string;
+  connectionRateName: string;
+  connectionMeterNumber: string | null;
+  connectionSector: string | null;
+  connectionAccount: string | null;
+  connectionCadastralKey: string | null;
+  connectionContractNumber: string | null;
+  connectionSewerage: boolean | null;
+  connectionStatus: string | null;
+  connectionAddress: string | null;
+  connectionInstallationDate: string | Date | null;
+  connectionPeopleNumber: number | null;
+  connectionZone: string | null;
+  connectionCoordinates: string | null;
+  connectionReference: string | null;
+  connectionMetadata: Record<string, any> | null;
+  connectionAltitude: number | null;
+  connectionPrecision: number | null;
+  connectionGeolocationDate: string | Date | null;
+  connectionGeometricZone: string | null;
+  propertyCadastralKey: string | null;
+  zoneId: number;
+  zoneCode: string;
+  zoneName: string;
+  // Client Data
+  company: Company | null;
+  person: Client | null;
+}
 
 export interface Client {
-  address: string,
-  country: string,
-  genderId: number,
-  lastName: string,
-  parishId: string,
-  personId: string,
-  birthDate: string,
-  firstName: string,
-  isDeceased: boolean,
-  professionId: number,
-  civilStatusId: number,
-  phones: Phone[],
-  emails: Email[]
+  address: string;
+  country: string;
+  genderId: number;
+  lastName: string;
+  parishId: string;
+  personId: string;
+  birthDate: string;
+  firstName: string;
+  isDeceased: boolean;
+  professionId: number;
+  civilStatusId: number;
+  phones: Phone[];
+  emails: Email[];
 }
 
 export interface Company {
-  ruc: string,
-  address: string,
-  country: string,
-  clientId: string,
-  parishId: string,
-  companyId: number,
-  businessName: string,
-  commercialName: string,
-  phones: Phone[],
-  emails: Email[]
+  ruc: string;
+  address: string;
+  country: string;
+  clientId: string;
+  parishId: string;
+  companyId: number;
+  businessName: string;
+  commercialName: string;
+  phones: Phone[];
+  emails: Email[];
 }
 
 interface Phone {

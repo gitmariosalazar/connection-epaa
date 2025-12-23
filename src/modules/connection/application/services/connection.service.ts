@@ -5,6 +5,7 @@ import { InterfaceConnectionUseCase } from '../usecases/connection.use-case.inte
 import {
   ConnectionAndPropertyResponse,
   ConnectionResponse,
+  ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../../domain/schemas/dto/response/connection.response';
 import { RpcException } from '@nestjs/microservices';
@@ -279,6 +280,50 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return connectionWithProperty;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllConnectionsWithProperty(params: {
+    limit: number;
+    offset: number;
+    query?: string;
+  }): Promise<ConnectionWithoutPropertyResponse[]> {
+    try {
+      const connectionsWithProperty =
+        await this.connectionRepository.findAllConnectionsWithProperty(params);
+
+      if (!connectionsWithProperty || connectionsWithProperty.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: 'No connections with property found',
+        });
+      }
+
+      return connectionsWithProperty;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getConnectionsPaginated(params: {
+    limit: number;
+    offset: number;
+    query?: string;
+  }): Promise<ConnectionResponse[]> {
+    try {
+      const connections =
+        await this.connectionRepository.getConnectionsPaginated(params);
+
+      if (!connections || connections.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: 'No connections found',
+        });
+      }
+
+      return connections;
     } catch (error) {
       throw error;
     }
