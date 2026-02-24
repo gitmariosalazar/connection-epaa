@@ -11,18 +11,16 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  //await app.listen(environments.NODE_ENV === 'production' ? 3013 : 4013);
+  await app.listen(environments.NODE_ENV === 'production' ? 3013 : 4013);
   app.use(morgan('dev'));
 
   const postgresqlService: DatabaseServicePostgreSQL =
     new DatabaseServicePostgreSQL();
 
   logger.log(await postgresqlService.connect());
-  /*
   logger.log(
     `🚀🎉 The Connection microservice is running on: http://localhost:${environments.NODE_ENV === 'production' ? 3013 : 4013}✅`,
   );
-  */
 
   const microservice = await NestFactory.createMicroservice(AppModule, {
     transport: Transport.KAFKA,

@@ -13,21 +13,20 @@ import { statusCode } from '../../../../../../settings/environments/status-code'
 import { ConnectionModel } from '../../../../domain/schemas/models/connection.model';
 import { Exists } from '../../../../../../shared/interfaces/verify-exists';
 import {
+  ConnectionAndPropertySqlResponse,
   ConnectionSqlResponse,
   ConnectionWithoutPropertySqlResponse,
   ConnectionWithPropertySqlResponse,
 } from '../../../interfaces/sql/connection.sql.response';
 
 @Injectable()
-export class PostgresqlConnectionPersistence
-  implements InterfaceConnectionRepository
-{
+export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
   constructor(private readonly postgresqlService: DatabaseServicePostgreSQL) {}
 
   // Implementation of InterfaceConnectionRepository methods
   async verifyConnectionExists(connectionId: string): Promise<boolean> {
     try {
-      const query: string = `SELECT EXISTS (SELECT 1 FROM acometida WHERE acometidaid = $1)`;
+      const query: string = `SELECT EXISTS (SELECT 1 FROM acometida WHERE acometida_id = $1)`;
       const params: string[] = [connectionId];
       const result = await this.postgresqlService.query<Exists>(query, params);
       return result[0].exists;
@@ -42,36 +41,37 @@ export class PostgresqlConnectionPersistence
     try {
       const query: string = `
         SELECT
-            a.acometidaid as "connectionId",
-            a.clienteid as "clientId",
-            a.tarifaid as "connectionRateId",
-            t.nombre as "connectionRateName",
-            a.numeromedidor as "connectionMeterNumber",
-            a.sector as "connectionSector",
-            a.cuenta as "connectionAccount",
-            a.clavecatastral as "connectionCadastralKey",
-            a.numerocontrato as "connectionContractNumber",
-            a.alcantarillado as "connectionSewerage",
-            a.estado as "connectionStatus",
-            a.direccion as "connectionAddress",
-            a.fechainstalacion as "connectionInstallationDate",
-            a.numeropersonas as "connectionPeopleNumbers",
-            a.zona as "connectionZone",
-            a.coordenadas as "connectionCoordinates",
-            a.referencia as "connectionReference",
-            a.metadata as "connectionMetadata",
-            a.altitud as "connectionAltitude",
-            a.precision as "connectionPrecision",
-            a.fechageolocalizacion as "connectionGeolocationDate",
-            a.zona_geometrica as "connectionGeometricZone",
-            a.predioClaveCatastral as "propertyCadastralKey",
-            a.zona_id as "zoneId"
-        FROM acometida a INNER JOIN cliente c ON c.clienteid = a.clienteid
-        INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
-        WHERE a.acometidaid = $1;
+            a.acometida_id as "connection_id",
+            a.cliente_id as "client_id",
+            a.tarifa_id as "connection_rate_id",
+            ct.nombre as "connection_rate_name",
+            a.numero_medidor as "connection_meter_number",
+            a.sector as "connection_sector",
+            a.cuenta as "connection_account",
+            a.clave_catastral as "connection_cadastral_key",
+            a.numero_contrato as "connection_contract_number",
+            a.alcantarillado as "connection_sewerage",
+            a.estado as "connection_status",
+            a.direccion as "connection_address",
+            a.fecha_instalacion as "connection_installation_date",
+            a.numero_personas as "connection_people_numbers",
+            a.zona as "connection_zone",
+            a.coordenadas as "connection_coordinates",
+            a.referencia as "connection_reference",
+            a.metadata as "connection_metadata",
+            a.altitud as "connection_altitude",
+            a.precision as "connection_precision",
+            a.fecha_geolocalizacion as "connection_geolocation_date",
+            a.zona_geometrica as "connection_geometric_zone",
+            a.predio_clave_catastral as "property_cadastral_key",
+            a.zona_id as "zone_id"
+        FROM acometida a INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+        INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+        INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        WHERE a.acometida_id = $1;
       `;
       const params: string[] = [connectionId];
-      const result = await this.postgresqlService.query<ConnectionResponse>(
+      const result = await this.postgresqlService.query<ConnectionSqlResponse>(
         query,
         params,
       );
@@ -102,34 +102,35 @@ export class PostgresqlConnectionPersistence
     try {
       const query: string = `
         SELECT
-            a.acometidaid as "connectionId",
-            a.clienteid as "clientId",
-            a.tarifaid as "connectionRateId",
-            t.nombre as "connectionRateName",
-            a.numeromedidor as "connectionMeterNumber",
-            a.sector as "connectionSector",
-            a.cuenta as "connectionAccount",
-            a.clavecatastral as "connectionCadastralKey",
-            a.numerocontrato as "connectionContractNumber",
-            a.alcantarillado as "connectionSewerage",
-            a.estado as "connectionStatus",
-            a.direccion as "connectionAddress",
-            a.fechainstalacion as "connectionInstallationDate",
-            a.numeropersonas as "connectionPeopleNumbers",
-            a.zona as "connectionZone",
-            a.coordenadas as "connectionCoordinates",
-            a.referencia as "connectionReference",
-            a.metadata as "connectionMetadata",
-            a.altitud as "connectionAltitude",
-            a.precision as "connectionPrecision",
-            a.fechageolocalizacion as "connectionGeolocationDate",
-            a.zona_geometrica as "connectionGeometricZone",
-            a.predioClaveCatastral as "propertyCadastralKey",
-            a.zona_id as "zoneId"
+            a.acometida_id as "connection_id",
+            a.cliente_id as "client_id",
+            a.tarifa_id as "connection_rate_id",
+            ct.nombre as "connection_rate_name",
+            a.numero_medidor as "connection_meter_number",
+            a.sector as "connection_sector",
+            a.cuenta as "connection_account",
+            a.clave_catastral as "connection_cadastral_key",
+            a.numero_contrato as "connection_contract_number",
+            a.alcantarillado as "connection_sewerage",
+            a.estado as "connection_status",
+            a.direccion as "connection_address",
+            a.fecha_instalacion as "connection_installation_date",
+            a.numero_personas as "connection_people_numbers",
+            a.zona as "connection_zone",
+            a.coordenadas as "connection_coordinates",
+            a.referencia as "connection_reference",
+            a.metadata as "connection_metadata",
+            a.altitud as "connection_altitude",
+            a.precision as "connection_precision",
+            a.fecha_geolocalizacion as "connection_geolocation_date",
+            a.zona_geometrica as "connection_geometric_zone",
+            a.predio_clave_catastral as "property_cadastral_key",
+            a.zona_id as "zone_id"
         FROM acometida a
-        INNER JOIN cliente c ON c.clienteid = a.clienteid
-        INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
-        ORDER BY a.acometidaid
+        INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+        INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+        INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        ORDER BY a.acometida_id
         LIMIT $1 OFFSET $2;
       `;
       const params: number[] = [limit, offset];
@@ -160,7 +161,7 @@ export class PostgresqlConnectionPersistence
   async deleteConnection(connectionId: string): Promise<boolean> {
     try {
       const query: string = `
-        DELETE FROM acometida WHERE acometidaid = $1;
+        DELETE FROM acometida WHERE acometida_id = $1;
       `;
       const params: string[] = [connectionId];
       const result = await this.postgresqlService.query(query, params);
@@ -179,56 +180,56 @@ export class PostgresqlConnectionPersistence
 
       const query: string = `
         INSERT INTO acometida (
-          acometidaid,
-          clienteid,
-          tarifaid,
-          numeromedidor,
+          acometida_id,
+          cliente_id,
+          tarifa_id,
+          numero_medidor,
           sector,
           cuenta,
-          clavecatastral,
-          numerocontrato,
+          clave_catastral,
+          numero_contrato,
           alcantarillado,
           estado,
           direccion,
-          fechainstalacion,
-          numeropersonas,
+          fecha_instalacion,
+          numero_personas,
           zona,
           coordenadas,
           referencia,
           metadata,
           altitud,
           precision,
-          fechageolocalizacion,
-          predioClaveCatastral,
+          fecha_geolocalizacion,
+          predio_clave_catastral,
           zona_id
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
         )
         RETURNING
-          acometidaid as "connectionId",
-          clienteid as "clientId",
-          tarifaid as "connectionRateId",
-          numeromedidor as "connectionMeterNumber",
-          sector as "connectionSector",
-          cuenta as "connectionAccount",
-          clavecatastral as "connectionCadastralKey",
-          numerocontrato as "connectionContractNumber",
-          alcantarillado as "connectionSewerage",
-          estado as "connectionStatus",
-          direccion as "connectionAddress",
-          fechainstalacion as "connectionInstallationDate",
-          numeropersonas as "connectionPeopleNumbers",
-          zona as "connectionZone",
-          coordenadas as "connectionCoordinates",
-          referencia as "connectionReference",
-          metadata as "connectionMetadata",
-          altitud as "connectionAltitude",
-          precision as "connectionPrecision",
-          fechageolocalizacion as "connectionGeolocationDate",
-          zona_geometrica as "connectionGeometricZone",
-          predioClaveCatastral as "propertyCadastralKey",
-          zona_id as "zoneId";
+          acometida_id as "connection_id",
+          cliente_id as "client_id",
+          tarifa_id as "connection_rate_id",
+          numero_medidor as "connection_meter_number",
+          sector as "connection_sector",
+          cuenta as "connection_account",
+          clave_catastral as "connection_cadastral_key",
+          numero_contrato as "connection_contract_number",
+          alcantarillado as "connection_sewerage",
+          estado as "connection_status",
+          direccion as "connection_address",
+          fecha_instalacion as "connection_installation_date",
+          numero_personas as "connection_people_numbers",
+          zona as "connection_zone",
+          coordenadas as "connection_coordinates",
+          referencia as "connection_reference",
+          metadata as "connection_metadata",
+          altitud as "connection_altitude",
+          precision as "connection_precision",
+          fecha_geolocalizacion as "connection_geolocation_date",
+          zona_geometrica as "connection_geometric_zone",
+          predio_clave_catastral as "property_cadastral_key",
+          zona_id as "zone_id";
       `;
       const params: any[] = [
         connection.getConnectionId(),
@@ -255,7 +256,7 @@ export class PostgresqlConnectionPersistence
         connection.getZoneId(),
       ];
 
-      const result = await this.postgresqlService.query<ConnectionResponse>(
+      const result = await this.postgresqlService.query<ConnectionSqlResponse>(
         query,
         params,
       );
@@ -281,52 +282,52 @@ export class PostgresqlConnectionPersistence
       console.log(`Connection Model: `, connection);
       const query: string = `
         UPDATE acometida SET
-          clienteid = COALESCE($2, clienteid),
-          tarifaid = COALESCE($3, tarifaid),
-          numeromedidor = COALESCE($4, numeromedidor),
+          cliente_id = COALESCE($2, cliente_id),
+          tarifa_id = COALESCE($3, tarifa_id),
+          numero_medidor = COALESCE($4, numero_medidor),
           sector = COALESCE($5, sector),
           cuenta = COALESCE($6, cuenta),
-          clavecatastral = COALESCE($7, clavecatastral),
-          numerocontrato = COALESCE($8, numerocontrato),
+          clave_catastral = COALESCE($7, clave_catastral),
+          numero_contrato = COALESCE($8, numero_contrato),
           alcantarillado = COALESCE($9, alcantarillado),
           estado = COALESCE($10, estado),
           direccion = COALESCE($11, direccion),
-          fechainstalacion = COALESCE($12, fechainstalacion),
-          numeropersonas = COALESCE($13, numeropersonas),
+          fecha_instalacion = COALESCE($12, fecha_instalacion),
+          numero_personas = COALESCE($13, numero_personas),
           zona = COALESCE($14, zona),
           coordenadas = COALESCE($15, coordenadas),
           referencia = COALESCE($16, referencia),
           metadata = COALESCE($17, metadata),
           altitud = COALESCE($18, altitud),
           precision = COALESCE($19, precision),
-          fechageolocalizacion = COALESCE($20, fechageolocalizacion),
-          predioClaveCatastral = COALESCE($21, predioClaveCatastral),
+          fecha_geolocalizacion = COALESCE($20, fecha_geolocalizacion),
+          predio_clave_catastral = COALESCE($21, predio_clave_catastral),
           zona_id = COALESCE($22, zona_id)
-        WHERE acometidaid = $1
+        WHERE acometida_id = $1
         RETURNING
-          acometidaid as "connectionId",
-          clienteid as "clientId",
-          tarifaid as "connectionRateId",
-          numeromedidor as "connectionMeterNumber",
-          sector as "connectionSector",
-          cuenta as "connectionAccount",
-          clavecatastral as "connectionCadastralKey",
-          numerocontrato as "connectionContractNumber",
-          alcantarillado as "connectionSewerage",
-          estado as "connectionStatus",
-          direccion as "connectionAddress",
-          fechainstalacion as "connectionInstallationDate",
-          numeropersonas as "connectionPeopleNumbers",
-          zona as "connectionZone",
-          coordenadas as "connectionCoordinates",
-          referencia as "connectionReference",
-          metadata as "connectionMetadata",
-          altitud as "connectionAltitude",
-          precision as "connectionPrecision",
-          fechageolocalizacion as "connectionGeolocationDate",
-          zona_geometrica as "connectionGeometricZone",
-          predioClaveCatastral as "propertyCadastralKey",
-          zona_id as "zoneId";
+          acometida_id as "connection_id",
+          cliente_id as "client_id",
+          tarifa_id as "connection_rate_id",
+          numero_medidor as "connection_meter_number",
+          sector as "connection_sector",
+          cuenta as "connection_account",
+          clave_catastral as "connection_cadastral_key",
+          numero_contrato as "connection_contract_number",
+          alcantarillado as "connection_sewerage",
+          estado as "connection_status",
+          direccion as "connection_address",
+          fecha_instalacion as "connection_installation_date",
+          numero_personas as "connection_people_numbers",
+          zona as "connection_zone",
+          coordenadas as "connection_coordinates",
+          referencia as "connection_reference",
+          metadata as "connection_metadata",
+          altitud as "connection_altitude",
+          precision as "connection_precision",
+          fecha_geolocalizacion as "connection_geolocation_date",
+          zona_geometrica as "connection_geometric_zone",
+          predio_clave_catastral as "property_cadastral_key",
+          zona_id as "zone_id";
       `;
       const params: any[] = [
         connectionId,
@@ -353,7 +354,7 @@ export class PostgresqlConnectionPersistence
         connection.getZoneId(),
       ];
 
-      const result = await this.postgresqlService.query<ConnectionResponse>(
+      const result = await this.postgresqlService.query<ConnectionSqlResponse>(
         query,
         params,
       );
@@ -378,64 +379,65 @@ export class PostgresqlConnectionPersistence
       const query: string = `
 SELECT
     -- Connection Data
-    a.acometidaid                AS "connectionId",
-    a.clienteid                  AS "clientId",
-    a.tarifaid                   AS "connectionRateId",
-    t.nombre                     AS "connectionRateName",
-    a.numeromedidor              AS "connectionMeterNumber",
-    a.sector                     AS "connectionSector",
-    a.cuenta                     AS "connectionAccount",
-    a.clavecatastral             AS "connectionCadastralKey",
-    a.numerocontrato             AS "connectionContractNumber",
-    a.alcantarillado             AS "connectionSewerage",
-    a.estado                     AS "connectionStatus",
-    a.direccion                  AS "connectionAddress",
-    a.fechainstalacion           AS "connectionInstallationDate",
-    a.numeropersonas             AS "connectionPeopleNumber",
-    a.zona                       AS "connectionZone",
-    a.coordenadas                AS "connectionCoordinates",
-    a.referencia                 AS "connectionReference",
-    a.metadata                   AS "connectionMetadata",
-    a.altitud                    AS "connectionAltitude",
-    a.precision                  AS "connectionPrecision",
-    a.fechageolocalizacion       AS "connectionGeolocationDate",
-    a.zona_geometrica            AS "connectionGeometricZone",
-    a.predioclavecatastral       AS "propertyCadastralKey",
-    a.zona_id                    AS "zoneId",
-    z.codigo                     AS "zoneCode",
-    z.nombre                     AS "zoneName",
+    a.acometida_id                AS "connection_id",
+    a.cliente_id                  AS "client_id",
+    a.tarifa_id                   AS "connection_rate_id",
+    ct.nombre                     AS "connection_rate_name",
+    a.numero_medidor              AS "connection_meter_number",
+    a.sector                     AS "connection_sector",
+    a.cuenta                     AS "connection_account",
+    a.clave_catastral             AS "connection_cadastral_key",
+    a.numero_contrato             AS "connection_contract_number",
+    a.alcantarillado             AS "connection_sewerage",
+    a.estado                     AS "connection_status",
+    a.direccion                  AS "connection_address",
+    a.fecha_instalacion           AS "connection_installation_date",
+    a.numero_personas             AS "connection_people_number",
+    a.zona                       AS "connection_zone",
+    a.coordenadas                AS "connection_coordinates",
+    a.referencia                 AS "connection_reference",
+    a.metadata                   AS "connection_metadata",
+    a.altitud                    AS "connection_altitude",
+    a.precision                  AS "connection_precision",
+    a.fecha_geolocalizacion       AS "connection_geolocation_date",
+    a.zona_geometrica            AS "connection_geometric_zone",
+    a.predio_clave_catastral       AS "property_cadastral_key",
+    a.zona_id                    AS "zone_id",
+    z.codigo                     AS "zone_code",
+    z.nombre                     AS "zone_name",
     -- Client Data
-    c.clienteid                  AS "clientId",
-    COALESCE(ci.nombres || ' ' || ci.apellidos, e.razonsocial) AS "clientName",
-    COALESCE(ci.direccion, e.direccion)                        AS "clientAddress",
-    cc.phones                    AS "clientPhones",
-    cc.emails                    AS "clientEmails",
+    c.cliente_id                  AS "client_id",
+    COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social) AS "client_name",
+    COALESCE(ci.direccion, e.direccion)                        AS "client_address",
+    cc.phones                    AS "client_phones",
+    cc.correos                    AS "client_emails",
     -- Property Data
-    p.predioid                   AS "propertyId",
-    p.callejon                   AS "propertyAlleyway",
-    p.sector                     AS "propertySector",
-    p.direccion                  AS "propertyAddress",
-    p.coordenadas                AS "propertyCoordinates",
-    p.referencia                 AS "propertyReference",
-    p.altitud                    AS "propertyAltitude",
-    p.precision                  AS "propertyPrecision",
-    p.zona_geometrica            AS "propertyGeometricZone",
-    tp.tipopredioid              AS "propertyTypeId",
-    tp.nombre                    AS "propertyTypeName"
+    p.predio_id                   AS "property_id",
+    p.callejon                   AS "property_alleyway",
+    p.sector                     AS "property_sector",
+    p.direccion                  AS "property_address",
+    p.coordenadas                AS "property_coordinates",
+    p.referencia                 AS "property_reference",
+    p.altitud                    AS "property_altitude",
+    p.precision                  AS "property_precision",
+    p.zona_geometrica            AS "property_geometric_zone",
+    tp.tipo_predio_id              AS "property_type_id",
+    tp.nombre                    AS "property_type_name"
 FROM acometida a
-INNER JOIN cliente c       ON c.clienteid = a.clienteid
-LEFT JOIN predio p         ON p.clavecatastral = a.predioclavecatastral
-LEFT JOIN ciudadano ci     ON ci.ciudadanoid = c.clienteid
-LEFT JOIN empresa e        ON e.ruc = c.clienteid
-LEFT JOIN cliente_contacto cc ON cc.clienteid = c.clienteid
-INNER JOIN tarifa t        ON t.tarifaid = a.tarifaid
-LEFT JOIN tipopredio tp    ON tp.tipopredioid = p.tipopredioid
+INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
+LEFT JOIN predio p         ON p.clave_catastral = a.clave_catastral
+LEFT JOIN ciudadano ci     ON ci.ciudadano_id = c.cliente_id
+LEFT JOIN empresa e        ON e.ruc = c.cliente_id
+LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
+INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
+LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
+LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
 INNER JOIN public.zona z    ON z.zona_id = a.zona_id
-WHERE a.acometidaid = $1;
+WHERE a.acometida_id = $1;
       `;
       const params: string[] = [propertyCadastralKey];
       const result =
-        await this.postgresqlService.query<ConnectionAndPropertyResponse>(
+        await this.postgresqlService.query<ConnectionAndPropertySqlResponse>(
           query,
           params,
         );
@@ -462,66 +464,66 @@ WHERE a.acometidaid = $1;
       const query: string = `
         SELECT
             -- Connection Data
-            a.acometidaid                AS "connectionId",
-            a.clienteid                  AS "clientId",
-            a.tarifaid                   AS "connectionRateId",
-            t.nombre                     AS "connectionRateName",
-            a.numeromedidor              AS "connectionMeterNumber",
-            a.sector                     AS "connectionSector",
-            a.cuenta                     AS "connectionAccount",
-            a.clavecatastral             AS "connectionCadastralKey",
-            a.numerocontrato             AS "connectionContractNumber",
-            a.alcantarillado             AS "connectionSewerage",
-            a.estado                     AS "connectionStatus",
-            a.direccion                  AS "connectionAddress",
-            a.fechainstalacion           AS "connectionInstallationDate",
-            a.numeropersonas             AS "connectionPeopleNumber",
-            a.zona                       AS "connectionZone",
-            a.coordenadas                AS "connectionCoordinates",
-            a.referencia                 AS "connectionReference",
-            a.metadata                   AS "connectionMetadata",
-            a.altitud                    AS "connectionAltitude",
-            a.precision                  AS "connectionPrecision",
-            a.fechageolocalizacion       AS "connectionGeolocationDate",
-            a.zona_geometrica            AS "connectionGeometricZone",
-            a.predioclavecatastral       AS "propertyCadastralKey",
-            a.zona_id                    AS "zoneId",
-            z.codigo                     AS "zoneCode",
-            z.nombre                     AS "zoneName",
+            a.acometida_id                AS "connection_id",
+            a.cliente_id                  AS "client_id",
+            a.tarifa_id                   AS "connection_rate_id",
+            ct.nombre                     AS "connection_rate_name",
+            a.numero_medidor              AS "connection_meter_number",
+            a.sector                      AS "connection_sector",
+            a.cuenta                      AS "connection_account",
+            a.clave_catastral             AS "connection_cadastral_key",
+            a.numero_contrato             AS "connection_contract_number",
+            a.alcantarillado              AS "connection_sewerage",
+            a.estado                      AS "connection_status",
+            a.direccion                   AS "connection_address",
+            a.fecha_instalacion           AS "connection_installation_date",
+            a.numero_personas             AS "connection_people_number",
+            a.zona                        AS "connection_zone",
+            a.coordenadas                 AS "connection_coordinates",
+            a.referencia                  AS "connection_reference",
+            a.metadata                    AS "connection_metadata",
+            a.altitud                     AS "connection_altitude",
+            a.precision                   AS "connection_precision",
+            a.fecha_geolocalizacion       AS "connection_geolocation_date",
+            a.zona_geometrica             AS "connection_geometric_zone",
+            a.predio_clave_catastral      AS "property_cadastral_key",
+            a.zona_id                     AS "zone_id",
+            z.codigo                      AS "zone_code",
+            z.nombre                      AS "zone_name",
             CASE
                 WHEN e.ruc IS NOT NULL THEN
                     jsonb_build_object(
-                        'companyId', e.empresaid,
-                        'commercialName', e.nombrecomercial,
-                        'businessName', e.razonsocial,
+                        'company_id', e.empresa_id,
+                        'commercial_name', e.nombre_comercial,
+                        'business_name', e.razon_social,
                         'ruc', e.ruc,
                         'address', e.direccion,
-                        'parishId', e.parroquiaid,
+                        'parish_id', e.parroquia_id,
                         'country', e.pais,
-                        'clientId', e.clienteid,
+                        'client_id', e.cliente_id,
                         'phones', cc.phones,
-                        'emails', cc.emails
+                        'emails', cc.correos
                     )
                 ELSE NULL
             END AS "company",
 
             -- Person Data (if applicable)
             CASE
-                WHEN ci.ciudadanoid IS NOT NULL THEN
+                WHEN ci.ciudadano_id IS NOT NULL THEN
                     jsonb_build_object(
-                        'personId', ci.ciudadanoid,
-                        'firstName', ci.nombres,
-                        'lastName', ci.apellidos,
-                        'birthDate', ci.fechanacimiento,
-                        'isDeceased', ci.fallecido,
-                        'genderId', ci.sexoid,
-                        'civilStatusId', ci.estadocivilid,
-                        'professionId', ci.profesionid,
-                        'parishId', ci.parroquiaid,
+                        'person_id', ci.ciudadano_id,
+                        'first_name', ci.nombres,
+                        'last_name', ci.apellidos,
+                        'birth_date', ci.fecha_nacimiento,
+                        'is_deceased', ci.fallecido,
+                        'gender_id', ci.sexo_id,
+                        'civil_status_id', ci.estado_civil_id,
+                        'profession_id', ci.profesion_id,
+                        'parish_id', ci.parroquia_id,
                         'address', ci.direccion,
-                        'country', ci.paisorigen,
+                        'country', ci.pais_origen,
                         'phones', cc.phones,
-                        'emails', cc.emails
+                        'emails', cc.correos
                     )
                 ELSE NULL
             END AS "person",
@@ -531,35 +533,36 @@ WHERE a.acometidaid = $1;
                 (
                     SELECT jsonb_agg(
                         jsonb_build_object(
-                            'propertyId', p.predioid,
-                            'propertyCadastralKey', p.clavecatastral,
-                            'propertyAlleyway', p.callejon,
-                            'propertySector', p.sector,
-                            'propertyAddress', p.direccion,
-                            'propertyCoordinates', p.coordenadas::text,
-                            'propertyReference', p.referencia,
-                            'propertyAltitude', p.altitud,
-                            'propertyPrecision', p.precision,
-                            'propertyGeometricZone', p.zona_geometrica,
-                            'propertyTypeId', tp.tipopredioid,
-                            'propertyTypeName', tp.nombre
+                            'property_id', p.predio_id,
+                            'property_cadastral_key', p.clave_catastral,
+                            'property_alleyway', p.callejon,
+                            'property_sector', p.sector,
+                            'property_address', p.direccion,
+                            'property_coordinates', p.coordenadas::text,
+                            'property_reference', p.referencia,
+                            'property_altitude', p.altitud,
+                            'property_precision', p.precision,
+                            'property_geometric_zone', p.zona_geometrica,
+                            'property_type_id', tp.tipo_predio_id,
+                            'property_type_name', tp.nombre
                         )
                     )
                     FROM predio p
-                    LEFT JOIN tipopredio tp ON tp.tipopredioid = p.tipopredioid
-                    WHERE p.clienteid = a.clienteid
+                    LEFT JOIN tipo_predio tp ON tp.tipo_predio_id = p.tipo_predio_id
+                    WHERE p.cliente_id = a.cliente_id
                 ),
                 '[]'::jsonb
             ) AS "properties"
 
         FROM acometida a
-        INNER JOIN cliente c           ON c.clienteid = a.clienteid
-        LEFT JOIN ciudadano ci         ON ci.ciudadanoid = c.clienteid
-        LEFT JOIN empresa e            ON e.ruc = c.clienteid
-        LEFT JOIN cliente_contacto cc  ON cc.clienteid = c.clienteid
-        INNER JOIN tarifa t            ON t.tarifaid = a.tarifaid
+        INNER JOIN cliente c           ON c.cliente_id = a.cliente_id
+        LEFT JOIN ciudadano ci         ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e            ON e.ruc = c.cliente_id
+        LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
+        INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
+        INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         INNER JOIN public.zona z on z.zona_id = a.zona_id
-        WHERE a.acometidaid = $1;
+        WHERE a.acometida_id = $1;
       `;
       const params: string[] = [cadastralKey];
       const result =
@@ -601,11 +604,11 @@ WHERE a.acometidaid = $1;
       if (query && query.trim()) {
         whereClause = `
         WHERE (
-          a.clavecatastral ILIKE $${paramCounter} OR
-          a.numeromedidor ILIKE $${paramCounter} OR
+          a.clave_catastral ILIKE $${paramCounter} OR
+          a.numero_medidor ILIKE $${paramCounter} OR
           ci.nombres ILIKE $${paramCounter} OR
           ci.apellidos ILIKE $${paramCounter} OR
-          a.clienteid::text ILIKE $${paramCounter}
+          a.cliente_id::text ILIKE $${paramCounter}
         )
       `;
         paramsQuery.push(`%${query.trim()}%`);
@@ -615,81 +618,82 @@ WHERE a.acometidaid = $1;
       const querySql: string = `
         SELECT
             -- Connection Data
-            a.acometidaid                AS "connectionId",
-            a.clienteid                  AS "clientId",
-            a.tarifaid                   AS "connectionRateId",
-            t.nombre                     AS "connectionRateName",
-            a.numeromedidor              AS "connectionMeterNumber",
-            a.sector                     AS "connectionSector",
-            a.cuenta                     AS "connectionAccount",
-            a.clavecatastral             AS "connectionCadastralKey",
-            a.numerocontrato             AS "connectionContractNumber",
-            a.alcantarillado             AS "connectionSewerage",
-            a.estado                     AS "connectionStatus",
-            a.direccion                  AS "connectionAddress",
-            a.fechainstalacion           AS "connectionInstallationDate",
-            a.numeropersonas             AS "connectionPeopleNumber",
-            a.zona                       AS "connectionZone",
-            a.coordenadas                AS "connectionCoordinates",
-            a.referencia                 AS "connectionReference",
-            a.metadata                   AS "connectionMetadata",
-            a.altitud                    AS "connectionAltitude",
-            a.precision                  AS "connectionPrecision",
-            a.fechageolocalizacion       AS "connectionGeolocationDate",
-            a.zona_geometrica            AS "connectionGeometricZone",
-            a.predioclavecatastral       AS "propertyCadastralKey",
-            a.zona_id                    AS "zoneId",
-            z.codigo                     AS "zoneCode",
-            z.nombre                     AS "zoneName",
+            a.acometida_id                AS "connection_id",
+            a.cliente_id                  AS "client_id",
+            a.tarifa_id                   AS "connection_rate_id",
+            ct.nombre                     AS "connection_rate_name",
+            a.numero_medidor              AS "connection_meter_number",
+            a.sector                     AS "connection_sector",
+            a.cuenta                     AS "connection_account",
+            a.clave_catastral             AS "connection_cadastral_key",
+            a.numero_contrato             AS "connection_contract_number",
+            a.alcantarillado             AS "connection_sewerage",
+            a.estado                     AS "connection_status",
+            a.direccion                  AS "connection_address",
+            a.fecha_instalacion           AS "connection_installation_date",
+            a.numero_personas             AS "connection_people_number",
+            a.zona                       AS "connection_zone",
+            a.coordenadas                AS "connection_coordinates",
+            a.referencia                 AS "connection_reference",
+            a.metadata                   AS "connection_metadata",
+            a.altitud                    AS "connection_altitude",
+            a.precision                  AS "connection_precision",
+            a.fecha_geolocalizacion       AS "connection_geolocation_date",
+            a.zona_geometrica            AS "connection_geometric_zone",
+            a.predio_clave_catastral       AS "property_cadastral_key",
+            a.zona_id                    AS "zone_id",
+            z.codigo                     AS "zone_code",
+            z.nombre                     AS "zone_name",
 
             -- Company Data (if applicable)
             CASE
                 WHEN e.ruc IS NOT NULL THEN
                     jsonb_build_object(
-                        'companyId', e.empresaid,
-                        'commercialName', e.nombrecomercial,
-                        'businessName', e.razonsocial,
+                        'company_id', e.empresa_id,
+                        'commercial_name', e.nombre_comercial,
+                        'business_name', e.razon_social,
                         'ruc', e.ruc,
                         'address', e.direccion,
-                        'parishId', e.parroquiaid,
+                        'parish_id', e.parroquia_id,
                         'country', e.pais,
-                        'clientId', e.clienteid,
+                        'client_id', e.cliente_id,
                         'phones', cc.phones,
-                        'emails', cc.emails
+                        'emails', cc.correos
                     )
                 ELSE NULL
             END AS "company",
 
             -- Person Data (if applicable)
             CASE
-                WHEN ci.ciudadanoid IS NOT NULL THEN
+                WHEN ci.ciudadano_id IS NOT NULL THEN
                     jsonb_build_object(
-                        'personId', ci.ciudadanoid,
-                        'firstName', ci.nombres,
-                        'lastName', ci.apellidos,
-                        'birthDate', ci.fechanacimiento,
-                        'isDeceased', ci.fallecido,
-                        'genderId', ci.sexoid,
-                        'civilStatusId', ci.estadocivilid,
-                        'professionId', ci.profesionid,
-                        'parishId', ci.parroquiaid,
+                        'person_id', ci.ciudadano_id,
+                        'first_name', ci.nombres,
+                        'last_name', ci.apellidos,
+                        'birth_date', ci.fecha_nacimiento,
+                        'is_deceased', ci.fallecido,
+                        'gender_id', ci.sexo_id,
+                        'civil_status_id', ci.estado_civil_id,
+                        'profession_id', ci.profesion_id,
+                        'parish_id', ci.parroquia_id,
                         'address', ci.direccion,
-                        'country', ci.paisorigen,
+                        'country', ci.pais_origen,
                         'phones', cc.phones,
-                        'emails', cc.emails
+                        'emails', cc.correos
                     )
                 ELSE NULL
             END AS "person"
 
         FROM acometida a
-        INNER JOIN cliente c           ON c.clienteid = a.clienteid
-        LEFT JOIN ciudadano ci         ON ci.ciudadanoid = c.clienteid
-        LEFT JOIN empresa e            ON e.ruc = c.clienteid
-        LEFT JOIN cliente_contacto cc  ON cc.clienteid = c.clienteid
-        INNER JOIN tarifa t            ON t.tarifaid = a.tarifaid
+        INNER JOIN cliente c           ON c.cliente_id = a.cliente_id
+        LEFT JOIN ciudadano ci         ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e            ON e.ruc = c.cliente_id
+        LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
+        INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
+        INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         INNER JOIN public.zona z       ON z.zona_id = a.zona_id
         ${whereClause}
-        ORDER BY a.acometidaid
+        ORDER BY a.acometida_id
         LIMIT $${paramCounter} OFFSET $${paramCounter + 1};
       `;
       paramsQuery.push(limit, offset);
@@ -735,10 +739,10 @@ WHERE a.acometidaid = $1;
       if (query && query.trim()) {
         whereClause = `
         WHERE (
-          a.clavecatastral ILIKE $${paramCounter} OR
-          a.numeromedidor ILIKE $${paramCounter} OR
+          a.clave_catastral ILIKE $${paramCounter} OR
+          a.numero_medidor ILIKE $${paramCounter} OR
           a.direccion ILIKE $${paramCounter} OR
-          a.clienteid::text ILIKE $${paramCounter}
+          a.cliente_id::text ILIKE $${paramCounter}
         )
       `;
         paramsQuery.push(`%${query.trim()}%`);
@@ -748,38 +752,39 @@ WHERE a.acometidaid = $1;
       // Consulta base con todos los campos que necesitas
       const sql = `
       SELECT
-        a.acometidaid AS "connectionId",
-        a.clienteid AS "clientId",
-        a.tarifaid AS "connectionRateId",
-        t.nombre AS "connectionRateName",
-        a.numeromedidor AS "connectionMeterNumber",
-        a.sector AS "connectionSector",
-        a.cuenta AS "connectionAccount",
-        a.clavecatastral AS "connectionCadastralKey",
-        a.numerocontrato AS "connectionContractNumber",
-        a.alcantarillado AS "connectionSewerage",
-        a.estado AS "connectionStatus",
-        a.direccion AS "connectionAddress",
-        a.fechainstalacion AS "connectionInstallationDate",
-        a.numeropersonas AS "connectionPeopleNumbers",
-        a.zona AS "connectionZone",
-        a.coordenadas AS "connectionCoordinates",
-        a.referencia AS "connectionReference",
-        a.metadata AS "connectionMetadata",
-        a.altitud AS "connectionAltitude",
-        a.precision AS "connectionPrecision",
-        a.fechageolocalizacion AS "connectionGeolocationDate",
-        a.zona_geometrica AS "connectionGeometricZone",
-        a.predioClaveCatastral AS "propertyCadastralKey",
-        a.zona_id AS "zoneId",
-        z.codigo AS "zoneCode",
-        z.nombre AS "zoneName"
+        a.acometida_id AS "connection_id",
+        a.cliente_id AS "client_id",
+        a.tarifa_id AS "connection_rate_id",
+        ct.nombre AS "connection_rate_name",
+        a.numero_medidor AS "connection_meter_number",
+        a.sector AS "connection_sector",
+        a.cuenta AS "connection_account",
+        a.clave_catastral AS "connection_cadastral_key",
+        a.numero_contrato AS "connection_contract_number",
+        a.alcantarillado AS "connection_sewerage",
+        a.estado AS "connection_status",
+        a.direccion AS "connection_address",
+        a.fecha_instalacion AS "connection_installation_date",
+        a.numero_personas AS "connection_people_numbers",
+        a.zona AS "connection_zone",
+        a.coordenadas AS "connection_coordinates",
+        a.referencia AS "connection_reference",
+        a.metadata AS "connection_metadata",
+        a.altitud AS "connection_altitude",
+        a.precision AS "connection_precision",
+        a.fecha_geolocalizacion AS "connection_geolocation_date",
+        a.zona_geometrica AS "connection_geometric_zone",
+        a.predio_clave_catastral AS "property_cadastral_key",
+        a.zona_id AS "zone_id",
+        z.codigo AS "zone_code",
+        z.nombre AS "zone_name"
       FROM acometida a
-      INNER JOIN cliente c ON c.clienteid = a.clienteid
-      INNER JOIN tarifa t ON t.tarifaid = a.tarifaid
+      INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+      INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+      INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN public.zona z ON z.zona_id = a.zona_id
       ${whereClause}
-      ORDER BY a.acometidaid
+      ORDER BY a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
 

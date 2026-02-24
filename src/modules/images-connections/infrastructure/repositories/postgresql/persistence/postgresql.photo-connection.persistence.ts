@@ -9,22 +9,21 @@ import { PhotoConnectionResponse } from '../../../../domain/schemas/dto/response
 import { statusCode } from '../../../../../../settings/environments/status-code';
 
 @Injectable()
-export class PhotoConnectionPostgreSQLPersistence
-  implements InterfacePhotoConnectionRepository {
-  constructor(private readonly postgreSQLService: DatabaseServicePostgreSQL) { }
+export class PhotoConnectionPostgreSQLPersistence implements InterfacePhotoConnectionRepository {
+  constructor(private readonly postgreSQLService: DatabaseServicePostgreSQL) {}
 
   async createPhotoConnection(
     photoConnection: PhotoConnectionModel,
   ): Promise<PhotoConnectionResponse | null> {
     try {
       const query = `
-        INSERT INTO fotoacometida (acometidaid, imagenurl, descripcion)
+        INSERT INTO foto_acometida (acometida_id, imagen_url, descripcion)
         VALUES ($1, $2, $3)
-        RETURNING acometidaid AS "photoConnectionId",
-                  imagenurl AS "photoUrl",
+        RETURNING acometida_id AS "photo_connection_id",
+                  imagen_url AS "photo_url",
                   descripcion AS "description",
-                  createdAt AS "createdAt",
-                  updatedAt AS "updatedAt";
+                  created_at AS "created_at",
+                  updated_at AS "updated_at";
       `;
 
       const params = [
@@ -60,14 +59,14 @@ export class PhotoConnectionPostgreSQLPersistence
     try {
       const query = `
         SELECT 
-          fotoacometidaid AS "photoConnectionId",
-          acometidaid AS "connectionId",
-          imagenurl AS "photoUrl",
+          foto_acometida_id AS "photo_connection_id",
+          acometida_id AS "connection_id",
+          imagen_url AS "photo_url",
           descripcion AS "description",
-          createdAt AS "createdAt",
-          updatedAt AS "updatedAt"
-        FROM fotoacometida fr
-        WHERE fr.acometidaid = $1;
+          created_at AS "created_at",
+          updated_at AS "updated_at"
+        FROM foto_acometida fr
+        WHERE fr.acometida_id = $1;
       `;
 
       const params = [cadastralKey];

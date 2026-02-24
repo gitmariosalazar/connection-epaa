@@ -18,7 +18,7 @@ export interface ConnectionResponse {
   connectionZone: number;
   connectionCoordinates: string;
   connectionReference: string;
-  ConnectionMetaData: Record<string, any>;
+  connectionMetaData: Record<string, any>;
   connectionAltitude: number;
   connectionPrecision: number;
   connectionGeolocationDate: Date;
@@ -118,8 +118,8 @@ export interface ConnectionWithPropertyResponse {
   zoneCode: string;
   zoneName: string;
   // Client Data
-  company: Company | null;
-  person: Client | null;
+  company: CompanyResponse | null;
+  person: ClientResponse | null;
   // Property Data
   properties: PropertyResponse[];
 }
@@ -153,11 +153,11 @@ export interface ConnectionWithoutPropertyResponse {
   zoneCode: string;
   zoneName: string;
   // Client Data
-  company: Company | null;
-  person: Client | null;
+  company: CompanyResponse | null;
+  person: ClientResponse | null;
 }
 
-export interface Client {
+export interface ClientResponse {
   address: string;
   country: string;
   genderId: number;
@@ -169,11 +169,11 @@ export interface Client {
   isDeceased: boolean;
   professionId: number;
   civilStatusId: number;
-  phones: Phone[];
-  emails: Email[];
+  phones: PhoneResponse[];
+  emails: EmailResponse[];
 }
 
-export interface Company {
+export interface CompanyResponse {
   ruc: string;
   address: string;
   country: string;
@@ -182,16 +182,16 @@ export interface Company {
   companyId: number;
   businessName: string;
   commercialName: string;
-  phones: Phone[];
-  emails: Email[];
+  phones: PhoneResponse[];
+  emails: EmailResponse[];
 }
 
-interface Phone {
+export interface PhoneResponse {
   telefonoid: number;
   numero: string;
 }
 
-interface Email {
+export interface EmailResponse {
   emailid: number;
   email: string;
 }

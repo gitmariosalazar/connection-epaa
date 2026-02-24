@@ -1,21 +1,20 @@
 export interface ObservationConnectionSqlResponse {
-  observationConnectionId: number;
-  connectionId: string;
-  observationId: number;
-  observationTitle: string;
-  observationDetails: string;
+  observation_connection_id: number;
+  connection_id: string;
+  observation_id: number;
+  observation_title: string;
+  observation_details: string;
 }
 
-
 export interface ObservationSQLResult {
-  observationId: number
-  observationTitle: string;
-  observationDetails: string;
+  observation_id: number;
+  observation_title: string;
+  observation_details: string;
 }
 
 export interface ObservationConnectionSQLResult {
-  observationConnectionId: number
-  connectionId: string
-  observationId: number
-  registerDate: string;
+  observation_connection_id: number;
+  connection_id: string;
+  observation_id: number;
+  register_date: string;
 }

@@ -1,8 +1,8 @@
 export interface PhotoConnectionSQLResponse {
-  photoConnectionId?: number;
-  connectionId: string;
-  photoUrl: string;
+  photo_connection_id?: number;
+  connection_id: string;
+  photo_url: string;
   description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
