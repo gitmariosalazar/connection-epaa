@@ -1,13 +1,18 @@
-import { Module } from "@nestjs/common";
-import { PostgresConnectionModule } from "../../modules/connection/infrastructure/modules/postgresql/postgresql.connection.module";
-import { ObservationConnectionPostgreSQLModule } from "../../modules/observations/infrastructure/modules/postgresql/postgresql.observation-connection.module";
-import { PhotoConnectionPostgreSQLModule } from "../../modules/images-connections/infrastructure/modules/postgresql/photo-connection.postgresql.module";
-
+import { Module } from '@nestjs/common';
+import { PostgresConnectionModule } from '../../modules/connection/infrastructure/modules/postgresql/postgresql.connection.module';
+import { ObservationConnectionPostgreSQLModule } from '../../modules/observations/infrastructure/modules/postgresql/postgresql.observation-connection.module';
+import { PhotoConnectionPostgreSQLModule } from '../../modules/images-connections/infrastructure/modules/postgresql/photo-connection.postgresql.module';
+import { PostgreSQLRateModule } from '../../modules/rates/infrastructure/modules/postgresql/postgresql.rate.module';
 
 @Module({
-  imports: [PostgresConnectionModule, ObservationConnectionPostgreSQLModule, PhotoConnectionPostgreSQLModule],
+  imports: [
+    PostgresConnectionModule,
+    ObservationConnectionPostgreSQLModule,
+    PhotoConnectionPostgreSQLModule,
+    PostgreSQLRateModule,
+  ],
   controllers: [],
   providers: [],
-  exports: []
+  exports: [],
 })
-export class AppConnectionModulesUsingPostgreSQL { }
+export class AppConnectionModulesUsingPostgreSQL {}
