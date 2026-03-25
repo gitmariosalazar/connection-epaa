@@ -27,6 +27,17 @@ export interface InterfaceConnectionRepository {
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null>;
 
+  findConnectionsBySector(
+    sector: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]>;
+  findAllConnectionsByClientId(
+    clientId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]>;
+
   findAllConnectionsWithProperty(params: {
     limit: number;
     offset: number;

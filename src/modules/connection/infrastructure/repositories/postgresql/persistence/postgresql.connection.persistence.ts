@@ -20,7 +20,9 @@ import {
 } from '../../../interfaces/sql/connection.sql.response';
 
 @Injectable()
-export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
+export class PostgresqlConnectionPersistence
+  implements InterfaceConnectionRepository
+{
   constructor(private readonly postgresqlService: DatabaseServicePostgreSQL) {}
 
   // Implementation of InterfaceConnectionRepository methods
@@ -95,6 +97,136 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     }
   }
 
+  async findConnectionsBySector(
+    sector: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]> {
+    try {
+      const query: string = `
+      SELECT
+          a.acometida_id as "connection_id",
+          a.cliente_id as "client_id",
+          a.tarifa_id as "connection_rate_id",
+          ct.nombre as "connection_rate_name",
+          a.numero_medidor as "connection_meter_number",
+          a.sector as "connection_sector",
+          a.cuenta as "connection_account",
+          a.clave_catastral as "connection_cadastral_key",
+          a.numero_contrato as "connection_contract_number",
+          a.alcantarillado as "connection_sewerage",
+          a.estado as "connection_status",
+          a.direccion as "connection_address",
+          a.fecha_instalacion as "connection_installation_date",
+          a.numero_personas as "connection_people_numbers",
+          a.zona as "connection_zone",
+          a.coordenadas as "connection_coordinates",
+          a.referencia as "connection_reference",
+          a.metadata as "connection_metadata",
+          a.altitud as "connection_altitude",
+          a.precision as "connection_precision",
+          a.fecha_geolocalizacion as "connection_geolocation_date",
+          a.zona_geometrica as "connection_geometric_zone",
+          a.predio_clave_catastral as "property_cadastral_key",
+          a.zona_id as "zone_id"
+      FROM acometida a
+      INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+      INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+      INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+      WHERE a.sector = $1
+      ORDER BY a.created_at DESC,a.acometida_id
+      LIMIT $2 OFFSET $3;
+    `;
+      const params: (string | number)[] = [sector, limit, offset];
+      const result = await this.postgresqlService.query<ConnectionSqlResponse>(
+        query,
+        params,
+      );
+
+      const response: ConnectionResponse[] = result.map((connection) =>
+        ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+          connection,
+        ),
+      );
+
+      if (response.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found in sector ${sector}`,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllConnectionsByClientId(
+    clientId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]> {
+    try {
+      const query: string = `
+      SELECT
+          a.acometida_id as "connection_id",
+          a.cliente_id as "client_id",
+          a.tarifa_id as "connection_rate_id",
+          ct.nombre as "connection_rate_name",
+          a.numero_medidor as "connection_meter_number",
+          a.sector as "connection_sector",
+          a.cuenta as "connection_account",
+          a.clave_catastral as "connection_cadastral_key",
+          a.numero_contrato as "connection_contract_number",
+          a.alcantarillado as "connection_sewerage",
+          a.estado as "connection_status",
+          a.direccion as "connection_address",
+          a.fecha_instalacion as "connection_installation_date",
+          a.numero_personas as "connection_people_numbers",
+          a.zona as "connection_zone",
+          a.coordenadas as "connection_coordinates",
+          a.referencia as "connection_reference",
+          a.metadata as "connection_metadata",
+          a.altitud as "connection_altitude",
+          a.precision as "connection_precision",
+          a.fecha_geolocalizacion as "connection_geolocation_date",
+          a.zona_geometrica as "connection_geometric_zone",
+          a.predio_clave_catastral as "property_cadastral_key",
+          a.zona_id as "zone_id"
+      FROM acometida a
+      INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+      INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+      INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+      WHERE a.cliente_id = $1
+      ORDER BY a.created_at DESC,a.acometida_id
+      LIMIT $2 OFFSET $3;
+    `;
+      const params: (string | number)[] = [clientId, limit, offset];
+      const result = await this.postgresqlService.query<ConnectionSqlResponse>(
+        query,
+        params,
+      );
+
+      const response: ConnectionResponse[] = result.map((connection) =>
+        ConnectionPostgreSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+          connection,
+        ),
+      );
+
+      if (response.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found by cliente ID ${clientId}`,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllConnections(
     limit: number,
     offset: number,
@@ -130,7 +262,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN cliente c ON c.cliente_id = a.cliente_id
         INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
-        ORDER BY a.acometida_id
+        ORDER BY a.created_at DESC,a.acometida_id
         LIMIT $1 OFFSET $2;
       `;
       const params: number[] = [limit, offset];

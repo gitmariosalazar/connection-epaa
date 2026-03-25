@@ -46,6 +46,36 @@ export class ConnectionController {
     return await this.connectionService.findAllConnections(limit, offset);
   }
 
+  @Get('find-connections-by-sector/:sector')
+  @MessagePattern('connections.find-connections-by-sector')
+  async findConnectionsBySector(
+    @Payload() data: { sector: string; limit?: number; offset?: number },
+  ) {
+    const sector = data.sector;
+    const limit = data?.limit ?? 100;
+    const offset = data?.offset ?? 0;
+    return await this.connectionService.findConnectionsBySector(
+      sector,
+      limit,
+      offset,
+    );
+  }
+
+  @Get('find-connections-by-client-id/:clientId')
+  @MessagePattern('connections.find-connections-by-client-id')
+  async findConnectionsByClientId(
+    @Payload() data: { clientId: string; limit?: number; offset?: number },
+  ) {
+    const clientId = data.clientId;
+    const limit = data?.limit ?? 100;
+    const offset = data?.offset ?? 0;
+    return await this.connectionService.findAllConnectionsByClientId(
+      clientId,
+      limit,
+      offset,
+    );
+  }
+
   @Delete('delete-connection/:connectionId')
   @MessagePattern('connections.delete-connection')
   async deleteConnection(@Payload() connectionId: string) {

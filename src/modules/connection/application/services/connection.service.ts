@@ -122,7 +122,7 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         'connectionPrecision',
         'connectionGeolocationDate',
         //'connectionGeometricZone',
-        'propertyCadastralKey',
+        //'propertyCadastralKey',
         'zoneId',
       ];
 
@@ -320,6 +320,72 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
           message: 'No connections found',
+        });
+      }
+
+      return connections;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findConnectionsBySector(
+    sector: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]> {
+    try {
+      if (!sector || sector.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid sector provided',
+        });
+      }
+
+      const connections =
+        await this.connectionRepository.findConnectionsBySector(
+          sector,
+          limit,
+          offset,
+        );
+
+      if (!connections || connections.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found in sector ${sector}`,
+        });
+      }
+
+      return connections;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllConnectionsByClientId(
+    clientId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]> {
+    try {
+      if (!clientId || clientId.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid clientId provided',
+        });
+      }
+
+      const connections =
+        await this.connectionRepository.findAllConnectionsByClientId(
+          clientId,
+          limit,
+          offset,
+        );
+
+      if (!connections || connections.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found for client with id ${clientId}`,
         });
       }
 

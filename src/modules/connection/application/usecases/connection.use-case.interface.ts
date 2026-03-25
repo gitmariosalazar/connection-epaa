@@ -39,4 +39,15 @@ export interface InterfaceConnectionUseCase {
     offset: number;
     query?: string;
   }): Promise<ConnectionResponse[]>;
+
+  findConnectionsBySector(
+    sector: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]>;
+  findAllConnectionsByClientId(
+    clientId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionResponse[]>;
 }
