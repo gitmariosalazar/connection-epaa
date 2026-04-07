@@ -7,6 +7,7 @@ import {
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../../../../domain/schemas/dto/response/connection.response';
+import { DashboardAdvanceResponse } from '../../../../domain/schemas/dto/response/dashboard.response';
 import { ConnectionPostgreSqlAdapter } from '../adapters/postgresql.connection.adapter';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../../../settings/environments/status-code';
@@ -24,6 +25,165 @@ export class PostgresqlConnectionPersistence
   implements InterfaceConnectionRepository
 {
   constructor(private readonly postgresqlService: DatabaseServicePostgreSQL) {}
+
+  async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
+    try {
+      const query = `
+      SELECT json_build_object(
+        'resumen', (
+            SELECT row_to_json(r) 
+            FROM (
+                SELECT 
+                    COUNT(*) as total_universo,
+                    ROUND(AVG(actualizacion_completa::int) * 100, 1) as pct_progreso_total,
+                    COUNT(*) FILTER (WHERE ultima_modificacion_global > date_trunc('day', now())) as actualizaciones_hoy
+                FROM public.vw_avance_actualizacion_acometidas
+            ) r
+        ),
+        'historico', COALESCE((
+            SELECT json_agg(h)
+            FROM (
+                SELECT 
+                    date_trunc('day', ultima_modificacion_global)::date as fecha,
+                    count(*) as registros_completados
+                FROM public.vw_avance_actualizacion_acometidas
+                WHERE actualizacion_completa = true
+                  AND ultima_modificacion_global > now() - INTERVAL '30 days'
+                GROUP BY 1
+                ORDER BY 1
+            ) h
+        ), '[]'::json),
+        'distribucion', COALESCE((
+            SELECT json_agg(d)
+            FROM (
+                SELECT 
+                    CASE 
+                        WHEN actualizacion_completa THEN 'Completado (Full)'
+                        WHEN NOT cliente_actualizado THEN 'Pendiente Datos Cliente'
+                        WHEN NOT predio_actualizado THEN 'Pendiente Ficha Predial'
+                        ELSE 'Pendiente Geolocalización'
+                    END as categoria,
+                    count(*) as cantidad
+                FROM public.vw_avance_actualizacion_acometidas
+                GROUP BY 1
+            ) d
+        ), '[]'::json),
+        'porZonas', COALESCE((
+            SELECT json_agg(z)
+            FROM (
+                SELECT 
+                    zona_id,
+                    count(*) as total,
+                    SUM(CASE WHEN actualizacion_completa THEN 1 ELSE 0 END) as completados,
+                    SUM(CASE WHEN NOT actualizacion_completa THEN 1 ELSE 0 END) as pendientes
+                FROM public.vw_avance_actualizacion_acometidas
+                GROUP BY 1
+                ORDER BY total DESC
+            ) z
+        ), '[]'::json),
+        
+        'distribucionTarifas', COALESCE((
+            SELECT json_agg(dt)
+            FROM (
+                SELECT 
+                    ct.nombre as tarifa,
+                    count(a.acometida_id) as cantidad
+                FROM public.acometida a
+                LEFT JOIN public.tarifa t ON t.tarifa_id = a.tarifa_id
+                LEFT JOIN public.categoria ct ON ct.categoria_id = t.categoria_id
+                GROUP BY ct.nombre
+                ORDER BY cantidad DESC
+            ) dt
+        ), '[]'::json),
+
+        'coberturaAlcantarillado', (
+            SELECT row_to_json(ca)
+            FROM (
+                SELECT 
+                    COALESCE(SUM(CASE WHEN alcantarillado = true THEN 1 ELSE 0 END), 0) as con_alcantarillado,
+                    COALESCE(SUM(CASE WHEN alcantarillado = false OR alcantarillado IS NULL THEN 1 ELSE 0 END), 0) as sin_alcantarillado
+                FROM public.acometida
+            ) ca
+        ),
+
+        'calidadGps', (
+            SELECT row_to_json(cg)
+            FROM (
+                SELECT 
+                    COALESCE(ROUND(AVG(precision)::numeric, 2), 0) as precision_promedio
+                FROM public.acometida WHERE precision IS NOT NULL AND precision > 0
+            ) cg
+        ),
+
+        'instalacionesRecientesCoords', COALESCE((
+            SELECT json_agg(irc)
+            FROM (
+                SELECT 
+                    coordenadas,
+                    fecha_instalacion as fecha
+                FROM public.acometida
+                WHERE fecha_instalacion >= date_trunc('year', now())
+                  AND coordenadas IS NOT NULL
+                LIMIT 100
+            ) irc
+        ), '[]'::json),
+
+        'curvaCrecimiento', COALESCE((
+            SELECT json_agg(cc)
+            FROM (
+                SELECT 
+                    to_char(fecha_instalacion, 'YYYY-MM') as mes,
+                    count(*) as nuevas_acometidas
+                FROM public.acometida
+                WHERE fecha_instalacion IS NOT NULL
+                  AND fecha_instalacion >= now() - INTERVAL '12 months'
+                GROUP BY 1
+                ORDER BY 1 ASC
+            ) cc
+        ), '[]'::json),
+
+        'poblacionServida', (
+            SELECT row_to_json(ps)
+            FROM (
+                SELECT 
+                    COALESCE(SUM(numero_personas), 0) as total_habitantes
+                FROM public.acometida WHERE estado = true
+            ) ps
+        ),
+
+        'coberturaMedidores', (
+            SELECT row_to_json(cm)
+            FROM (
+                SELECT 
+                    SUM(CASE WHEN numero_medidor IS NOT NULL AND numero_medidor != '' AND UPPER(numero_medidor) != 'S/M' THEN 1 ELSE 0 END) as con_medidor,
+                    SUM(CASE WHEN numero_medidor IS NULL OR numero_medidor = '' OR UPPER(numero_medidor) = 'S/M' THEN 1 ELSE 0 END) as sin_medidor
+                FROM public.acometida
+            ) cm
+        ),
+
+        'estadoRed', (
+            SELECT row_to_json(er)
+            FROM (
+                SELECT 
+                    SUM(CASE WHEN estado = true THEN 1 ELSE 0 END) as activas,
+                    SUM(CASE WHEN estado = false OR estado IS NULL THEN 1 ELSE 0 END) as inactivas
+                FROM public.acometida
+            ) er
+        )
+      ) as stats;
+      `;
+      const result = await this.postgresqlService.query<any>(query, []);
+      if (!result || result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.INTERNAL_SERVER_ERROR,
+          message: 'Failed to retrieve dashboard stats',
+        });
+      }
+      return result[0].stats as DashboardAdvanceResponse;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   // Implementation of InterfaceConnectionRepository methods
   async verifyConnectionExists(connectionId: string): Promise<boolean> {

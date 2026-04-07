@@ -4,8 +4,11 @@ import {
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../schemas/dto/response/connection.response';
+import { DashboardAdvanceResponse } from '../schemas/dto/response/dashboard.response';
 import { ConnectionModel } from '../schemas/models/connection.model';
+
 export interface InterfaceConnectionRepository {
+  getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
   updateConnection(
     connectionId: string,
     connection: ConnectionModel,

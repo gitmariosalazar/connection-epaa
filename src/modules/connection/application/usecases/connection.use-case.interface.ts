@@ -6,8 +6,11 @@ import {
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../../domain/schemas/dto/response/connection.response';
+import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
 
 export interface InterfaceConnectionUseCase {
+  getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
+
   updateConnection(
     connectionId: string,
     connection: Partial<UpdateConnectionRequest>,

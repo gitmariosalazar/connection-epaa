@@ -8,6 +8,7 @@ import {
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
 } from '../../domain/schemas/dto/response/connection.response';
+import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../settings/environments/status-code';
 import { CreateConnectionRequest } from '../../domain/schemas/dto/request/create.connection.request';
@@ -22,6 +23,17 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     @Inject('ConnectionRepository')
     private readonly connectionRepository: InterfaceConnectionRepository,
   ) {}
+
+  async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
+    try {
+      return await this.connectionRepository.getAdvanceDashboardStats();
+    } catch (error) {
+      throw new RpcException({
+        statusCode: statusCode.INTERNAL_SERVER_ERROR,
+        message: 'Could not fetch dashboard advancement stats',
+      });
+    }
+  }
 
   async verifyConnectionExists(connectionId: string): Promise<boolean> {
     return this.connectionRepository.verifyConnectionExists(connectionId);

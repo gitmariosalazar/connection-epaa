@@ -8,6 +8,12 @@ import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update
 export class ConnectionController {
   constructor(private readonly connectionService: ConnectionService) {}
 
+  @Get('dashboard/advancement-stats')
+  @MessagePattern('connections.get-advance-dashboard-stats')
+  async getAdvanceDashboardStats() {
+    return this.connectionService.getAdvanceDashboardStats();
+  }
+
   // Implementation of controller methods
   @Post('create-connection')
   @MessagePattern('connections.create-connection')
