@@ -6,6 +6,13 @@ import {
 } from '../schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../schemas/dto/response/dashboard.response';
 import { ConnectionModel } from '../schemas/models/connection.model';
+import {
+  BulkStateChangeResponse,
+  ConnectionsByStateResponse,
+  ConnectionStateHistoryResponse,
+  ConnectionStateResponse,
+  StateSummaryResponse,
+} from '../schemas/dto/response/connection-state.response';
 
 export interface InterfaceConnectionRepository {
   getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
@@ -52,4 +59,35 @@ export interface InterfaceConnectionRepository {
     offset: number;
     query?: string;
   }): Promise<ConnectionResponse[]>;
+
+  // ── State Management ──────────────────────────────────────────────────────
+  changeConnectionState(
+    connectionId: string,
+    newStateId: number,
+    userId: string,
+    motivo: string,
+    detallesTecnicos?: Record<string, any>,
+  ): Promise<ConnectionStateResponse>;
+
+  getConnectionStateHistory(
+    connectionId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionStateHistoryResponse[]>;
+
+  getConnectionsByState(
+    stateId: number,
+    sector?: number,
+    limit?: number,
+    offset?: number,
+  ): Promise<ConnectionsByStateResponse[]>;
+
+  getStateSummaryDashboard(): Promise<StateSummaryResponse[]>;
+
+  bulkChangeConnectionState(
+    connectionIds: string[],
+    newStateId: number,
+    userId: string,
+    motivo: string,
+  ): Promise<BulkStateChangeResponse>;
 }

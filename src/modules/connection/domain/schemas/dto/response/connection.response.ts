@@ -11,7 +11,9 @@ export interface ConnectionResponse {
   connectionCadastralKey: string;
   connectionContractNumber: string;
   connectionSewerage: boolean;
-  connectionStatus: boolean;
+  connectionStatus: string;        // nombre from cat_estados_acometida
+  connectionStateId: number;       // estado_id FK
+  connectionIsReadable: boolean;   // permite_lectura
   connectionAddress: string;
   connectionInstallationDate: Date;
   connectionPeopleNumber: number;
@@ -39,7 +41,9 @@ export interface ConnectionAndPropertyResponse {
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;
+  connectionStatus: string | null;        // nombre from cat_estados_acometida
+  connectionStateId: number | null;       // estado_id FK
+  connectionIsReadable: boolean | null;   // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumbers: number | null;
@@ -65,7 +69,7 @@ export interface ConnectionAndPropertyResponse {
   alleyway: string | null;
   propertySector: string | null;
   propertyAddress: string | null;
-  propertyCoordinates: string | null; // o { lat: number; lng: number }
+  propertyCoordinates: string | null;
   propertyReference: string | null;
   propertyAltitude: number | null;
   propertyPrecision: number | null;
@@ -101,7 +105,9 @@ export interface ConnectionWithPropertyResponse {
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;
+  connectionStatus: string | null;        // nombre from cat_estados_acometida
+  connectionStateId: number | null;       // estado_id FK
+  connectionIsReadable: boolean | null;   // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumber: number | null;
@@ -136,7 +142,9 @@ export interface ConnectionWithoutPropertyResponse {
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;
+  connectionStatus: string | null;        // nombre from cat_estados_acometida
+  connectionStateId: number | null;       // estado_id FK
+  connectionIsReadable: boolean | null;   // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumber: number | null;

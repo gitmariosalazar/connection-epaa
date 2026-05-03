@@ -16,6 +16,13 @@ import { validateFields } from '../../../../shared/validators/fields.validators'
 import { ConnectionModel } from '../../domain/schemas/models/connection.model';
 import { ConnectionMapper } from '../mappers/connection.mapper';
 import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update.connection.request';
+import {
+  BulkStateChangeResponse,
+  ConnectionsByStateResponse,
+  ConnectionStateHistoryResponse,
+  ConnectionStateResponse,
+  StateSummaryResponse,
+} from '../../domain/schemas/dto/response/connection-state.response';
 
 @Injectable()
 export class ConnectionService implements InterfaceConnectionUseCase {
@@ -402,6 +409,135 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return connections;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // STATE MANAGEMENT
+  // ───────────────────────────────────────────────────────────────────────────
+
+  async changeConnectionState(
+    connectionId: string,
+    newStateId: number,
+    userId: string,
+    motivo: string,
+    detallesTecnicos?: Record<string, any>,
+  ): Promise<ConnectionStateResponse> {
+    try {
+      if (!connectionId?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'connectionId is required' });
+      }
+      if (!newStateId || newStateId < 1) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid newStateId is required' });
+      }
+      if (!userId?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'userId is required' });
+      }
+      if (!motivo?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'motivo is required for audit trail' });
+      }
+
+      const exists = await this.connectionRepository.verifyConnectionExists(connectionId);
+      if (!exists) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection ${connectionId} not found`,
+        });
+      }
+
+      return this.connectionRepository.changeConnectionState(
+        connectionId, newStateId, userId, motivo, detallesTecnicos,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getConnectionStateHistory(
+    connectionId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionStateHistoryResponse[]> {
+    try {
+      if (!connectionId?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'connectionId is required' });
+      }
+
+      const exists = await this.connectionRepository.verifyConnectionExists(connectionId);
+      if (!exists) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection ${connectionId} not found`,
+        });
+      }
+
+      const history = await this.connectionRepository.getConnectionStateHistory(
+        connectionId,
+        limit ?? 50,
+        offset ?? 0,
+      );
+
+      return history;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getConnectionsByState(
+    stateId: number,
+    sector?: number,
+    limit?: number,
+    offset?: number,
+  ): Promise<ConnectionsByStateResponse[]> {
+    try {
+      if (!stateId || stateId < 1) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid stateId is required' });
+      }
+
+      return this.connectionRepository.getConnectionsByState(
+        stateId, sector, limit ?? 100, offset ?? 0,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getStateSummaryDashboard(): Promise<StateSummaryResponse[]> {
+    try {
+      return this.connectionRepository.getStateSummaryDashboard();
+    } catch (error) {
+      throw new RpcException({
+        statusCode: statusCode.INTERNAL_SERVER_ERROR,
+        message: 'Could not fetch connection state summary',
+      });
+    }
+  }
+
+  async bulkChangeConnectionState(
+    connectionIds: string[],
+    newStateId: number,
+    userId: string,
+    motivo: string,
+  ): Promise<BulkStateChangeResponse> {
+    try {
+      if (!connectionIds?.length) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'At least one connectionId is required' });
+      }
+      if (!newStateId || newStateId < 1) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid newStateId is required' });
+      }
+      if (!userId?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'userId is required' });
+      }
+      if (!motivo?.trim()) {
+        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'motivo is required for audit trail' });
+      }
+
+      return this.connectionRepository.bulkChangeConnectionState(
+        connectionIds, newStateId, userId, motivo,
+      );
     } catch (error) {
       throw error;
     }

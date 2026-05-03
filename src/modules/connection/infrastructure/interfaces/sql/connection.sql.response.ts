@@ -11,7 +11,9 @@ export class ConnectionSqlResponse {
   connection_cadastral_key: string;
   connection_contract_number: string;
   connection_sewerage: boolean;
-  connection_status: boolean;
+  connection_status: string;         // nombre from cat_estados_acometida (replaces boolean)
+  connection_state_id: number;       // estado_id FK
+  connection_is_readable: boolean;   // permite_lectura from cat_estados_acometida
   connection_address: string;
   connection_installation_date: Date;
   connection_people_number: number;
@@ -39,7 +41,9 @@ export interface ConnectionAndPropertySqlResponse {
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
   connection_sewerage: boolean | null;
-  connection_status: string | null;
+  connection_status: string | null;       // nombre from cat_estados_acometida
+  connection_state_id: number | null;     // estado_id FK
+  connection_is_readable: boolean | null; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_numbers: number | null;
@@ -65,7 +69,7 @@ export interface ConnectionAndPropertySqlResponse {
   alleyway: string | null;
   property_sector: string | null;
   property_address: string | null;
-  property_coordinates: string | null; // o { lat: number; lng: number }
+  property_coordinates: string | null;
   property_reference: string | null;
   property_altitude: number | null;
   property_precision: number | null;
@@ -101,7 +105,9 @@ export interface ConnectionWithPropertySqlResponse {
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
   connection_sewerage: boolean | null;
-  connection_status: string | null;
+  connection_status: string | null;       // nombre from cat_estados_acometida
+  connection_state_id: number | null;     // estado_id FK
+  connection_is_readable: boolean | null; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_number: number | null;
@@ -136,7 +142,9 @@ export interface ConnectionWithoutPropertySqlResponse {
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
   connection_sewerage: boolean | null;
-  connection_status: string | null;
+  connection_status: string | null;       // nombre from cat_estados_acometida
+  connection_state_id: number | null;     // estado_id FK
+  connection_is_readable: boolean | null; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_number: number | null;

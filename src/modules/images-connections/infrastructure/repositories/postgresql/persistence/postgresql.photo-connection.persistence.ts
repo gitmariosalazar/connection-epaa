@@ -16,6 +16,22 @@ export class PhotoConnectionPostgreSQLPersistence implements InterfacePhotoConne
     photoConnection: PhotoConnectionModel,
   ): Promise<PhotoConnectionResponse | null> {
     try {
+      // Validate connection exists before inserting photo
+      const estadoCheck = await this.postgreSQLService.query<any>(
+        `SELECT ac.acometida_id, est.nombre AS estado_nombre
+         FROM acometida ac
+         JOIN cat_estados_acometida est ON ac.estado_id = est.id_estado
+         WHERE ac.acometida_id = $1 LIMIT 1`,
+        [photoConnection.getConnectionId()],
+      );
+
+      if (estadoCheck.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection ${photoConnection.getConnectionId()} not found.`,
+        });
+      }
+
       const query = `
         INSERT INTO foto_acometida (acometida_id, imagen_url, descripcion)
         VALUES ($1, $2, $3)
@@ -66,7 +82,8 @@ export class PhotoConnectionPostgreSQLPersistence implements InterfacePhotoConne
           created_at AS "created_at",
           updated_at AS "updated_at"
         FROM foto_acometida fr
-        WHERE fr.acometida_id = $1;
+        WHERE fr.acometida_id = $1
+        ORDER BY fr.created_at DESC;
       `;
 
       const params = [cadastralKey];

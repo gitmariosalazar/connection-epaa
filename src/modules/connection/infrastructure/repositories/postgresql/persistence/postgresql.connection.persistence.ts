@@ -19,6 +19,13 @@ import {
   ConnectionWithoutPropertySqlResponse,
   ConnectionWithPropertySqlResponse,
 } from '../../../interfaces/sql/connection.sql.response';
+import {
+  BulkStateChangeResponse,
+  ConnectionsByStateResponse,
+  ConnectionStateHistoryResponse,
+  ConnectionStateResponse,
+  StateSummaryResponse,
+} from '../../../../domain/schemas/dto/response/connection-state.response';
 
 @Injectable()
 export class PostgresqlConnectionPersistence
@@ -146,8 +153,10 @@ export class PostgresqlConnectionPersistence
             SELECT row_to_json(ps)
             FROM (
                 SELECT 
-                    COALESCE(SUM(numero_personas), 0) as total_habitantes
-                FROM public.acometida WHERE estado = true
+                    COALESCE(SUM(a.numero_personas), 0) as total_habitantes
+                FROM public.acometida a
+                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
+                WHERE est.permite_lectura = TRUE
             ) ps
         ),
 
@@ -165,9 +174,10 @@ export class PostgresqlConnectionPersistence
             SELECT row_to_json(er)
             FROM (
                 SELECT 
-                    SUM(CASE WHEN estado = true THEN 1 ELSE 0 END) as activas,
-                    SUM(CASE WHEN estado = false OR estado IS NULL THEN 1 ELSE 0 END) as inactivas
-                FROM public.acometida
+                    SUM(CASE WHEN est.permite_lectura = TRUE  THEN 1 ELSE 0 END) as activas,
+                    SUM(CASE WHEN est.permite_lectura = FALSE THEN 1 ELSE 0 END) as inactivas
+                FROM public.acometida a
+                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
             ) er
         )
       ) as stats;
@@ -213,7 +223,9 @@ export class PostgresqlConnectionPersistence
             a.clave_catastral as "connection_cadastral_key",
             a.numero_contrato as "connection_contract_number",
             a.alcantarillado as "connection_sewerage",
-            a.estado as "connection_status",
+            a.estado_id as "connection_state_id",
+            est.nombre as "connection_status",
+            est.permite_lectura as "connection_is_readable",
             a.direccion as "connection_address",
             a.fecha_instalacion as "connection_installation_date",
             a.numero_personas as "connection_people_numbers",
@@ -230,6 +242,7 @@ export class PostgresqlConnectionPersistence
         FROM acometida a INNER JOIN cliente c ON c.cliente_id = a.cliente_id
         INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         WHERE a.acometida_id = $1;
       `;
       const params: string[] = [connectionId];
@@ -275,7 +288,9 @@ export class PostgresqlConnectionPersistence
           a.clave_catastral as "connection_cadastral_key",
           a.numero_contrato as "connection_contract_number",
           a.alcantarillado as "connection_sewerage",
-          a.estado as "connection_status",
+          a.estado_id as "connection_state_id",
+          est.nombre as "connection_status",
+          est.permite_lectura as "connection_is_readable",
           a.direccion as "connection_address",
           a.fecha_instalacion as "connection_installation_date",
           a.numero_personas as "connection_people_numbers",
@@ -293,6 +308,7 @@ export class PostgresqlConnectionPersistence
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+      LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       WHERE a.sector = $1
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT $2 OFFSET $3;
@@ -340,7 +356,9 @@ export class PostgresqlConnectionPersistence
           a.clave_catastral as "connection_cadastral_key",
           a.numero_contrato as "connection_contract_number",
           a.alcantarillado as "connection_sewerage",
-          a.estado as "connection_status",
+          a.estado_id as "connection_state_id",
+          est.nombre as "connection_status",
+          est.permite_lectura as "connection_is_readable",
           a.direccion as "connection_address",
           a.fecha_instalacion as "connection_installation_date",
           a.numero_personas as "connection_people_numbers",
@@ -358,6 +376,7 @@ export class PostgresqlConnectionPersistence
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+      LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       WHERE a.cliente_id = $1
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT $2 OFFSET $3;
@@ -404,7 +423,9 @@ export class PostgresqlConnectionPersistence
             a.clave_catastral as "connection_cadastral_key",
             a.numero_contrato as "connection_contract_number",
             a.alcantarillado as "connection_sewerage",
-            a.estado as "connection_status",
+            a.estado_id as "connection_state_id",
+            est.nombre as "connection_status",
+            est.permite_lectura as "connection_is_readable",
             a.direccion as "connection_address",
             a.fecha_instalacion as "connection_installation_date",
             a.numero_personas as "connection_people_numbers",
@@ -422,6 +443,7 @@ export class PostgresqlConnectionPersistence
         INNER JOIN cliente c ON c.cliente_id = a.cliente_id
         INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         ORDER BY a.created_at DESC,a.acometida_id
         LIMIT $1 OFFSET $2;
       `;
@@ -681,7 +703,9 @@ SELECT
     a.clave_catastral             AS "connection_cadastral_key",
     a.numero_contrato             AS "connection_contract_number",
     a.alcantarillado             AS "connection_sewerage",
-    a.estado                     AS "connection_status",
+    a.estado_id                  AS "connection_state_id",
+    est.nombre                   AS "connection_status",
+    est.permite_lectura          AS "connection_is_readable",
     a.direccion                  AS "connection_address",
     a.fecha_instalacion           AS "connection_installation_date",
     a.numero_personas             AS "connection_people_number",
@@ -725,6 +749,7 @@ INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
 LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
 LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
 INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
 WHERE a.acometida_id = $1;
       `;
       const params: string[] = [propertyCadastralKey];
@@ -766,7 +791,9 @@ WHERE a.acometida_id = $1;
             a.clave_catastral             AS "connection_cadastral_key",
             a.numero_contrato             AS "connection_contract_number",
             a.alcantarillado              AS "connection_sewerage",
-            a.estado                      AS "connection_status",
+            a.estado_id                   AS "connection_state_id",
+            est.nombre                    AS "connection_status",
+            est.permite_lectura           AS "connection_is_readable",
             a.direccion                   AS "connection_address",
             a.fecha_instalacion           AS "connection_installation_date",
             a.numero_personas             AS "connection_people_number",
@@ -854,6 +881,7 @@ WHERE a.acometida_id = $1;
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         INNER JOIN public.zona z on z.zona_id = a.zona_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         WHERE a.acometida_id = $1;
       `;
       const params: string[] = [cadastralKey];
@@ -920,7 +948,9 @@ WHERE a.acometida_id = $1;
             a.clave_catastral             AS "connection_cadastral_key",
             a.numero_contrato             AS "connection_contract_number",
             a.alcantarillado             AS "connection_sewerage",
-            a.estado                     AS "connection_status",
+            a.estado_id                  AS "connection_state_id",
+            est.nombre                   AS "connection_status",
+            est.permite_lectura          AS "connection_is_readable",
             a.direccion                  AS "connection_address",
             a.fecha_instalacion           AS "connection_installation_date",
             a.numero_personas             AS "connection_people_number",
@@ -984,6 +1014,7 @@ WHERE a.acometida_id = $1;
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         INNER JOIN public.zona z       ON z.zona_id = a.zona_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         ${whereClause}
         ORDER BY a.acometida_id
         LIMIT $${paramCounter} OFFSET $${paramCounter + 1};
@@ -1054,7 +1085,9 @@ WHERE a.acometida_id = $1;
         a.clave_catastral AS "connection_cadastral_key",
         a.numero_contrato AS "connection_contract_number",
         a.alcantarillado AS "connection_sewerage",
-        a.estado AS "connection_status",
+        a.estado_id AS "connection_state_id",
+        est.nombre AS "connection_status",
+        est.permite_lectura AS "connection_is_readable",
         a.direccion AS "connection_address",
         a.fecha_instalacion AS "connection_installation_date",
         a.numero_personas AS "connection_people_numbers",
@@ -1075,6 +1108,7 @@ WHERE a.acometida_id = $1;
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN public.zona z ON z.zona_id = a.zona_id
+      LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       ${whereClause}
       ORDER BY a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
@@ -1100,6 +1134,246 @@ WHERE a.acometida_id = $1;
         statusCode: statusCode.INTERNAL_SERVER_ERROR,
         message: 'Error interno al obtener las conexiones',
       });
+    }
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STATE MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Cambia el estado de una acometida insertando en historial_estados_acometida.
+   * El trigger fn_actualizar_estado_activo se encarga de sincronizar acometida.estado_id
+   * y de desactivar el historial anterior automáticamente.
+   */
+  async changeConnectionState(
+    connectionId: string,
+    newStateId: number,
+    userId: string,
+    motivo: string,
+    detallesTecnicos?: Record<string, any>,
+  ): Promise<ConnectionStateResponse> {
+    try {
+      const query = `
+        INSERT INTO historial_estados_acometida
+          (acometida_id, estado_id, usuario_id, motivo, activo, detalles_tecnicos)
+        VALUES ($1, $2, $3::uuid, $4, TRUE, $5::jsonb)
+        RETURNING
+          historial_estados_acometida.id             AS "historialId",
+          historial_estados_acometida.acometida_id   AS "connectionId",
+          historial_estados_acometida.estado_id      AS "stateId",
+          historial_estados_acometida.fecha_cambio   AS "changedAt",
+          historial_estados_acometida.motivo         AS "motivo";
+      `;
+
+      const result = await this.postgresqlService.query<any>(query, [
+        connectionId,
+        newStateId,
+        userId,
+        motivo,
+        JSON.stringify(detallesTecnicos ?? {}),
+      ]);
+
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.INTERNAL_SERVER_ERROR,
+          message: 'Error al cambiar el estado de la acometida',
+        });
+      }
+
+      // Recuperar el estado actualizado desde cat_estados_acometida
+      const stateInfo = await this.postgresqlService.query<any>(
+        `SELECT est.nombre, est.permite_lectura, est.permite_facturar
+         FROM cat_estados_acometida est WHERE est.id_estado = $1`,
+        [newStateId],
+      );
+
+      const state = stateInfo[0];
+      return {
+        connectionId: result[0].connectionId,
+        currentStateId: newStateId,
+        currentStateName: state?.nombre ?? '',
+        allowsReading: state?.permite_lectura ?? false,
+        allowsBilling: state?.permite_facturar ?? false,
+        changedAt: result[0].changedAt,
+        motivo: result[0].motivo,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Devuelve el historial completo de cambios de estado de una acometida,
+   * incluyendo el usuario responsable, el estado anterior y el nuevo.
+   */
+  async getConnectionStateHistory(
+    connectionId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ConnectionStateHistoryResponse[]> {
+    try {
+      const query = `
+        SELECT
+          h.id                        AS "historialId",
+          h.acometida_id              AS "connectionId",
+          h.estado_id                 AS "stateId",
+          est.nombre                  AS "stateName",
+          est.permite_facturar        AS "allowsBilling",
+          est.permite_lectura         AS "allowsReading",
+          h.fecha_cambio              AS "changedAt",
+          h.usuario_id::text          AS "userId",
+          u.email                     AS "userEmail",
+          h.motivo                    AS "motivo",
+          h.activo                    AS "active",
+          COALESCE(h.detalles_tecnicos, '{}'::jsonb) AS "technicalDetails"
+        FROM historial_estados_acometida h
+        JOIN cat_estados_acometida est ON est.id_estado = h.estado_id
+        LEFT JOIN public.usuarios u ON u.usuario_id = h.usuario_id
+        WHERE h.acometida_id = $1
+        ORDER BY h.fecha_cambio DESC
+        LIMIT $2 OFFSET $3;
+      `;
+
+      const result = await this.postgresqlService.query<ConnectionStateHistoryResponse>(
+        query,
+        [connectionId, limit, offset],
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Retorna todas las acometidas que se encuentran en un estado específico.
+   * Permite filtrar por sector y paginar.
+   */
+  async getConnectionsByState(
+    stateId: number,
+    sector?: number,
+    limit: number = 100,
+    offset: number = 0,
+  ): Promise<ConnectionsByStateResponse[]> {
+    try {
+      const query = `
+        SELECT
+          a.acometida_id                                     AS "connectionId",
+          a.sector                                           AS "sector",
+          a.cuenta                                           AS "account",
+          a.direccion                                        AS "address",
+          COALESCE(a.numero_medidor, '')                     AS "meterNumber",
+          COALESCE(
+            ci.nombres || ' ' || ci.apellidos,
+            e.razon_social,
+            'Sin nombre'
+          )                                                  AS "clientName",
+          est.nombre                                         AS "stateName",
+          h.fecha_cambio                                     AS "stateChangedAt"
+        FROM acometida a
+        JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        JOIN historial_estados_acometida h
+          ON h.acometida_id = a.acometida_id AND h.activo = TRUE
+        LEFT JOIN cliente c ON c.cliente_id = a.cliente_id
+        LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e ON e.ruc = c.cliente_id
+        WHERE est.id_estado = $1
+          AND ($2::int IS NULL OR a.sector = $2)
+        ORDER BY h.fecha_cambio DESC
+        LIMIT $3 OFFSET $4;
+      `;
+
+      const result = await this.postgresqlService.query<ConnectionsByStateResponse>(
+        query,
+        [stateId, sector ?? null, limit, offset],
+      );
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Devuelve un resumen ejecutivo de cuántas acometidas hay en cada estado,
+   * incluyendo porcentaje sobre el total. Ideal para KPI dashboard.
+   */
+  async getStateSummaryDashboard(): Promise<StateSummaryResponse[]> {
+    try {
+      const query = `
+        SELECT
+          est.id_estado                                       AS "stateId",
+          est.nombre                                          AS "stateName",
+          est.permite_lectura                                 AS "allowsReading",
+          est.permite_facturar                                AS "allowsBilling",
+          COUNT(a.acometida_id)                               AS "total",
+          ROUND(
+            COUNT(a.acometida_id)::numeric
+            / NULLIF(SUM(COUNT(*)) OVER (), 0) * 100,
+            2
+          )                                                   AS "percentage"
+        FROM cat_estados_acometida est
+        LEFT JOIN acometida a ON a.estado_id = est.id_estado
+        GROUP BY est.id_estado, est.nombre, est.permite_lectura, est.permite_facturar
+        ORDER BY "total" DESC;
+      `;
+
+      const result = await this.postgresqlService.query<StateSummaryResponse>(query, []);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Cambia el estado de múltiples acometidas en una sola operación transaccional.
+   * Útil para suspensión masiva de morosos o reconexiones grupales.
+   */
+  async bulkChangeConnectionState(
+    connectionIds: string[],
+    newStateId: number,
+    userId: string,
+    motivo: string,
+  ): Promise<BulkStateChangeResponse> {
+    try {
+      if (!connectionIds || connectionIds.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'No connection IDs provided for bulk state change',
+        });
+      }
+
+      // Insertar en historial para cada acometida — el trigger sincroniza acometida.estado_id
+      const query = `
+        INSERT INTO historial_estados_acometida
+          (acometida_id, estado_id, usuario_id, motivo, activo)
+        SELECT
+          unnest($1::varchar[]),
+          $2,
+          $3::uuid,
+          $4,
+          TRUE
+        RETURNING acometida_id AS "connectionId";
+      `;
+
+      const result = await this.postgresqlService.query<{ connectionId: string }>(
+        query,
+        [connectionIds, newStateId, userId, motivo],
+      );
+
+      const stateInfo = await this.postgresqlService.query<any>(
+        `SELECT nombre FROM cat_estados_acometida WHERE id_estado = $1`,
+        [newStateId],
+      );
+
+      return {
+        updatedCount: result.length,
+        stateId: newStateId,
+        stateName: stateInfo[0]?.nombre ?? '',
+        affectedConnectionIds: result.map((r) => r.connectionId),
+      };
+    } catch (error) {
+      throw error;
     }
   }
 }

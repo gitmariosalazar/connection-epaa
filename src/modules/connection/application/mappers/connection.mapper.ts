@@ -103,7 +103,9 @@ export class ConnectionMapper {
       response.connectionCadastralKey,
       response.connectionContractNumber,
       response.connectionSewerage,
-      response.connectionStatus,
+      // connectionStatus in the model is a legacy boolean (used for DB writes).
+      // connectionIsReadable is the canonical boolean derived from cat_estados_acometida.
+      response.connectionIsReadable ?? false,
       response.connectionAddress,
       response.connectionInstallationDate,
       response.connectionPeopleNumber,

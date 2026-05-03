@@ -134,4 +134,79 @@ export class ConnectionController {
   ) {
     return this.connectionService.getConnectionsPaginated(params);
   }
+
+  // ── State Management ────────────────────────────────────────────────────────
+
+  @Post('change-connection-state')
+  @MessagePattern('connections.change-connection-state')
+  async changeConnectionState(
+    @Payload()
+    data: {
+      connectionId: string;
+      newStateId: number;
+      userId: string;
+      motivo: string;
+      detallesTecnicos?: Record<string, any>;
+    },
+  ) {
+    return this.connectionService.changeConnectionState(
+      data.connectionId,
+      data.newStateId,
+      data.userId,
+      data.motivo,
+      data.detallesTecnicos,
+    );
+  }
+
+  @Get('get-connection-state-history')
+  @MessagePattern('connections.get-connection-state-history')
+  async getConnectionStateHistory(
+    @Payload()
+    data: { connectionId: string; limit?: number; offset?: number },
+  ) {
+    return this.connectionService.getConnectionStateHistory(
+      data.connectionId,
+      data.limit ?? 50,
+      data.offset ?? 0,
+    );
+  }
+
+  @Get('get-connections-by-state')
+  @MessagePattern('connections.get-connections-by-state')
+  async getConnectionsByState(
+    @Payload()
+    data: { stateId: number; sector?: number; limit?: number; offset?: number },
+  ) {
+    return this.connectionService.getConnectionsByState(
+      data.stateId,
+      data.sector,
+      data.limit ?? 100,
+      data.offset ?? 0,
+    );
+  }
+
+  @Get('get-state-summary-dashboard')
+  @MessagePattern('connections.get-state-summary-dashboard')
+  async getStateSummaryDashboard() {
+    return this.connectionService.getStateSummaryDashboard();
+  }
+
+  @Post('bulk-change-connection-state')
+  @MessagePattern('connections.bulk-change-connection-state')
+  async bulkChangeConnectionState(
+    @Payload()
+    data: {
+      connectionIds: string[];
+      newStateId: number;
+      userId: string;
+      motivo: string;
+    },
+  ) {
+    return this.connectionService.bulkChangeConnectionState(
+      data.connectionIds,
+      data.newStateId,
+      data.userId,
+      data.motivo,
+    );
+  }
 }
