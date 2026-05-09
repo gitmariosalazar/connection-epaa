@@ -9,13 +9,14 @@ import {
   ObservationSQLResult,
 } from '../../../interfaces/sql/observation-connection.sql.response';
 import { ObservationConnectionSqlAdapter } from '../../../adapters/observation-connection.postgresql.adapter';
+import { DatabaseServiceMySQL } from '../../../../../../shared/connections/database/mysql/mysql.service';
 
 @Injectable()
-export class ObservationConnectionPostgreSqlPersistence
+export class ObservationConnectionMySqlPersistence
   implements InterfaceObservationConnectionRepository
 {
   // Implement repository methods here
-  constructor(private readonly postgreSqlService: DatabaseServicePostgreSQL) {}
+  constructor(private readonly mySqlService: DatabaseServiceMySQL) {}
 
   // Implement repository methods here
   async createObservationConnection(
@@ -23,38 +24,36 @@ export class ObservationConnectionPostgreSqlPersistence
   ): Promise<ObservationConnectionResponse | null> {
     try {
       const insertObservationQuery: string = `
-        INSERT INTO observacion (titulo_observacion, detalle_observacion) VALUES (?,?) returning observacion_id as
-        "observation_id", titulo_observacion as "observation_title", detalle_observacion as "observation_details";
+        INSERT INTO observacion (titulo_observacion, detalle_observacion) VALUES (?,?);
       `;
       const insertObservationParams = [
         observation.getObservation().getObservationTitle(),
         observation.getObservation().getObservationDetails(),
       ];
 
-      const result = await this.postgreSqlService.query<ObservationSQLResult>(
+      const result: any = await this.mySqlService.query(
         insertObservationQuery,
         insertObservationParams,
       );
       console.log(`result`, result);
-      const observationId: number = result[0].observation_id;
+      const observationId: number = result.insertId;
 
       const insertObservationConnectionQuery: string = `
-      insert into observacion_acometida(observacion_id, acometida_id)  values (?, ?) 
-      returning observacion_acometida_id as "observation_connection_id",observacion_id as "observation_id", acometida_id as "connection_id"
+      insert into observacion_acometida(observacion_id, acometida_id)  values (?, ?);
       `;
       const insertObservationConnectionParams = [
         observationId,
         observation.getConnectionId(),
       ];
 
-      const resultObservationConnection =
-        await this.postgreSqlService.query<ObservationConnectionSQLResult>(
+      const resultObservationConnection: any =
+        await this.mySqlService.query(
           insertObservationConnectionQuery,
           insertObservationConnectionParams,
         );
 
       const observationConnectionId: number =
-        resultObservationConnection[0].observation_connection_id;
+        resultObservationConnection.insertId;
 
       const selectObservationConnectionQuery: string = `
         SELECT 
@@ -69,7 +68,7 @@ export class ObservationConnectionPostgreSqlPersistence
       const selectObservationConnectionParams = [observationConnectionId];
 
       const resultSelect =
-        await this.postgreSqlService.query<ObservationConnectionSqlResponse>(
+        await this.mySqlService.query<ObservationConnectionSqlResponse>(
           selectObservationConnectionQuery,
           selectObservationConnectionParams,
         );
@@ -99,7 +98,7 @@ export class ObservationConnectionPostgreSqlPersistence
       const params = [connectionId];
 
       const result =
-        await this.postgreSqlService.query<ObservationConnectionSqlResponse>(
+        await this.mySqlService.query<ObservationConnectionSqlResponse>(
           query,
           params,
         );
@@ -128,7 +127,7 @@ export class ObservationConnectionPostgreSqlPersistence
       const params = [observationId];
 
       const result =
-        await this.postgreSqlService.query<ObservationConnectionSqlResponse>(
+        await this.mySqlService.query<ObservationConnectionSqlResponse>(
           query,
           params,
         );
@@ -155,9 +154,7 @@ export class ObservationConnectionPostgreSqlPersistence
       `;
 
       const result =
-        await this.postgreSqlService.query<ObservationConnectionSqlResponse>(
-          query,
-        );
+        await this.mySqlService.query<ObservationConnectionSqlResponse>(query);
       return result.map(
         ObservationConnectionSqlAdapter.fromObservationConnectionSqlResponseToObservationConnectionResponse,
       );

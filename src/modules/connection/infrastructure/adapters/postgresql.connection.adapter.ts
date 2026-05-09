@@ -7,7 +7,7 @@ import {
   ConnectionWithPropertyResponse,
   EmailResponse,
   PhoneResponse,
-} from '../../../../domain/schemas/dto/response/connection.response';
+} from '../../domain/schemas/dto/response/connection.response';
 import {
   ClientSqlResponse,
   CompanySqlResponse,
@@ -17,9 +17,9 @@ import {
   ConnectionWithPropertySqlResponse,
   EmailSqlResponse,
   PhoneSqlResponse,
-} from '../../../interfaces/sql/connection.sql.response';
+} from '../interfaces/sql/connection.sql.response';
 
-export class ConnectionPostgreSqlAdapter {
+export class ConnectionSqlAdapter {
   static fromConnectionSqlResponseToConnectionResponse(
     connection: ConnectionSqlResponse,
   ): ConnectionResponse {
@@ -33,10 +33,14 @@ export class ConnectionPostgreSqlAdapter {
       connectionAccount: connection.connection_account,
       connectionCadastralKey: connection.connection_cadastral_key,
       connectionContractNumber: connection.connection_contract_number,
-      connectionSewerage: connection.connection_sewerage,
+      connectionSewerage:
+        connection.connection_sewerage === true ||
+        connection.connection_sewerage === 1, // Convert to boolean if it's a number
       connectionStatus: connection.connection_status,
       connectionStateId: connection.connection_state_id,
-      connectionIsReadable: connection.connection_is_readable,
+      connectionIsReadable:
+        connection.connection_is_readable === true ||
+        connection.connection_is_readable === 1, // Convert to boolean if it's a number
       connectionAddress: connection.connection_address,
       connectionInstallationDate: connection.connection_installation_date,
       connectionPeopleNumber: connection.connection_people_number,
@@ -100,7 +104,7 @@ export class ConnectionPostgreSqlAdapter {
       personId: person.person_id,
       birthDate: person.birth_date,
       firstName: person.first_name,
-      isDeceased: person.is_deceased,
+      isDeceased: person.is_deceased === true || person.is_deceased === 1, // Convert to boolean if it's a number
       professionId: person.profession_id,
       civilStatusId: person.civil_status_id,
       phones: this.fromPhoneSqlResponseToPhoneResponse(person.phones),
@@ -122,10 +126,14 @@ export class ConnectionPostgreSqlAdapter {
       connectionAccount: connection.connection_account,
       connectionCadastralKey: connection.connection_cadastral_key,
       connectionContractNumber: connection.connection_contract_number,
-      connectionSewerage: connection.connection_sewerage,
+      connectionSewerage:
+        connection.connection_sewerage === true ||
+        connection.connection_sewerage === 1, // Convert to boolean if it's a number
       connectionStatus: connection.connection_status,
       connectionStateId: connection.connection_state_id,
-      connectionIsReadable: connection.connection_is_readable,
+      connectionIsReadable:
+        connection.connection_is_readable === true ||
+        connection.connection_is_readable === 1, // Convert to boolean if it's a number
       connectionAddress: connection.connection_address,
       connectionInstallationDate: connection.connection_installation_date,
       connectionPeopleNumbers: connection.connection_people_numbers,
@@ -175,10 +183,14 @@ export class ConnectionPostgreSqlAdapter {
       connectionAccount: connection.connection_account,
       connectionCadastralKey: connection.connection_cadastral_key,
       connectionContractNumber: connection.connection_contract_number,
-      connectionSewerage: connection.connection_sewerage,
+      connectionSewerage:
+        connection.connection_sewerage === true ||
+        connection.connection_sewerage === 1, // Convert to boolean if it's a number
       connectionStatus: connection.connection_status,
       connectionStateId: connection.connection_state_id,
-      connectionIsReadable: connection.connection_is_readable,
+      connectionIsReadable:
+        connection.connection_is_readable === true ||
+        connection.connection_is_readable === 1, // Convert to boolean if it's a number
       connectionAddress: connection.connection_address,
       connectionInstallationDate: connection.connection_installation_date,
       connectionPeopleNumber: connection.connection_people_number,
@@ -235,10 +247,14 @@ export class ConnectionPostgreSqlAdapter {
       connectionAccount: connection.connection_account,
       connectionCadastralKey: connection.connection_cadastral_key,
       connectionContractNumber: connection.connection_contract_number,
-      connectionSewerage: connection.connection_sewerage,
+      connectionSewerage:
+        connection.connection_sewerage === true ||
+        connection.connection_sewerage === 1, // Convert to boolean if it's a number
       connectionStatus: connection.connection_status,
       connectionStateId: connection.connection_state_id,
-      connectionIsReadable: connection.connection_is_readable,
+      connectionIsReadable:
+        connection.connection_is_readable === true ||
+        connection.connection_is_readable === 1, // Convert to boolean if it's a number
       connectionAddress: connection.connection_address,
       connectionInstallationDate: connection.connection_installation_date,
       connectionPeopleNumber: connection.connection_people_number,

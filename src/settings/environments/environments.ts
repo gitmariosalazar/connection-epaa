@@ -25,14 +25,7 @@ interface EnvironmentsVariables {
   CONNECTION_KAFKA_CLIENT: string;
   KAFKA_BROKER_INTERNAL: string;
   KAFKA_BROKER_EXTERNAL: string;
-  /*
-  OBSERVATION_CONNECTION_KAFKA_GROUP_ID: string;
-  OBSERVATION_CONNECTION_KAFKA_CLIENT: string;
-  OBSERVATION_CONNECTION_KAFKA_CLIENT_ID: string;
-  PHOTO_CONNECTION_KAFKA_GROUP_ID: string;
-  PHOTO_CONNECTION_KAFKA_CLIENT: string;
-  PHOTO_CONNECTION_KAFKA_CLIENT_ID: string;
-  */
+  DATABASE_TYPE: 'mysql' | 'postgres';
 }
 
 const environmentsSchema = Joi.object<EnvironmentsVariables>({
@@ -54,14 +47,7 @@ const environmentsSchema = Joi.object<EnvironmentsVariables>({
   CONNECTION_KAFKA_CLIENT: Joi.string().required(),
   KAFKA_BROKER_INTERNAL: Joi.string().required(),
   KAFKA_BROKER_EXTERNAL: Joi.string().required(),
-  /*
-  OBSERVATION_CONNECTION_KAFKA_GROUP_ID: Joi.string().required(),
-  OBSERVATION_CONNECTION_KAFKA_CLIENT: Joi.string().required(),
-  OBSERVATION_CONNECTION_KAFKA_CLIENT_ID: Joi.string().required(),
-  PHOTO_CONNECTION_KAFKA_GROUP_ID: Joi.string().required(),
-  PHOTO_CONNECTION_KAFKA_CLIENT: Joi.string().required(),
-  PHOTO_CONNECTION_KAFKA_CLIENT_ID: Joi.string().required(),
-  */
+  DATABASE_TYPE: Joi.string().valid('mysql', 'postgres').default('postgres'),
 }).unknown(true);
 
 const { error, value: envVars } = environmentsSchema.validate(process.env);
@@ -88,15 +74,5 @@ export const environments: EnvironmentsVariables = {
   CONNECTION_KAFKA_CLIENT: envVars.CONNECTION_KAFKA_CLIENT,
   KAFKA_BROKER_EXTERNAL: envVars.KAFKA_BROKER_EXTERNAL,
   KAFKA_BROKER_INTERNAL: envVars.KAFKA_BROKER_INTERNAL,
-  /*
-  OBSERVATION_CONNECTION_KAFKA_GROUP_ID:
-    envVars.OBSERVATION_CONNECTION_KAFKA_GROUP_ID,
-  OBSERVATION_CONNECTION_KAFKA_CLIENT:
-    envVars.OBSERVATION_CONNECTION_KAFKA_CLIENT,
-  OBSERVATION_CONNECTION_KAFKA_CLIENT_ID:
-    envVars.OBSERVATION_CONNECTION_KAFKA_CLIENT_ID,
-  PHOTO_CONNECTION_KAFKA_GROUP_ID: envVars.PHOTO_CONNECTION_KAFKA_GROUP_ID,
-  PHOTO_CONNECTION_KAFKA_CLIENT: envVars.PHOTO_CONNECTION_KAFKA_CLIENT,
-  PHOTO_CONNECTION_KAFKA_CLIENT_ID: envVars.PHOTO_CONNECTION_KAFKA_CLIENT_ID,
-  */
+  DATABASE_TYPE: envVars.DATABASE_TYPE as 'mysql' | 'postgres',
 };

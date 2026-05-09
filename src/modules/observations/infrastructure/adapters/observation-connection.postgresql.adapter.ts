@@ -1,7 +1,7 @@
-import { ObservationConnectionResponse } from '../../../../domain/schemas/dto/response/observation-connection.response';
-import { ObservationConnectionSqlResponse } from '../../../interfaces/sql/observation-connection.sql.response';
+import { ObservationConnectionResponse } from '../../domain/schemas/dto/response/observation-connection.response';
+import { ObservationConnectionSqlResponse } from '../interfaces/sql/observation-connection.sql.response';
 
-export class ObservationConnectionPostgreSqlAdapter {
+export class ObservationConnectionSqlAdapter {
   static fromObservationConnectionSqlResponseToObservationConnectionResponse(
     sqlResponse: ObservationConnectionSqlResponse,
   ): ObservationConnectionResponse {

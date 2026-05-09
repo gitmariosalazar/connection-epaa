@@ -1,6 +1,6 @@
 import { UUID } from 'crypto';
 
-export class ConnectionSqlResponse {
+export interface ConnectionSqlResponse {
   connection_id: string;
   client_id: string;
   connection_rate_id: number;
@@ -10,10 +10,10 @@ export class ConnectionSqlResponse {
   connection_account: number;
   connection_cadastral_key: string;
   connection_contract_number: string;
-  connection_sewerage: boolean;
-  connection_status: string;         // nombre from cat_estados_acometida (replaces boolean)
-  connection_state_id: number;       // estado_id FK
-  connection_is_readable: boolean;   // permite_lectura from cat_estados_acometida
+  connection_sewerage: boolean | null | number;
+  connection_status: string; // nombre from cat_estados_acometida (replaces boolean)
+  connection_state_id: number; // estado_id FK
+  connection_is_readable: boolean | null | number; // permite_lectura from cat_estados_acometida
   connection_address: string;
   connection_installation_date: Date;
   connection_people_number: number;
@@ -40,10 +40,10 @@ export interface ConnectionAndPropertySqlResponse {
   connection_account: string | null;
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
-  connection_sewerage: boolean | null;
-  connection_status: string | null;       // nombre from cat_estados_acometida
-  connection_state_id: number | null;     // estado_id FK
-  connection_is_readable: boolean | null; // permite_lectura
+  connection_sewerage: boolean | null | number;
+  connection_status: string | null; // nombre from cat_estados_acometida
+  connection_state_id: number | null; // estado_id FK
+  connection_is_readable: boolean | null | number; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_numbers: number | null;
@@ -104,10 +104,10 @@ export interface ConnectionWithPropertySqlResponse {
   connection_account: string | null;
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
-  connection_sewerage: boolean | null;
-  connection_status: string | null;       // nombre from cat_estados_acometida
-  connection_state_id: number | null;     // estado_id FK
-  connection_is_readable: boolean | null; // permite_lectura
+  connection_sewerage: boolean | null | number;
+  connection_status: string | null; // nombre from cat_estados_acometida
+  connection_state_id: number | null; // estado_id FK
+  connection_is_readable: boolean | null | number; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_number: number | null;
@@ -141,10 +141,10 @@ export interface ConnectionWithoutPropertySqlResponse {
   connection_account: string | null;
   connection_cadastral_key: string | null;
   connection_contract_number: string | null;
-  connection_sewerage: boolean | null;
-  connection_status: string | null;       // nombre from cat_estados_acometida
-  connection_state_id: number | null;     // estado_id FK
-  connection_is_readable: boolean | null; // permite_lectura
+  connection_sewerage: boolean | null | number;
+  connection_status: string | null; // nombre from cat_estados_acometida
+  connection_state_id: number | null; // estado_id FK
+  connection_is_readable: boolean | null | number; // permite_lectura
   connection_address: string | null;
   connection_installation_date: string | Date | null;
   connection_people_number: number | null;
@@ -174,7 +174,7 @@ export interface ClientSqlResponse {
   person_id: string;
   birth_date: string;
   first_name: string;
-  is_deceased: boolean;
+  is_deceased: boolean | null | number;
   profession_id: number;
   civil_status_id: number;
   phones: PhoneSqlResponse[];

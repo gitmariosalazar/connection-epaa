@@ -7,7 +7,6 @@ import {
   ConnectionWithPropertyResponse,
 } from '../../../../domain/schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../../../../domain/schemas/dto/response/dashboard.response';
-import { ConnectionSqlAdapter } from '../../../adapters/postgresql.connection.adapter';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../../../settings/environments/status-code';
 import { ConnectionModel } from '../../../../domain/schemas/models/connection.model';
@@ -25,10 +24,14 @@ import {
   ConnectionStateResponse,
   StateSummaryResponse,
 } from '../../../../domain/schemas/dto/response/connection-state.response';
-import { DatabaseAbstract, IDatabaseClient } from '../../../../../../shared/connections/database/abstract/abstract.database';
+import {
+  DatabaseAbstract,
+  IDatabaseClient,
+} from '../../../../../../shared/connections/database/abstract/abstract.database';
+import { ConnectionSqlAdapter } from '../../../adapters/postgresql.connection.adapter';
 
 @Injectable()
-export class PostgresqlConnectionPersistence
+export class MySQLConnectionPersistence
   implements InterfaceConnectionRepository
 {
   constructor(private readonly databaseService: DatabaseAbstract) {}
@@ -36,32 +39,30 @@ export class PostgresqlConnectionPersistence
   async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
     try {
       const query = `
-      SELECT json_build_object(
+      SELECT JSON_OBJECT(
         'resumen', (
-            SELECT row_to_json(r) 
-            FROM (
-                SELECT 
-                    COUNT(*) as total_universo,
-                    ROUND(AVG(actualizacion_completa::int) * 100, 1) as pct_progreso_total,
-                    COUNT(*) FILTER (WHERE ultima_modificacion_global > date_trunc('day', now())) as actualizaciones_hoy
-                FROM public.vw_avance_actualizacion_acometidas
-            ) r
+            SELECT JSON_OBJECT(
+              'total_universo', COUNT(*),
+              'pct_progreso_total', ROUND(AVG(CAST(actualizacion_completa AS UNSIGNED)) * 100, 1),
+              'actualizaciones_hoy', SUM(CASE WHEN ultima_modificacion_global > DATE(NOW()) THEN 1 ELSE 0 END)
+            )
+            FROM vw_avance_actualizacion_acometidas
         ),
         'historico', COALESCE((
-            SELECT json_agg(h)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('fecha', h.fecha, 'registros_completados', h.registros_completados))
             FROM (
                 SELECT 
-                    date_trunc('day', ultima_modificacion_global)::date as fecha,
+                    DATE(ultima_modificacion_global) as fecha,
                     count(*) as registros_completados
-                FROM public.vw_avance_actualizacion_acometidas
+                FROM vw_avance_actualizacion_acometidas
                 WHERE actualizacion_completa = true
-                  AND ultima_modificacion_global > now() - INTERVAL '30 days'
-                GROUP BY 1
-                ORDER BY 1
+                  AND ultima_modificacion_global > NOW() - INTERVAL 30 DAY
+                GROUP BY DATE(ultima_modificacion_global)
+                ORDER BY fecha
             ) h
-        ), '[]'::json),
+        ), JSON_ARRAY()),
         'distribucion', COALESCE((
-            SELECT json_agg(d)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('categoria', d.categoria, 'cantidad', d.cantidad))
             FROM (
                 SELECT 
                     CASE 
@@ -71,113 +72,113 @@ export class PostgresqlConnectionPersistence
                         ELSE 'Pendiente Geolocalización'
                     END as categoria,
                     count(*) as cantidad
-                FROM public.vw_avance_actualizacion_acometidas
-                GROUP BY 1
+                FROM vw_avance_actualizacion_acometidas
+                GROUP BY categoria
             ) d
-        ), '[]'::json),
+        ), JSON_ARRAY()),
         'porZonas', COALESCE((
-            SELECT json_agg(z)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('zona_id', z.zona_id, 'total', z.total, 'completados', z.completados, 'pendientes', z.pendientes))
             FROM (
                 SELECT 
                     zona_id,
                     count(*) as total,
                     SUM(CASE WHEN actualizacion_completa THEN 1 ELSE 0 END) as completados,
                     SUM(CASE WHEN NOT actualizacion_completa THEN 1 ELSE 0 END) as pendientes
-                FROM public.vw_avance_actualizacion_acometidas
-                GROUP BY 1
+                FROM vw_avance_actualizacion_acometidas
+                GROUP BY zona_id
                 ORDER BY total DESC
             ) z
-        ), '[]'::json),
+        ), JSON_ARRAY()),
         
         'distribucionTarifas', COALESCE((
-            SELECT json_agg(dt)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('tarifa', dt.tarifa, 'cantidad', dt.cantidad))
             FROM (
                 SELECT 
                     ct.nombre as tarifa,
                     count(a.acometida_id) as cantidad
-                FROM public.acometida a
-                LEFT JOIN public.tarifa t ON t.tarifa_id = a.tarifa_id
-                LEFT JOIN public.categoria ct ON ct.categoria_id = t.categoria_id
+                FROM acometida a
+                LEFT JOIN tarifa t ON t.tarifa_id = a.tarifa_id
+                LEFT JOIN categoria ct ON ct.categoria_id = t.categoria_id
                 GROUP BY ct.nombre
                 ORDER BY cantidad DESC
             ) dt
-        ), '[]'::json),
+        ), JSON_ARRAY()),
 
         'coberturaAlcantarillado', (
-            SELECT row_to_json(ca)
+            SELECT JSON_OBJECT('con_alcantarillado', ca.con_alcantarillado, 'sin_alcantarillado', ca.sin_alcantarillado)
             FROM (
                 SELECT 
                     COALESCE(SUM(CASE WHEN alcantarillado = true THEN 1 ELSE 0 END), 0) as con_alcantarillado,
                     COALESCE(SUM(CASE WHEN alcantarillado = false OR alcantarillado IS NULL THEN 1 ELSE 0 END), 0) as sin_alcantarillado
-                FROM public.acometida
+                FROM acometida
             ) ca
         ),
 
         'calidadGps', (
-            SELECT row_to_json(cg)
+            SELECT JSON_OBJECT('precision_promedio', cg.precision_promedio)
             FROM (
                 SELECT 
-                    COALESCE(ROUND(AVG(precision)::numeric, 2), 0) as precision_promedio
-                FROM public.acometida WHERE precision IS NOT NULL AND precision > 0
+                    COALESCE(ROUND(AVG(precision_prom), 2), 0) as precision_promedio
+                FROM (SELECT \`precision\` as precision_prom FROM acometida WHERE \`precision\` IS NOT NULL AND \`precision\` > 0) p
             ) cg
         ),
 
         'instalacionesRecientesCoords', COALESCE((
-            SELECT json_agg(irc)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('coordenadas', irc.coordenadas, 'fecha', irc.fecha))
             FROM (
                 SELECT 
                     coordenadas,
                     fecha_instalacion as fecha
-                FROM public.acometida
-                WHERE fecha_instalacion >= date_trunc('year', now())
+                FROM acometida
+                WHERE fecha_instalacion >= DATE_FORMAT(NOW(), '%Y-01-01')
                   AND coordenadas IS NOT NULL
                 LIMIT 100
             ) irc
-        ), '[]'::json),
+        ), JSON_ARRAY()),
 
         'curvaCrecimiento', COALESCE((
-            SELECT json_agg(cc)
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('mes', cc.mes, 'nuevas_acometidas', cc.nuevas_acometidas))
             FROM (
                 SELECT 
-                    to_char(fecha_instalacion, 'YYYY-MM') as mes,
+                    DATE_FORMAT(fecha_instalacion, '%Y-%m') as mes,
                     count(*) as nuevas_acometidas
-                FROM public.acometida
+                FROM acometida
                 WHERE fecha_instalacion IS NOT NULL
-                  AND fecha_instalacion >= now() - INTERVAL '12 months'
-                GROUP BY 1
-                ORDER BY 1 ASC
+                  AND fecha_instalacion >= NOW() - INTERVAL 12 MONTH
+                GROUP BY DATE_FORMAT(fecha_instalacion, '%Y-%m')
+                ORDER BY mes ASC
             ) cc
-        ), '[]'::json),
+        ), JSON_ARRAY()),
 
         'poblacionServida', (
-            SELECT row_to_json(ps)
+            SELECT JSON_OBJECT('total_habitantes', ps.total_habitantes)
             FROM (
                 SELECT 
                     COALESCE(SUM(a.numero_personas), 0) as total_habitantes
-                FROM public.acometida a
-                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
+                FROM acometida a
+                JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
                 WHERE est.permite_lectura = TRUE
             ) ps
         ),
 
         'coberturaMedidores', (
-            SELECT row_to_json(cm)
+            SELECT JSON_OBJECT('con_medidor', cm.con_medidor, 'sin_medidor', cm.sin_medidor)
             FROM (
                 SELECT 
                     SUM(CASE WHEN numero_medidor IS NOT NULL AND numero_medidor != '' AND UPPER(numero_medidor) != 'S/M' THEN 1 ELSE 0 END) as con_medidor,
                     SUM(CASE WHEN numero_medidor IS NULL OR numero_medidor = '' OR UPPER(numero_medidor) = 'S/M' THEN 1 ELSE 0 END) as sin_medidor
-                FROM public.acometida
+                FROM acometida
             ) cm
         ),
 
         'estadoRed', (
-            SELECT row_to_json(er)
+            SELECT JSON_OBJECT('activas', er.activas, 'inactivas', er.inactivas)
             FROM (
                 SELECT 
                     SUM(CASE WHEN est.permite_lectura = TRUE  THEN 1 ELSE 0 END) as activas,
                     SUM(CASE WHEN est.permite_lectura = FALSE THEN 1 ELSE 0 END) as inactivas
-                FROM public.acometida a
-                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
+                FROM acometida a
+                JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
             ) er
         )
       ) as stats;
@@ -313,7 +314,11 @@ export class PostgresqlConnectionPersistence
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
     `;
-      const params: (string | number)[] = [sector, limit, offset];
+      const params: (string | number)[] = [
+        sector,
+        Number(limit),
+        Number(offset),
+      ];
       const result = await this.databaseService.query<ConnectionSqlResponse>(
         query,
         params,
@@ -381,7 +386,11 @@ export class PostgresqlConnectionPersistence
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
     `;
-      const params: (string | number)[] = [clientId, limit, offset];
+      const params: (string | number)[] = [
+        clientId,
+        Number(limit),
+        Number(offset),
+      ];
       const result = await this.databaseService.query<ConnectionSqlResponse>(
         query,
         params,
@@ -447,7 +456,7 @@ export class PostgresqlConnectionPersistence
         ORDER BY a.created_at DESC,a.acometida_id
         LIMIT ? OFFSET ?;
       `;
-      const params: number[] = [limit, offset];
+      const params: number[] = [Number(limit), Number(offset)];
       const result = await this.databaseService.query<ConnectionSqlResponse>(
         query,
         params,
@@ -519,31 +528,7 @@ export class PostgresqlConnectionPersistence
         ) VALUES (
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        )
-        RETURNING
-          acometida_id as "connection_id",
-          cliente_id as "client_id",
-          tarifa_id as "connection_rate_id",
-          numero_medidor as "connection_meter_number",
-          sector as "connection_sector",
-          cuenta as "connection_account",
-          clave_catastral as "connection_cadastral_key",
-          numero_contrato as "connection_contract_number",
-          alcantarillado as "connection_sewerage",
-          estado as "connection_status",
-          direccion as "connection_address",
-          fecha_instalacion as "connection_installation_date",
-          numero_personas as "connection_people_numbers",
-          zona as "connection_zone",
-          coordenadas as "connection_coordinates",
-          referencia as "connection_reference",
-          metadata as "connection_metadata",
-          altitud as "connection_altitude",
-          precision as "connection_precision",
-          fecha_geolocalizacion as "connection_geolocation_date",
-          zona_geometrica as "connection_geometric_zone",
-          predio_clave_catastral as "property_cadastral_key",
-          zona_id as "zone_id";
+        );
       `;
       const params: any[] = [
         connection.getConnectionId(),
@@ -570,18 +555,44 @@ export class PostgresqlConnectionPersistence
         connection.getZoneId(),
       ];
 
-      const result = await this.databaseService.query<ConnectionSqlResponse>(
-        query,
-        params,
-      );
-      if (result.length === 0) {
+      const result: any = await this.databaseService.query(query, params);
+      if (result.affectedRows === 0) {
         throw new RpcException({
           statusCode: statusCode.INTERNAL_SERVER_ERROR,
           message: `Failed to create connection.`,
         });
       }
+      const selectQuery = `SELECT 
+          acometida_id as "connection_id",
+          cliente_id as "client_id",
+          tarifa_id as "connection_rate_id",
+          numero_medidor as "connection_meter_number",
+          sector as "connection_sector",
+          cuenta as "connection_account",
+          clave_catastral as "connection_cadastral_key",
+          numero_contrato as "connection_contract_number",
+          alcantarillado as "connection_sewerage",
+          estado as "connection_status",
+          direccion as "connection_address",
+          fecha_instalacion as "connection_installation_date",
+          numero_personas as "connection_people_numbers",
+          zona as "connection_zone",
+          coordenadas as "connection_coordinates",
+          referencia as "connection_reference",
+          metadata as "connection_metadata",
+          altitud as "connection_altitude",
+          precision as "connection_precision",
+          fecha_geolocalizacion as "connection_geolocation_date",
+          zona_geometrica as "connection_geometric_zone",
+          predio_clave_catastral as "property_cadastral_key",
+          zona_id as "zone_id"
+        FROM acometida WHERE acometida_id = ?;`;
+      const selectResult =
+        await this.databaseService.query<ConnectionSqlResponse>(selectQuery, [
+          connection.getConnectionId(),
+        ]);
       return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-        result[0],
+        selectResult[0],
       );
     } catch (error) {
       throw error;
@@ -617,31 +628,7 @@ export class PostgresqlConnectionPersistence
           fecha_geolocalizacion = COALESCE(?, fecha_geolocalizacion),
           predio_clave_catastral = COALESCE(?, predio_clave_catastral),
           zona_id = COALESCE(?, zona_id)
-        WHERE acometida_id = ?
-        RETURNING
-          acometida_id as "connection_id",
-          cliente_id as "client_id",
-          tarifa_id as "connection_rate_id",
-          numero_medidor as "connection_meter_number",
-          sector as "connection_sector",
-          cuenta as "connection_account",
-          clave_catastral as "connection_cadastral_key",
-          numero_contrato as "connection_contract_number",
-          alcantarillado as "connection_sewerage",
-          estado as "connection_status",
-          direccion as "connection_address",
-          fecha_instalacion as "connection_installation_date",
-          numero_personas as "connection_people_numbers",
-          zona as "connection_zone",
-          coordenadas as "connection_coordinates",
-          referencia as "connection_reference",
-          metadata as "connection_metadata",
-          altitud as "connection_altitude",
-          precision as "connection_precision",
-          fecha_geolocalizacion as "connection_geolocation_date",
-          zona_geometrica as "connection_geometric_zone",
-          predio_clave_catastral as "property_cadastral_key",
-          zona_id as "zone_id";
+        WHERE acometida_id = ?;
       `;
       const params: any[] = [
         connectionId,
@@ -668,18 +655,44 @@ export class PostgresqlConnectionPersistence
         connection.getZoneId(),
       ];
 
-      const result = await this.databaseService.query<ConnectionSqlResponse>(
-        query,
-        params,
-      );
-      if (result.length === 0) {
+      const result: any = await this.databaseService.query(query, params);
+      if (result.affectedRows === 0) {
         throw new RpcException({
           statusCode: statusCode.INTERNAL_SERVER_ERROR,
           message: `Failed to update connection with ID ${connectionId}.`,
         });
       }
+      const selectQuery = `SELECT 
+          acometida_id as "connection_id",
+          cliente_id as "client_id",
+          tarifa_id as "connection_rate_id",
+          numero_medidor as "connection_meter_number",
+          sector as "connection_sector",
+          cuenta as "connection_account",
+          clave_catastral as "connection_cadastral_key",
+          numero_contrato as "connection_contract_number",
+          alcantarillado as "connection_sewerage",
+          estado as "connection_status",
+          direccion as "connection_address",
+          fecha_instalacion as "connection_installation_date",
+          numero_personas as "connection_people_numbers",
+          zona as "connection_zone",
+          coordenadas as "connection_coordinates",
+          referencia as "connection_reference",
+          metadata as "connection_metadata",
+          altitud as "connection_altitude",
+          precision as "connection_precision",
+          fecha_geolocalizacion as "connection_geolocation_date",
+          zona_geometrica as "connection_geometric_zone",
+          predio_clave_catastral as "property_cadastral_key",
+          zona_id as "zone_id"
+        FROM acometida WHERE acometida_id = ?;`;
+      const selectResult =
+        await this.databaseService.query<ConnectionSqlResponse>(selectQuery, [
+          connectionId,
+        ]);
       return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-        result[0],
+        selectResult[0],
       );
     } catch (error) {
       throw error;
@@ -723,7 +736,7 @@ SELECT
     z.nombre                     AS "zone_name",
     -- Client Data
     c.cliente_id                  AS "client_id",
-    COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social) AS "client_name",
+    COALESCE(CONCAT(ci.nombres, ' ', ci.apellidos), e.razon_social) AS "client_name",
     COALESCE(ci.direccion, e.direccion)                        AS "client_address",
     cc.phones                    AS "client_phones",
     cc.correos                    AS "client_emails",
@@ -748,7 +761,7 @@ LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
 INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
 LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
 LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
-INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+INNER JOIN zona z    ON z.zona_id = a.zona_id
 LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
 WHERE a.acometida_id = ?;
       `;
@@ -880,7 +893,7 @@ WHERE a.acometida_id = ?;
         LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
-        INNER JOIN public.zona z on z.zona_id = a.zona_id
+        INNER JOIN zona z on z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         WHERE a.acometida_id = ?;
       `;
@@ -1013,7 +1026,7 @@ WHERE a.acometida_id = ?;
         LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
-        INNER JOIN public.zona z       ON z.zona_id = a.zona_id
+        INNER JOIN zona z       ON z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         ${whereClause}
         ORDER BY a.acometida_id
@@ -1107,7 +1120,7 @@ WHERE a.acometida_id = ?;
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
-      LEFT JOIN public.zona z ON z.zona_id = a.zona_id
+      LEFT JOIN zona z ON z.zona_id = a.zona_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       ${whereClause}
       ORDER BY a.acometida_id
@@ -1123,9 +1136,7 @@ WHERE a.acometida_id = ?;
 
       // Mapeo a tu respuesta
       const response = result.map((row) =>
-        ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-          row,
-        ),
+        ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(row),
       );
 
       return response;
@@ -1228,16 +1239,17 @@ WHERE a.acometida_id = ?;
           COALESCE(h.detalles_tecnicos, '{}'::jsonb) AS "technicalDetails"
         FROM historial_estados_acometida h
         JOIN cat_estados_acometida est ON est.id_estado = h.estado_id
-        LEFT JOIN public.usuarios u ON u.usuario_id = h.usuario_id
+        LEFT JOIN usuarios u ON u.usuario_id = h.usuario_id
         WHERE h.acometida_id = ?
         ORDER BY h.fecha_cambio DESC
         LIMIT ? OFFSET ?;
       `;
 
-      const result = await this.databaseService.query<ConnectionStateHistoryResponse>(
-        query,
-        [connectionId, limit, offset],
-      );
+      const result =
+        await this.databaseService.query<ConnectionStateHistoryResponse>(
+          query,
+          [connectionId, Number(limit), Number(offset)],
+        );
 
       return result;
     } catch (error) {
@@ -1283,10 +1295,13 @@ WHERE a.acometida_id = ?;
         LIMIT ? OFFSET ?;
       `;
 
-      const result = await this.databaseService.query<ConnectionsByStateResponse>(
-        query,
-        [stateId, sector ?? null, limit, offset],
-      );
+      const result =
+        await this.databaseService.query<ConnectionsByStateResponse>(query, [
+          stateId,
+          sector ?? null,
+          Number(limit),
+          Number(offset),
+        ]);
 
       return result;
     } catch (error) {
@@ -1318,7 +1333,10 @@ WHERE a.acometida_id = ?;
         ORDER BY "total" DESC;
       `;
 
-      const result = await this.databaseService.query<StateSummaryResponse>(query, []);
+      const result = await this.databaseService.query<StateSummaryResponse>(
+        query,
+        [],
+      );
       return result;
     } catch (error) {
       throw error;
