@@ -25,13 +25,25 @@ async function bootstrap() {
     strategy: new CustomServerKafka(
       {
         client: {
-        clientId: environments.CONNECTION_KAFKA_CLIENT_ID,
-        brokers: [environments.KAFKA_BROKER_URL],
-      },
-      consumer: {
-        groupId: environments.CONNECTION_KAFKA_GROUP_ID,
-        allowAutoTopicCreation: true,
-      }
+          clientId: environments.CONNECTION_KAFKA_CLIENT_ID,
+          brokers: [environments.KAFKA_BROKER_URL],
+          retry: {
+            // Reintentos de CONEXIÓN al broker (no de mensajes)
+            retries: 5,
+            initialRetryTime: 300,
+          },
+        },
+        consumer: {
+          groupId: environments.CONNECTION_KAFKA_GROUP_ID,
+          allowAutoTopicCreation: true,
+          // sessionTimeout y retry de mensajes: manejados a nivel de CustomServerKafka
+        },
+        run: {
+          // autoCommit: true por defecto en NestJS — el offset se commitea automáticamente
+          // después de que handleMessage resuelve (incluso si hay error capturado internamente)
+          autoCommitInterval: 5000,
+          autoCommitThreshold: 10,
+        },
       },
       environments.KAFKA_TOPIC
     ),

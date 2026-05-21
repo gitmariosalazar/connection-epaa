@@ -631,7 +631,6 @@ export class MySQLConnectionPersistence
         WHERE acometida_id = ?;
       `;
       const params: any[] = [
-        connectionId,
         connection.getClientId(),
         connection.getConnectionRateId(),
         connection.getConnectionMeterNumber(),
@@ -653,6 +652,7 @@ export class MySQLConnectionPersistence
         connection.getConnectionGeolocationDate(),
         connection.getPropertyCadastralKey(),
         connection.getZoneId(),
+        connectionId,
       ];
 
       const result: any = await this.databaseService.query(query, params);

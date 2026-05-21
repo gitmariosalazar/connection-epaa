@@ -644,7 +644,6 @@ export class PostgresqlConnectionPersistence
           zona_id as "zone_id";
       `;
       const params: any[] = [
-        connectionId,
         connection.getClientId(),
         connection.getConnectionRateId(),
         connection.getConnectionMeterNumber(),
@@ -666,6 +665,7 @@ export class PostgresqlConnectionPersistence
         connection.getConnectionGeolocationDate(),
         connection.getPropertyCadastralKey(),
         connection.getZoneId(),
+        connectionId,
       ];
 
       const result = await this.databaseService.query<ConnectionSqlResponse>(

@@ -1,0 +1,44 @@
+import { RequestModel } from '../schemas/models/RequestModel';
+import {
+  DashboardKpisResponse,
+  ExpedienteResponse,
+  HistorialEstadoResponse,
+  SolicitudOrdenTrabajoResponse,
+} from '../../application/dto/response/request-queries.response';
+import {
+  SubmitWithDocumentsRequest,
+  SubmitWithDocumentsResponse,
+} from '../../application/dto/request/submit-with-documents.request';
+
+export interface InterfaceConnectionRequestRepository {
+  createConnectionRequest(request: RequestModel): Promise<RequestModel | null>;
+  updateConnectionRequest(
+    requestId: string,
+    updateData: Partial<RequestModel>,
+  ): Promise<RequestModel | null>;
+  getConnectionRequestById(requestId: string): Promise<RequestModel | null>;
+  findAllConnectionRequests(
+    limit: number,
+    offset: number,
+    status?: string,
+  ): Promise<RequestModel[]>;
+  deleteConnectionRequest(requestId: string): Promise<boolean>;
+  changeRequestStatus(solicitudId: string, newStatus: string, userId: string, comment: string): Promise<void>;
+
+  /**
+   * OPERACIÓN ATÓMICA: Crea la solicitud, inserta documentos y transiciona
+   * a DOCS_SUBMITTED en una única transacción PostgreSQL.
+   */
+  submitWithDocuments(dto: SubmitWithDocumentsRequest): Promise<SubmitWithDocumentsResponse>;
+
+  // ── Consultas enriquecidas para el frontend ──────────────────────────────
+  /** Expediente completo de una solicitud (todos los módulos en un solo query) */
+  getExpedienteBySolicitudId(solicitudId: string): Promise<ExpedienteResponse | null>;
+  /** Timeline de cambios de estado para el stepper del frontend */
+  getHistorialBySolicitudId(solicitudId: string): Promise<HistorialEstadoResponse[]>;
+  /** Métricas globales para el panel administrativo */
+  getDashboardKpis(): Promise<DashboardKpisResponse>;
+  /** Órdenes de trabajo (inspección e instalación) ligadas a una solicitud */
+  getOrdenesTrabajoBysSolicitudId(solicitudId: string): Promise<SolicitudOrdenTrabajoResponse[]>;
+}
+
