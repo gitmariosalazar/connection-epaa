@@ -7,6 +7,7 @@ import {
   ConnectionWithPropertyResponse,
   EmailResponse,
   PhoneResponse,
+  PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
 import {
   ClientSqlResponse,
@@ -17,6 +18,7 @@ import {
   ConnectionWithPropertySqlResponse,
   EmailSqlResponse,
   PhoneSqlResponse,
+  PropertyWithClientSqlResponse,
 } from '../interfaces/sql/connection.sql.response';
 
 export class ConnectionSqlAdapter {
@@ -54,6 +56,31 @@ export class ConnectionSqlAdapter {
       connectionGeometricZone: connection.connection_geometric_zone,
       propertyCadastralKey: connection.property_cadastral_key,
       zoneId: connection.zone_id,
+    };
+  }
+
+  static fromPropertyWithClientSqlResponseToPropertyWithClientResponse(
+    property: PropertyWithClientSqlResponse,
+  ): PropertyWithClientResponse {
+    return {
+      propertyId: property.property_id,
+      propertySector: property.property_sector,
+      propertyTypeId: property.property_type_id,
+      propertyAddress: property.property_address,
+      propertyAlleyway: property.property_alleyway,
+      propertyAltitude: property.property_altitude,
+      propertyTypeName: property.property_type_name,
+      propertyPrecision: property.property_precision,
+      propertyReference: property.property_reference,
+      propertyCoordinates: property.property_coordinates,
+      propertyCadastralKey: property.property_cadastral_key,
+      propertyGeometricZone: property.property_geometric_zone,
+      company: property.company
+        ? this.fromCompanySqlResponseToCompanyResponse(property.company)
+        : null,
+      person: property.person
+        ? this.fromPersonSqlResponseToPersonResponse(property.person)
+        : null,
     };
   }
 
@@ -122,6 +149,8 @@ export class ConnectionSqlAdapter {
       connectionRateId: connection.connection_rate_id,
       connectionRateName: connection.connection_rate_name,
       connectionMeterNumber: connection.connection_meter_number,
+      connectionMeterNumberCurrent: connection.connection_meter_number_current,
+      connectionMeterNumberPreview: connection.connection_meter_number_preview,
       connectionSector: connection.connection_sector,
       connectionAccount: connection.connection_account,
       connectionCadastralKey: connection.connection_cadastral_key,
@@ -150,22 +179,29 @@ export class ConnectionSqlAdapter {
       zoneCode: connection.zone_code,
       zoneName: connection.zone_name,
       // Client Data
-      clientName: connection.client_name,
-      clientAddress: connection.client_address,
-      phones: connection.phones,
-      emails: connection.emails,
+      company: connection.company
+        ? this.fromCompanySqlResponseToCompanyResponse(connection.company)
+        : null,
+      person: connection.person
+        ? this.fromPersonSqlResponseToPersonResponse(connection.person)
+        : null,
       // Property Data
-      propertyId: connection.property_id,
-      alleyway: connection.alleyway,
-      propertySector: connection.property_sector,
-      propertyAddress: connection.property_address,
-      propertyCoordinates: connection.property_coordinates,
-      propertyReference: connection.property_reference,
-      propertyAltitude: connection.property_altitude,
-      propertyPrecision: connection.property_precision,
-      propertyGeometricZone: connection.property_geometric_zone,
-      propertyTypeName: connection.property_type_name,
-      propertyTypeId: connection.property_type_id,
+      property: connection.property
+        ? {
+            propertyId: connection.property.property_id,
+            propertySector: connection.property.property_sector,
+            propertyTypeId: connection.property.property_type_id,
+            propertyAddress: connection.property.property_address,
+            propertyAlleyway: connection.property.property_alleyway,
+            propertyAltitude: connection.property.property_altitude,
+            propertyTypeName: connection.property.property_type_name,
+            propertyPrecision: connection.property.property_precision,
+            propertyReference: connection.property.property_reference,
+            propertyCoordinates: connection.property.property_coordinates,
+            propertyCadastralKey: connection.property.property_cadastral_key,
+            propertyGeometricZone: connection.property.property_geometric_zone,
+          }
+        : null,
     };
   }
 

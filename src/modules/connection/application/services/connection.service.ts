@@ -7,6 +7,7 @@ import {
   ConnectionResponse,
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
+  PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
 import { RpcException } from '@nestjs/microservices';
@@ -275,6 +276,35 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     }
   }
 
+  async findConnectionAndPropertyByCadastralKeyOrCardId(
+    searchValue: string,
+  ): Promise<ConnectionAndPropertyResponse[]> {
+    try {
+      if (!searchValue || searchValue.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid searchValue provided',
+        });
+      }
+
+      const connectionsAndProperties =
+        await this.connectionRepository.findConnectionAndPropertyByCadastralKeyOrCardId(
+          searchValue,
+        );
+
+      if (!connectionsAndProperties || connectionsAndProperties.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections and properties found with search value ${searchValue}`,
+        });
+      }
+
+      return connectionsAndProperties;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findConnectionWithPropertyByCadastralKey(
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null> {
@@ -417,7 +447,6 @@ export class ConnectionService implements InterfaceConnectionUseCase {
   // ───────────────────────────────────────────────────────────────────────────
   // STATE MANAGEMENT
   // ───────────────────────────────────────────────────────────────────────────
-
   async changeConnectionState(
     connectionId: string,
     newStateId: number,
@@ -427,19 +456,32 @@ export class ConnectionService implements InterfaceConnectionUseCase {
   ): Promise<ConnectionStateResponse> {
     try {
       if (!connectionId?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'connectionId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'connectionId is required',
+        });
       }
       if (!newStateId || newStateId < 1) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid newStateId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Valid newStateId is required',
+        });
       }
       if (!userId?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'userId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'userId is required',
+        });
       }
       if (!motivo?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'motivo is required for audit trail' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'motivo is required for audit trail',
+        });
       }
 
-      const exists = await this.connectionRepository.verifyConnectionExists(connectionId);
+      const exists =
+        await this.connectionRepository.verifyConnectionExists(connectionId);
       if (!exists) {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
@@ -448,7 +490,11 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return this.connectionRepository.changeConnectionState(
-        connectionId, newStateId, userId, motivo, detallesTecnicos,
+        connectionId,
+        newStateId,
+        userId,
+        motivo,
+        detallesTecnicos,
       );
     } catch (error) {
       throw error;
@@ -462,10 +508,14 @@ export class ConnectionService implements InterfaceConnectionUseCase {
   ): Promise<ConnectionStateHistoryResponse[]> {
     try {
       if (!connectionId?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'connectionId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'connectionId is required',
+        });
       }
 
-      const exists = await this.connectionRepository.verifyConnectionExists(connectionId);
+      const exists =
+        await this.connectionRepository.verifyConnectionExists(connectionId);
       if (!exists) {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
@@ -493,11 +543,17 @@ export class ConnectionService implements InterfaceConnectionUseCase {
   ): Promise<ConnectionsByStateResponse[]> {
     try {
       if (!stateId || stateId < 1) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid stateId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Valid stateId is required',
+        });
       }
 
       return this.connectionRepository.getConnectionsByState(
-        stateId, sector, limit ?? 100, offset ?? 0,
+        stateId,
+        sector,
+        limit ?? 100,
+        offset ?? 0,
       );
     } catch (error) {
       throw error;
@@ -523,21 +579,69 @@ export class ConnectionService implements InterfaceConnectionUseCase {
   ): Promise<BulkStateChangeResponse> {
     try {
       if (!connectionIds?.length) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'At least one connectionId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'At least one connectionId is required',
+        });
       }
       if (!newStateId || newStateId < 1) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'Valid newStateId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Valid newStateId is required',
+        });
       }
       if (!userId?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'userId is required' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'userId is required',
+        });
       }
       if (!motivo?.trim()) {
-        throw new RpcException({ statusCode: statusCode.BAD_REQUEST, message: 'motivo is required for audit trail' });
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'motivo is required for audit trail',
+        });
       }
 
       return this.connectionRepository.bulkChangeConnectionState(
-        connectionIds, newStateId, userId, motivo,
+        connectionIds,
+        newStateId,
+        userId,
+        motivo,
       );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+    searchValue: string,
+    limit: number,
+    offset: number,
+  ): Promise<PropertyWithClientResponse[]> {
+    try {
+      if (!searchValue || searchValue.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid searchValue provided',
+        });
+      }
+
+      const propertiesWithClient =
+        await this.connectionRepository.findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+          searchValue,
+          limit,
+          offset,
+        );
+
+      if (!propertiesWithClient || propertiesWithClient.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No properties with client found matching search value ${searchValue}`,
+        });
+      }
+
+      return propertiesWithClient;
     } catch (error) {
       throw error;
     }

@@ -84,8 +84,9 @@ export class ConnectionMapper {
         existingConnection['connectionGeolocationDate'],
       connection.connectionGeometricZone ||
         existingConnection['connectionGeometricZone'],
-      connection.propertyCadastralKey ||
-        existingConnection['propertyCadastralKey'],
+      connection.propertyCadastralKey !== undefined
+        ? connection.propertyCadastralKey
+        : existingConnection['propertyCadastralKey'],
       connection.zoneId || existingConnection['zoneId'],
     );
     return connectionModel;

@@ -5,6 +5,7 @@ import {
   ConnectionResponse,
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
+  PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
 import {
@@ -35,6 +36,9 @@ export interface InterfaceConnectionUseCase {
   findConnectionAndPropertyByCadastralKey(
     propertyCadastralKey: string,
   ): Promise<ConnectionAndPropertyResponse | null>;
+  findConnectionAndPropertyByCadastralKeyOrCardId(
+    searchValue: string,
+  ): Promise<ConnectionAndPropertyResponse[]>;
   findConnectionWithPropertyByCadastralKey(
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null>;
@@ -43,6 +47,12 @@ export interface InterfaceConnectionUseCase {
     offset: number;
     query?: string;
   }): Promise<ConnectionWithoutPropertyResponse[]>;
+
+  findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+    searchValue: string,
+    limit: number,
+    offset: number,
+  ): Promise<PropertyWithClientResponse[]>;
 
   getConnectionsPaginated(params: {
     limit: number;

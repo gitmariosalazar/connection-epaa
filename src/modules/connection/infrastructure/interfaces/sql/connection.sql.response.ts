@@ -36,6 +36,8 @@ export interface ConnectionAndPropertySqlResponse {
   connection_rate_id: string;
   connection_rate_name: string;
   connection_meter_number: string | null;
+  connection_meter_number_current: string | null;
+  connection_meter_number_preview: string | null;
   connection_sector: string | null;
   connection_account: string | null;
   connection_cadastral_key: string | null;
@@ -60,22 +62,10 @@ export interface ConnectionAndPropertySqlResponse {
   zone_code: string;
   zone_name: string;
   // Client Data
-  client_name: string;
-  client_address: string | null;
-  phones: string[] | null;
-  emails: string[] | null;
+  company: CompanySqlResponse | null;
+  person: ClientSqlResponse | null;
   // Property Data
-  property_id: UUID | null;
-  alleyway: string | null;
-  property_sector: string | null;
-  property_address: string | null;
-  property_coordinates: string | null;
-  property_reference: string | null;
-  property_altitude: number | null;
-  property_precision: number | null;
-  property_geometric_zone: string | null;
-  property_type_name: string | null;
-  property_type_id: string | null;
+  property: PropertyResponse | null;
 }
 
 export interface PropertyResponse {
@@ -91,6 +81,24 @@ export interface PropertyResponse {
   property_coordinates: string | null;
   property_cadastral_key: string | null;
   property_geometric_zone: string | null;
+}
+
+export interface PropertyWithClientSqlResponse {
+  property_id: UUID;
+  property_sector: string | null;
+  property_type_id: number | null;
+  property_address: string | null;
+  property_alleyway: string | null;
+  property_altitude: number | null;
+  property_type_name: string | null;
+  property_precision: number | null;
+  property_reference: string | null;
+  property_coordinates: string | null;
+  property_cadastral_key: string | null;
+  property_geometric_zone: string | null;
+  // Client Data
+  company: CompanySqlResponse | null;
+  person: ClientSqlResponse | null;
 }
 
 export interface ConnectionWithPropertySqlResponse {

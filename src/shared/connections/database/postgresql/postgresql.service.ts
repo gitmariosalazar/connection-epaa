@@ -53,6 +53,10 @@ export class DatabaseServicePostgreSQL extends DatabaseAbstract {
         connectionTimeoutMillis: 2000,
       };
       this.pool = new Pool(poolConfig);
+      // Evitar caídas del microservicio por errores inesperados en clientes inactivos (idle)
+      this.pool.on('error', (err) => {
+        console.error('⚠️ Unexpected error on idle PostgreSQL client:', err.message);
+      });
       // We check connection but we don't throw to avoid crashing the container at startup
       await this.pool.query('SELECT NOW()');
       this.isConnected = true;

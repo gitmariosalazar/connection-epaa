@@ -2,7 +2,10 @@ import { ServerKafka, CustomTransportStrategy } from '@nestjs/microservices';
 import { EachMessagePayload } from 'kafkajs';
 import { Logger } from '@nestjs/common';
 
-export class CustomServerKafka extends ServerKafka implements CustomTransportStrategy {
+export class CustomServerKafka
+  extends ServerKafka
+  implements CustomTransportStrategy
+{
   protected readonly logger = new Logger('CustomServerKafka');
   private readonly mainTopic: string;
 
@@ -14,7 +17,10 @@ export class CustomServerKafka extends ServerKafka implements CustomTransportStr
   public async listen(callback: (err?: unknown, ...args: unknown[]) => void) {
     const originalBindEvents = this.bindEvents.bind(this);
     this.bindEvents = async (consumer: any) => {
-      await consumer.subscribe({ topics: [this.mainTopic], fromBeginning: false });
+      await consumer.subscribe({
+        topics: [this.mainTopic],
+        fromBeginning: false,
+      });
       await originalBindEvents(consumer);
     };
     return super.listen(callback);
@@ -31,32 +37,47 @@ export class CustomServerKafka extends ServerKafka implements CustomTransportStr
         const parsed = JSON.parse(valueStr);
 
         if (parsed && parsed.pattern) {
-          // Caso 1: client.send() con inner routing pattern
-          // Formato: { id, pattern:'main_topic', data:{ pattern:'real.handler', data:{...} } }
-          if (
-            parsed.id &&
-            parsed.data &&
-            typeof parsed.data === 'object' &&
-            parsed.data.pattern
-          ) {
-            pattern = parsed.data.pattern;
-            // Reconstruir preservando id (correlationId) para que ServerKafka envíe la reply
+          const nestedData =
+            parsed.data && typeof parsed.data === 'object' ? parsed.data : null;
+          const contextualData =
+            nestedData &&
+            nestedData.value &&
+            typeof nestedData.value === 'object'
+              ? nestedData.value
+              : null;
+
+          const innerPattern =
+            nestedData?.pattern || contextualData?.pattern || '';
+          const innerPayload =
+            nestedData?.data !== undefined
+              ? nestedData.data
+              : contextualData?.data !== undefined
+                ? contextualData.data
+                : contextualData || nestedData;
+
+          // Caso 1: request-response con correlation id.
+          // Soporta ambos formatos:
+          // - { id, pattern:'topic', data:{ pattern:'real.handler', data:{...} } }
+          // - { id, pattern:'topic', data:{ value:{ pattern:'real.handler', data:{...} }, headers:{...} } }
+          if (parsed.id && innerPattern) {
+            pattern = innerPattern;
             payload.message.value = Buffer.from(
               JSON.stringify({
                 id: parsed.id,
-                pattern: parsed.data.pattern,
-                data: parsed.data.data !== undefined ? parsed.data.data : parsed.data,
+                pattern: innerPattern,
+                data: innerPayload,
               }),
             );
           }
-          // Caso 2: kafkaProxy.send() fire-and-forget
-          // Formato: { pattern:'real.handler', data:{...} }
+          // Caso 2: mensaje directo con pattern/data
           else {
             pattern = parsed.pattern;
             const finalData = parsed.data;
             if (finalData !== null && finalData !== undefined) {
               const bufferData =
-                typeof finalData === 'string' ? finalData : JSON.stringify(finalData);
+                typeof finalData === 'string'
+                  ? finalData
+                  : JSON.stringify(finalData);
               payload.message.value = Buffer.from(bufferData);
             }
           }

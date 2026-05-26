@@ -11,9 +11,9 @@ export interface ConnectionResponse {
   connectionCadastralKey: string;
   connectionContractNumber: string;
   connectionSewerage: boolean;
-  connectionStatus: string;        // nombre from cat_estados_acometida
-  connectionStateId: number;       // estado_id FK
-  connectionIsReadable: boolean;   // permite_lectura
+  connectionStatus: string; // nombre from cat_estados_acometida
+  connectionStateId: number; // estado_id FK
+  connectionIsReadable: boolean; // permite_lectura
   connectionAddress: string;
   connectionInstallationDate: Date;
   connectionPeopleNumber: number;
@@ -36,14 +36,16 @@ export interface ConnectionAndPropertyResponse {
   connectionRateId: string;
   connectionRateName: string;
   connectionMeterNumber: string | null;
+  connectionMeterNumberCurrent: string | null;
+  connectionMeterNumberPreview: string | null;
   connectionSector: string | null;
   connectionAccount: string | null;
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;        // nombre from cat_estados_acometida
-  connectionStateId: number | null;       // estado_id FK
-  connectionIsReadable: boolean | null;   // permite_lectura
+  connectionStatus: string | null; // nombre from cat_estados_acometida
+  connectionStateId: number | null; // estado_id FK
+  connectionIsReadable: boolean | null; // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumbers: number | null;
@@ -60,22 +62,10 @@ export interface ConnectionAndPropertyResponse {
   zoneCode: string;
   zoneName: string;
   // Client Data
-  clientName: string;
-  clientAddress: string | null;
-  phones: string[] | null;
-  emails: string[] | null;
+  company: CompanyResponse | null;
+  person: ClientResponse | null;
   // Property Data
-  propertyId: UUID | null;
-  alleyway: string | null;
-  propertySector: string | null;
-  propertyAddress: string | null;
-  propertyCoordinates: string | null;
-  propertyReference: string | null;
-  propertyAltitude: number | null;
-  propertyPrecision: number | null;
-  propertyGeometricZone: string | null;
-  propertyTypeName: string | null;
-  propertyTypeId: string | null;
+  property: PropertyResponse | null;
 }
 
 export interface PropertyResponse {
@@ -93,6 +83,24 @@ export interface PropertyResponse {
   propertyGeometricZone: string | null;
 }
 
+export interface PropertyWithClientResponse {
+  propertyId: UUID;
+  propertySector: string | null;
+  propertyTypeId: number | null;
+  propertyAddress: string | null;
+  propertyAlleyway: string | null;
+  propertyAltitude: number | null;
+  propertyTypeName: string | null;
+  propertyPrecision: number | null;
+  propertyReference: string | null;
+  propertyCoordinates: string | null;
+  propertyCadastralKey: string | null;
+  propertyGeometricZone: string | null;
+  // Client Data
+  company: CompanyResponse | null;
+  person: ClientResponse | null;
+}
+
 export interface ConnectionWithPropertyResponse {
   // Connection Data
   connectionId: string;
@@ -105,9 +113,9 @@ export interface ConnectionWithPropertyResponse {
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;        // nombre from cat_estados_acometida
-  connectionStateId: number | null;       // estado_id FK
-  connectionIsReadable: boolean | null;   // permite_lectura
+  connectionStatus: string | null; // nombre from cat_estados_acometida
+  connectionStateId: number | null; // estado_id FK
+  connectionIsReadable: boolean | null; // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumber: number | null;
@@ -142,9 +150,9 @@ export interface ConnectionWithoutPropertyResponse {
   connectionCadastralKey: string | null;
   connectionContractNumber: string | null;
   connectionSewerage: boolean | null;
-  connectionStatus: string | null;        // nombre from cat_estados_acometida
-  connectionStateId: number | null;       // estado_id FK
-  connectionIsReadable: boolean | null;   // permite_lectura
+  connectionStatus: string | null; // nombre from cat_estados_acometida
+  connectionStateId: number | null; // estado_id FK
+  connectionIsReadable: boolean | null; // permite_lectura
   connectionAddress: string | null;
   connectionInstallationDate: string | Date | null;
   connectionPeopleNumber: number | null;

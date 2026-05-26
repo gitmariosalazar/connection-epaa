@@ -3,6 +3,7 @@ import {
   ConnectionResponse,
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
+  PropertyWithClientResponse,
 } from '../schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../schemas/dto/response/dashboard.response';
 import { ConnectionModel } from '../schemas/models/connection.model';
@@ -31,11 +32,20 @@ export interface InterfaceConnectionRepository {
     offset: number,
   ): Promise<ConnectionResponse[]>;
   findConnectionAndPropertyByCadastralKey(
-    propertyCadastralKey: string,
+    cadastralKey: string,
   ): Promise<ConnectionAndPropertyResponse | null>;
+  findConnectionAndPropertyByCadastralKeyOrCardId(
+    searchValue: string,
+  ): Promise<ConnectionAndPropertyResponse[]>;
   findConnectionWithPropertyByCadastralKey(
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null>;
+
+  findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+    searchValue: string,
+    limit: number,
+    offset: number,
+  ): Promise<PropertyWithClientResponse[]>;
 
   findConnectionsBySector(
     sector: string,

@@ -5,6 +5,7 @@ import {
   ConnectionResponse,
   ConnectionWithoutPropertyResponse,
   ConnectionWithPropertyResponse,
+  PropertyWithClientResponse,
 } from '../../../../domain/schemas/dto/response/connection.response';
 import { DashboardAdvanceResponse } from '../../../../domain/schemas/dto/response/dashboard.response';
 import { ConnectionSqlAdapter } from '../../../adapters/postgresql.connection.adapter';
@@ -17,6 +18,7 @@ import {
   ConnectionSqlResponse,
   ConnectionWithoutPropertySqlResponse,
   ConnectionWithPropertySqlResponse,
+  PropertyWithClientSqlResponse,
 } from '../../../interfaces/sql/connection.sql.response';
 import {
   BulkStateChangeResponse,
@@ -25,12 +27,13 @@ import {
   ConnectionStateResponse,
   StateSummaryResponse,
 } from '../../../../domain/schemas/dto/response/connection-state.response';
-import { DatabaseAbstract, IDatabaseClient } from '../../../../../../shared/connections/database/abstract/abstract.database';
+import {
+  DatabaseAbstract,
+  IDatabaseClient,
+} from '../../../../../../shared/connections/database/abstract/abstract.database';
 
 @Injectable()
-export class PostgresqlConnectionPersistence
-  implements InterfaceConnectionRepository
-{
+export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
   constructor(private readonly databaseService: DatabaseAbstract) {}
 
   async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
@@ -615,7 +618,7 @@ export class PostgresqlConnectionPersistence
           altitud = COALESCE(?, altitud),
           precision = COALESCE(?, precision),
           fecha_geolocalizacion = COALESCE(?, fecha_geolocalizacion),
-          predio_clave_catastral = COALESCE(?, predio_clave_catastral),
+          predio_clave_catastral = ?,
           zona_id = COALESCE(?, zona_id)
         WHERE acometida_id = ?
         RETURNING
@@ -687,72 +690,72 @@ export class PostgresqlConnectionPersistence
   }
 
   async findConnectionAndPropertyByCadastralKey(
-    propertyCadastralKey: string,
+    cadastralKey: string,
   ): Promise<ConnectionAndPropertyResponse | null> {
     try {
       const query: string = `
-SELECT
-    -- Connection Data
-    a.acometida_id                AS "connection_id",
-    a.cliente_id                  AS "client_id",
-    a.tarifa_id                   AS "connection_rate_id",
-    ct.nombre                     AS "connection_rate_name",
-    a.numero_medidor              AS "connection_meter_number",
-    a.sector                     AS "connection_sector",
-    a.cuenta                     AS "connection_account",
-    a.clave_catastral             AS "connection_cadastral_key",
-    a.numero_contrato             AS "connection_contract_number",
-    a.alcantarillado             AS "connection_sewerage",
-    a.estado_id                  AS "connection_state_id",
-    est.nombre                   AS "connection_status",
-    est.permite_lectura          AS "connection_is_readable",
-    a.direccion                  AS "connection_address",
-    a.fecha_instalacion           AS "connection_installation_date",
-    a.numero_personas             AS "connection_people_number",
-    a.zona                       AS "connection_zone",
-    a.coordenadas                AS "connection_coordinates",
-    a.referencia                 AS "connection_reference",
-    a.metadata                   AS "connection_metadata",
-    a.altitud                    AS "connection_altitude",
-    a.precision                  AS "connection_precision",
-    a.fecha_geolocalizacion       AS "connection_geolocation_date",
-    a.zona_geometrica            AS "connection_geometric_zone",
-    a.predio_clave_catastral       AS "property_cadastral_key",
-    a.zona_id                    AS "zone_id",
-    z.codigo                     AS "zone_code",
-    z.nombre                     AS "zone_name",
-    -- Client Data
-    c.cliente_id                  AS "client_id",
-    COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social) AS "client_name",
-    COALESCE(ci.direccion, e.direccion)                        AS "client_address",
-    cc.phones                    AS "client_phones",
-    cc.correos                    AS "client_emails",
-    -- Property Data
-    p.predio_id                   AS "property_id",
-    p.callejon                   AS "property_alleyway",
-    p.sector                     AS "property_sector",
-    p.direccion                  AS "property_address",
-    p.coordenadas                AS "property_coordinates",
-    p.referencia                 AS "property_reference",
-    p.altitud                    AS "property_altitude",
-    p.precision                  AS "property_precision",
-    p.zona_geometrica            AS "property_geometric_zone",
-    tp.tipo_predio_id              AS "property_type_id",
-    tp.nombre                    AS "property_type_name"
-FROM acometida a
-INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
-LEFT JOIN predio p         ON p.clave_catastral = a.clave_catastral
-LEFT JOIN ciudadano ci     ON ci.ciudadano_id = c.cliente_id
-LEFT JOIN empresa e        ON e.ruc = c.cliente_id
-LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
-INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
-LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
-LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
-INNER JOIN public.zona z    ON z.zona_id = a.zona_id
-LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
-WHERE a.acometida_id = ?;
+        SELECT
+            -- Connection Data
+            a.acometida_id                AS "connection_id",
+            a.cliente_id                  AS "client_id",
+            a.tarifa_id                   AS "connection_rate_id",
+            ct.nombre                     AS "connection_rate_name",
+            a.numero_medidor              AS "connection_meter_number",
+            a.sector                     AS "connection_sector",
+            a.cuenta                     AS "connection_account",
+            a.clave_catastral             AS "connection_cadastral_key",
+            a.numero_contrato             AS "connection_contract_number",
+            a.alcantarillado             AS "connection_sewerage",
+            a.estado_id                  AS "connection_state_id",
+            est.nombre                   AS "connection_status",
+            est.permite_lectura          AS "connection_is_readable",
+            a.direccion                  AS "connection_address",
+            a.fecha_instalacion           AS "connection_installation_date",
+            a.numero_personas             AS "connection_people_number",
+            a.zona                       AS "connection_zone",
+            a.coordenadas                AS "connection_coordinates",
+            a.referencia                 AS "connection_reference",
+            a.metadata                   AS "connection_metadata",
+            a.altitud                    AS "connection_altitude",
+            a.precision                  AS "connection_precision",
+            a.fecha_geolocalizacion       AS "connection_geolocation_date",
+            a.zona_geometrica            AS "connection_geometric_zone",
+            a.predio_clave_catastral       AS "property_cadastral_key",
+            a.zona_id                    AS "zone_id",
+            z.codigo                     AS "zone_code",
+            z.nombre                     AS "zone_name",
+            -- Client Data
+            c.cliente_id                  AS "client_id",
+            COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social) AS "client_name",
+            COALESCE(ci.direccion, e.direccion)                        AS "client_address",
+            cc.phones                    AS "client_phones",
+            cc.correos                    AS "client_emails",
+            -- Property Data
+            p.predio_id                   AS "property_id",
+            p.callejon                   AS "property_alleyway",
+            p.sector                     AS "property_sector",
+            p.direccion                  AS "property_address",
+            p.coordenadas                AS "property_coordinates",
+            p.referencia                 AS "property_reference",
+            p.altitud                    AS "property_altitude",
+            p.precision                  AS "property_precision",
+            p.zona_geometrica            AS "property_geometric_zone",
+            tp.tipo_predio_id              AS "property_type_id",
+            tp.nombre                    AS "property_type_name"
+        FROM acometida a
+        INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
+        LEFT JOIN predio p         ON p.clave_catastral = a.predio_clave_catastral
+        LEFT JOIN ciudadano ci     ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e        ON e.ruc = c.cliente_id
+        LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
+        INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
+        LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
+        INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        WHERE a.acometida_id = ?;
       `;
-      const params: string[] = [propertyCadastralKey];
+      const params: string[] = [cadastralKey];
       const result =
         await this.databaseService.query<ConnectionAndPropertySqlResponse>(
           query,
@@ -762,12 +765,151 @@ WHERE a.acometida_id = ?;
       if (result.length === 0) {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
-          message: `No connection found for property cadastral key ${propertyCadastralKey}`,
+          message: `No connection found for property cadastral key ${cadastralKey}`,
         });
       }
 
       return ConnectionSqlAdapter.fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(
         result[0],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findConnectionAndPropertyByCadastralKeyOrCardId(
+    searchValue: string,
+  ): Promise<ConnectionAndPropertyResponse[]> {
+    try {
+      const query: string = `
+        SELECT
+            -- Connection Data
+            a.acometida_id                AS "connection_id",
+            a.cliente_id                  AS "client_id",
+            a.tarifa_id                   AS "connection_rate_id",
+            ct.nombre                     AS "connection_rate_name",
+            a.numero_medidor              AS "connection_meter_number",
+            hm.numero_medidor_nuevo       AS "connection_meter_number_current",
+            hm.numero_medidor_anterior    AS "connection_meter_number_preview",
+            a.sector                     AS "connection_sector",
+            a.cuenta                     AS "connection_account",
+            a.clave_catastral             AS "connection_cadastral_key",
+            a.numero_contrato             AS "connection_contract_number",
+            a.alcantarillado             AS "connection_sewerage",
+            a.estado_id                  AS "connection_state_id",
+            est.nombre                   AS "connection_status",
+            est.permite_lectura          AS "connection_is_readable",
+            a.direccion                  AS "connection_address",
+            a.fecha_instalacion           AS "connection_installation_date",
+            a.numero_personas             AS "connection_people_number",
+            a.zona                       AS "connection_zone",
+            a.coordenadas                AS "connection_coordinates",
+            a.referencia                 AS "connection_reference",
+            a.metadata                   AS "connection_metadata",
+            a.altitud                    AS "connection_altitude",
+            a.precision                  AS "connection_precision",
+            a.fecha_geolocalizacion       AS "connection_geolocation_date",
+            a.zona_geometrica            AS "connection_geometric_zone",
+            a.predio_clave_catastral       AS "property_cadastral_key",
+            a.zona_id                    AS "zone_id",
+            z.codigo                     AS "zone_code",
+            z.nombre                     AS "zone_name",
+            -- Client Data
+            CASE
+                WHEN e.ruc IS NOT NULL THEN
+                    jsonb_build_object(
+                        'company_id', e.empresa_id,
+                        'commercial_name', e.nombre_comercial,
+                        'business_name', e.razon_social,
+                        'ruc', e.ruc,
+                        'address', e.direccion,
+                        'parish_id', e.parroquia_id,
+                        'country', e.pais,
+                        'client_id', e.cliente_id,
+                        'phones', cc.phones,
+                        'emails', cc.correos
+                    )
+                ELSE NULL
+            END AS "company",
+
+            -- Person Data (if applicable)
+            CASE
+                WHEN ci.ciudadano_id IS NOT NULL THEN
+                    jsonb_build_object(
+                        'person_id', ci.ciudadano_id,
+                        'first_name', ci.nombres,
+                        'last_name', ci.apellidos,
+                        'birth_date', ci.fecha_nacimiento,
+                        'is_deceased', ci.fallecido,
+                        'gender_id', ci.sexo_id,
+                        'civil_status_id', ci.estado_civil_id,
+                        'profession_id', ci.profesion_id,
+                        'parish_id', ci.parroquia_id,
+                        'address', ci.direccion,
+                        'country', ci.pais_origen,
+                        'phones', cc.phones,
+                        'emails', cc.correos
+                    )
+                ELSE NULL
+            END AS "person",
+
+            -- Properties (JSON array)
+            CASE
+                WHEN a.predio_clave_catastral IS NOT NULL THEN
+                    jsonb_build_object(
+                            'property_id', p.predio_id,
+                            'property_cadastral_key', p.clave_catastral,
+                            'property_alleyway', p.callejon,
+                            'property_sector', p.sector,
+                            'property_address', p.direccion,
+                            'property_coordinates', p.coordenadas::text,
+                            'property_reference', p.referencia,
+                            'property_altitude', p.altitud,
+                            'property_precision', p.precision,
+                            'property_geometric_zone', p.zona_geometrica,
+                            'property_type_id', tp.tipo_predio_id,
+                            'property_type_name', tp.nombre
+                    )
+                ELSE NULL
+            END AS "property"
+        FROM acometida a
+        INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
+        LEFT JOIN predio p         ON p.clave_catastral = a.predio_clave_catastral
+        LEFT JOIN ciudadano ci     ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e        ON e.ruc = c.cliente_id
+        LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
+        INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
+        LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
+        INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+        LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        LEFT JOIN LATERAL (
+            SELECT sub_hm.numero_medidor_nuevo, sub_hm.numero_medidor_anterior
+            FROM public.historial_medidores sub_hm
+            WHERE sub_hm.id_acometida = a.acometida_id
+            ORDER BY sub_hm.estado ASC, sub_hm.fecha_instalacion DESC
+            LIMIT 1
+        ) hm ON TRUE
+        WHERE a.acometida_id = ? OR a.cliente_id = ?;
+      `;
+      const params: string[] = [searchValue, searchValue];
+      const result =
+        await this.databaseService.query<ConnectionAndPropertySqlResponse>(
+          query,
+          params,
+        );
+
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connection found for search value ${searchValue}`,
+        });
+      }
+
+      return result.map((row) =>
+        ConnectionSqlAdapter.fromConnectionAndPropertySqlResponseToConnectionAndPropertyResponse(
+          row,
+        ),
       );
     } catch (error) {
       throw error;
@@ -1123,9 +1265,7 @@ WHERE a.acometida_id = ?;
 
       // Mapeo a tu respuesta
       const response = result.map((row) =>
-        ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-          row,
-        ),
+        ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(row),
       );
 
       return response;
@@ -1234,10 +1374,11 @@ WHERE a.acometida_id = ?;
         LIMIT ? OFFSET ?;
       `;
 
-      const result = await this.databaseService.query<ConnectionStateHistoryResponse>(
-        query,
-        [connectionId, limit, offset],
-      );
+      const result =
+        await this.databaseService.query<ConnectionStateHistoryResponse>(
+          query,
+          [connectionId, limit, offset],
+        );
 
       return result;
     } catch (error) {
@@ -1283,10 +1424,13 @@ WHERE a.acometida_id = ?;
         LIMIT ? OFFSET ?;
       `;
 
-      const result = await this.databaseService.query<ConnectionsByStateResponse>(
-        query,
-        [stateId, sector ?? null, limit, offset],
-      );
+      const result =
+        await this.databaseService.query<ConnectionsByStateResponse>(query, [
+          stateId,
+          sector ?? null,
+          limit,
+          offset,
+        ]);
 
       return result;
     } catch (error) {
@@ -1318,7 +1462,10 @@ WHERE a.acometida_id = ?;
         ORDER BY "total" DESC;
       `;
 
-      const result = await this.databaseService.query<StateSummaryResponse>(query, []);
+      const result = await this.databaseService.query<StateSummaryResponse>(
+        query,
+        [],
+      );
       return result;
     } catch (error) {
       throw error;
@@ -1372,6 +1519,110 @@ WHERE a.acometida_id = ?;
         stateName: stateInfo[0]?.nombre ?? '',
         affectedConnectionIds: result.map((r) => r.connectionId),
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+    searchValue: string,
+    limit: number,
+    offset: number,
+  ): Promise<PropertyWithClientResponse[]> {
+    try {
+      const likeSearchValue = `%${searchValue}%`;
+      const query: string = `
+        SELECT
+          p.predio_id AS "property_id",
+          p.clave_catastral AS "property_cadastral_key",
+          p.callejon AS "property_alleyway",
+          p.sector AS "property_sector",
+          p.direccion AS "property_address",
+          p.coordenadas::text AS "property_coordinates",
+          p.referencia AS "property_reference",
+          p.altitud AS "property_altitude",
+          p.precision AS "property_precision",
+          p.zona_geometrica AS "property_geometric_zone",
+          tp.tipo_predio_id AS "property_type_id",
+          tp.nombre AS "property_type_name",
+          CASE
+              WHEN e.ruc IS NOT NULL THEN
+                  jsonb_build_object(
+                      'company_id', e.empresa_id,
+                      'commercial_name', e.nombre_comercial,
+                      'business_name', e.razon_social,
+                      'ruc', e.ruc,
+                      'address', e.direccion,
+                      'parish_id', e.parroquia_id,
+                      'country', e.pais,
+                      'client_id', e.cliente_id,
+                      'phones', cc.phones,
+                      'emails', cc.correos
+                  )
+              ELSE NULL
+          END AS "company",
+
+          -- Person Data (if applicable)
+          CASE
+              WHEN ci.ciudadano_id IS NOT NULL THEN
+                  jsonb_build_object(
+                      'person_id', ci.ciudadano_id,
+                      'first_name', ci.nombres,
+                      'last_name', ci.apellidos,
+                      'birth_date', ci.fecha_nacimiento,
+                      'is_deceased', ci.fallecido,
+                      'gender_id', ci.sexo_id,
+                      'civil_status_id', ci.estado_civil_id,
+                      'profession_id', ci.profesion_id,
+                      'parish_id', ci.parroquia_id,
+                      'address', ci.direccion,
+                      'country', ci.pais_origen,
+                      'phones', cc.phones,
+                      'emails', cc.correos
+                  )
+              ELSE NULL
+          END AS "person"
+        FROM predio p
+        LEFT JOIN tipo_predio tp ON tp.tipo_predio_id = p.tipo_predio_id
+        INNER JOIN cliente c ON c.cliente_id = p.cliente_id
+        LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
+        LEFT JOIN empresa e ON e.ruc = c.cliente_id
+        LEFT JOIN cliente_contacto cc ON cc.cliente_id = c.cliente_id
+        WHERE p.clave_catastral = ?
+          OR c.cliente_id = ?
+          OR CONCAT_WS(' ', ci.nombres, ci.apellidos) ILIKE ?
+          OR e.nombre_comercial ILIKE ?
+          OR e.razon_social ILIKE ?
+        ORDER BY p.predio_id
+        LIMIT ? OFFSET ?;
+      `;
+      const params: any[] = [
+        searchValue,
+        searchValue,
+        likeSearchValue,
+        likeSearchValue,
+        likeSearchValue,
+        limit,
+        offset,
+      ];
+      const result =
+        await this.databaseService.query<PropertyWithClientSqlResponse>(
+          query,
+          params,
+        );
+
+      if (result.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No property found for search value ${searchValue}`,
+        });
+      }
+
+      return result.map((row) =>
+        ConnectionSqlAdapter.fromPropertyWithClientSqlResponseToPropertyWithClientResponse(
+          row,
+        ),
+      );
     } catch (error) {
       throw error;
     }

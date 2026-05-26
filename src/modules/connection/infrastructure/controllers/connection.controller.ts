@@ -94,13 +94,19 @@ export class ConnectionController {
     return this.connectionService.verifyConnectionExists(connectionId);
   }
 
-  @Get('find-connection-by-property-cadastral-key/:propertyCadastralKey')
+  @Get('find-connection-by-property-cadastral-key/:cadastralKey')
   @MessagePattern('connections.find-connection-by-property-cadastral-key')
-  async getConnectionByPropertyCadastralKey(
-    @Payload() propertyCadastralKey: string,
-  ) {
+  async getConnectionByPropertyCadastralKey(@Payload() cadastralKey: string) {
     return this.connectionService.findConnectionAndPropertyByCadastralKey(
-      propertyCadastralKey,
+      cadastralKey,
+    );
+  }
+
+  @Get('find-connection-by-cadastral-key-or-card-id/:searchValue')
+  @MessagePattern('connections.find-connection-by-cadastral-key-or-card-id')
+  async getConnectionByCadastralKeyOrCardId(@Payload() searchValue: string) {
+    return this.connectionService.findConnectionAndPropertyByCadastralKeyOrCardId(
+      searchValue,
     );
   }
 
@@ -162,7 +168,11 @@ export class ConnectionController {
   @MessagePattern('connections.get-connection-state-history')
   async getConnectionStateHistory(
     @Payload()
-    data: { connectionId: string; limit?: number; offset?: number },
+    data: {
+      connectionId: string;
+      limit?: number;
+      offset?: number;
+    },
   ) {
     return this.connectionService.getConnectionStateHistory(
       data.connectionId,
@@ -175,7 +185,12 @@ export class ConnectionController {
   @MessagePattern('connections.get-connections-by-state')
   async getConnectionsByState(
     @Payload()
-    data: { stateId: number; sector?: number; limit?: number; offset?: number },
+    data: {
+      stateId: number;
+      sector?: number;
+      limit?: number;
+      offset?: number;
+    },
   ) {
     return this.connectionService.getConnectionsByState(
       data.stateId,
@@ -207,6 +222,25 @@ export class ConnectionController {
       data.newStateId,
       data.userId,
       data.motivo,
+    );
+  }
+
+  @Get('find-property-with-client-by-cadastral-key-or-card-id-or-like-name')
+  @MessagePattern(
+    'connections.find-property-with-client-by-cadastral-key-or-card-id-or-like-name',
+  )
+  async findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+    @Payload()
+    data: {
+      searchValue: string;
+      limit?: number;
+      offset?: number;
+    },
+  ) {
+    return this.connectionService.findPropertyWithClientByCadastralKeyOrCardIdOrLikeName(
+      data.searchValue,
+      data.limit ?? 50,
+      data.offset ?? 0,
     );
   }
 }
