@@ -31,7 +31,13 @@ export class ConnectionMapper {
       connection.connectionZone,
       `POINT(${connection.longitude} ${connection.latitude})`,
       connection.connectionReference,
-      connection.ConnectionMetaData,
+      connection.ConnectionMetaData !== undefined
+        ? connection.ConnectionMetaData
+        : (connection['connectionMetaData'] !== undefined
+            ? connection['connectionMetaData']
+            : (connection['connectionMetadata'] !== undefined
+                ? connection['connectionMetadata']
+                : {})),
       connection.connectionAltitude,
       connection.connectionPrecision,
       connection.connectionGeolocationDate,
@@ -76,7 +82,13 @@ export class ConnectionMapper {
       `POINT(${connection.longitude || existingConnection['longitude']} ${connection.latitude || existingConnection['latitude']})`,
       connection.connectionReference ||
         existingConnection['connectionReference'],
-      connection.ConnectionMetaData || existingConnection['connectionMetaData'],
+      connection.ConnectionMetaData !== undefined
+        ? connection.ConnectionMetaData
+        : (connection['connectionMetaData'] !== undefined
+            ? connection['connectionMetaData']
+            : (connection['connectionMetadata'] !== undefined
+                ? connection['connectionMetadata']
+                : existingConnection.getConnectionMetaData())),
       connection.connectionAltitude || existingConnection['connectionAltitude'],
       connection.connectionPrecision ||
         existingConnection['connectionPrecision'],
@@ -113,7 +125,11 @@ export class ConnectionMapper {
       response.connectionZone,
       response.connectionCoordinates,
       response.connectionReference,
-      response.connectionMetaData,
+      response.connectionMetaData !== undefined
+        ? response.connectionMetaData
+        : (response['connectionMetadata'] !== undefined
+            ? response['connectionMetadata']
+            : {}),
       response.connectionAltitude,
       response.connectionPrecision,
       response.connectionGeolocationDate,
