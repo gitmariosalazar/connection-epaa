@@ -1,5 +1,5 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Client, ClientKafka, Transport } from '@nestjs/microservices';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { INotificationPort } from './notification.port';
 import { environments } from '../../settings/environments/environments';
 
@@ -7,40 +7,25 @@ import { environments } from '../../settings/environments/environments';
  * KafkaNotificationAdapter — Adaptador de salida (OCP, DIP).
  * Cubre los 11 puntos de notificación del proceso BPMN de Acometidas.
  *
+ * PATRÓN: Idéntico al resto de microservicios del proyecto.
+ *   - El ClientKafka se inyecta vía @Inject() del token registrado en
+ *     KafkaServiceModule (ClientsModule.register).
+ *   - NO usa @Client() como decorador de propiedad, lo que causaba que
+ *     NestJS creara un consumer group adicional (nestjs-group-client)
+ *     y generara rebalanceos innecesarios.
+ *
  * FIRE-AND-FORGET: usa .emit() (no .send()).
  *   → El flujo principal NUNCA se bloquea ni falla por notificaciones.
  *   → Si Kafka no está disponible, el error se loguea y se continúa.
  */
 @Injectable()
-export class KafkaNotificationAdapter implements INotificationPort, OnModuleInit {
+export class KafkaNotificationAdapter implements INotificationPort {
   private readonly logger = new Logger(KafkaNotificationAdapter.name);
 
-  @Client({
-    transport: Transport.KAFKA,
-    options: {
-      client: {
-        clientId: 'connection-notifier-client',
-        brokers: [environments.KAFKA_BROKER_URL],
-        retry: { retries: 3, initialRetryTime: 300 },
-      },
-      producer: {
-        allowAutoTopicCreation: true,
-      },
-    },
-  })
-  private kafkaClient: ClientKafka;
-
-  async onModuleInit() {
-    try {
-      await this.kafkaClient.connect();
-      this.logger.log('KafkaNotificationAdapter conectado al broker para notificaciones');
-    } catch (err) {
-      this.logger.warn(
-        `KafkaNotificationAdapter no pudo conectar al arrancar (${err.message}). ` +
-        `Las notificaciones se enviarán cuando el broker esté disponible.`,
-      );
-    }
-  }
+  constructor(
+    @Inject(environments.CONNECTION_KAFKA_CLIENT)
+    private readonly kafkaClient: ClientKafka,
+  ) {}
 
   /** Emite un evento a notifications_topic de forma segura (fire-and-forget) */
   private emit(pattern: string, data: Record<string, unknown>): void {
@@ -54,9 +39,70 @@ export class KafkaNotificationAdapter implements INotificationPort, OnModuleInit
 
   // ── Fase 2 ─────────────────────────────────────────────────────────────────
 
-  /** Nueva solicitud con documentos enviada → alerta al analista */
-  notifyDocsSubmitted(userId: string, solicitudId: string, numDocumentos: number): void {
-    this.emit('notifications.acometidas.docs_submitted', { userId, solicitudId, numDocumentos });
+  /**
+   * Nueva solicitud con documentos enviada.
+   * Emite la notificación correcta según el destinatario:
+   *  - SIN clientData → al ANALISTA: alerta operativa (IN_APP únicamente)
+   *  - CON clientData → al CLIENTE:  confirmación EMAIL con template HTML profesional
+   *
+   * Esto evita el doble envío de correo (uno sin template + uno con template).
+   */
+  notifyDocsSubmitted(
+    userId: string,
+    solicitudId: string,
+    numDocumentos: number,
+    clientData?: {
+      nombre?: string;
+      numeroSolicitud?: string;
+      tipoAcometida?: string;
+      tipoPersona?: string;
+      direccion?: string;
+      claveCatastral?: string;
+    },
+  ): void {
+    if (!clientData) {
+      // ── Llamada para el ANALISTA: EMAIL con template HTML + IN_APP ─────────
+      // El use case del analista consultará el nombre desde la BD automáticamente
+      this.emit('notifications.acometidas.docs_submitted', { userId, solicitudId, numDocumentos });
+    } else {
+      // ── Llamada para el CLIENTE: EMAIL con template HTML + IN_APP ──────────
+      this.emit('notifications.acometidas.acometida_confirmacion', {
+        userId,
+        solicitudId,
+        nombre:          clientData.nombre          ?? 'Cliente',
+        numeroSolicitud: clientData.numeroSolicitud  ?? solicitudId,
+        tipoAcometida:   clientData.tipoAcometida   ?? 'Nueva Acometida de Agua Potable',
+        tipoPersona:     clientData.tipoPersona     ?? 'No especificado',
+        direccion:       clientData.direccion        ?? 'No especificada',
+        claveCatastral:  clientData.claveCatastral  ?? 'No disponible',
+        numDocumentos,
+      });
+    }
+  }
+
+  /** Nueva solicitud asignada al analista → EMAIL (template) + IN_APP */
+  notifyAnalystNewSolicitud(
+    analistaId: string,
+    solicitudId: string,
+    numDocumentos: number,
+    data: {
+      numeroSolicitud: string;
+      tipoAcometida:   string;
+      tipoPersona:     string;
+      direccion:       string;
+      claveCatastral:  string;
+    },
+  ): void {
+    this.emit('notifications.acometidas.docs_submitted', {
+      userId:          analistaId,
+      solicitudId,
+      numDocumentos,
+      numeroSolicitud: data.numeroSolicitud,
+      tipoAcometida:   data.tipoAcometida,
+      tipoPersona:     data.tipoPersona,
+      direccion:       data.direccion,
+      claveCatastral:  data.claveCatastral,
+    });
   }
 
   // ── Fase 3 ─────────────────────────────────────────────────────────────────

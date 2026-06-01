@@ -24,6 +24,8 @@ import { RequestResponse } from '../../application/dto/response/request.response
 import { CreateRequestRequest } from '../../application/dto/request/create-request.request';
 import { UpdateRequestRequest } from '../../application/dto/request/update-request.request';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { GetExpedienteByClienteIdUseCase } from '../../application/usecases/commands/GetExpedienteByClienteIdUseCase';
+import { GetTrackingByClienteIdUseCase } from '../../application/usecases/commands/GetTrackingByClienteIdUseCase';
 
 @Controller('requests')
 export class RequestController {
@@ -34,11 +36,13 @@ export class RequestController {
     private readonly updateRequestUseCase: UpdateRequestUseCase,
     private readonly deleteConnectionRequestUseCase: DeleteConnectionRequestUseCase,
     private readonly getExpedienteUseCase: GetExpedienteUseCase,
+    private readonly getExpedienteByClienteIdUseCase: GetExpedienteByClienteIdUseCase,
     private readonly getHistorialEstadoUseCase: GetHistorialEstadoUseCase,
     private readonly getDashboardKpisUseCase: GetDashboardKpisUseCase,
     private readonly getOrdenesTrabajoUseCase: GetOrdenesTrabajoUseCase,
     private readonly submitRequestUseCase: SubmitRequestUseCase,
     private readonly submitWithDocumentsUseCase: SubmitWithDocumentsUseCase,
+    private readonly getTrackingByClienteIdUseCase: GetTrackingByClienteIdUseCase,
   ) {}
 
   @Post()
@@ -101,6 +105,12 @@ export class RequestController {
     return await this.getExpedienteUseCase.execute(solicitudId);
   }
 
+  @Get(':clienteId/expedientes')
+  @MessagePattern('requests.get_expedientes_by_cliente')
+  async getExpedientesByCliente(@Payload() clienteId: string) {
+    return await this.getExpedienteByClienteIdUseCase.execute(clienteId);
+  }
+
   @Get(':solicitudId/historial')
   @MessagePattern('requests.get_historial')
   async getHistorial(@Payload() solicitudId: string) {
@@ -141,9 +151,18 @@ export class RequestController {
    */
   @Post('submit-with-documents')
   @MessagePattern('requests.submit_with_documents')
-  async submitWithDocuments(
-    @Payload() dto: SubmitWithDocumentsRequest,
-  ) {
+  async submitWithDocuments(@Payload() dto: SubmitWithDocumentsRequest) {
     return await this.submitWithDocumentsUseCase.execute(dto);
+  }
+
+  /**
+   * Tracking en tiempo real de todas las solicitudes de un cliente.
+   * Retorna el estado actual mapeado a las 7 fases del BPMN para el wizard
+   * de seguimiento del frontend, enriquecido con métricas y timeline.
+   */
+  @Get(':clienteId/tracking')
+  @MessagePattern('requests.get_tracking')
+  async getTracking(@Payload() clienteId: string) {
+    return await this.getTrackingByClienteIdUseCase.execute(clienteId);
   }
 }

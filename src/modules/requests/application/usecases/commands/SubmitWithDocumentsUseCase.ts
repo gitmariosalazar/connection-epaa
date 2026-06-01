@@ -20,19 +20,44 @@ export class SubmitWithDocumentsUseCase {
   ) {}
 
   async execute(dto: SubmitWithDocumentsRequest): Promise<SubmitWithDocumentsResponse> {
-    // Transacción atómica en la persistencia
+    // Transacción atómica: INSERT solicitud + round-robin analista + documentos + cambio de estado
     const result = await this.repository.submitWithDocuments(dto);
 
-    // Notificación fire-and-forget — el analista recibe alerta de nueva solicitud
-    // Si falla, NO afecta el resultado ya confirmado en BD
+    // Datos de la solicitud que se usan en AMBOS templates (analista y cliente)
+    const solicitudData = {
+      numeroSolicitud: result.numeroSolicitud,
+      tipoAcometida:   dto.connectionType ?? 'Nueva Acometida de Agua Potable',
+      tipoPersona:     dto.personType     ?? 'No especificado',
+      direccion:       dto.address        ?? 'No especificada',
+      claveCatastral:  dto.cadastralKey   ?? 'No disponible',
+    };
+
+    // Notificaciones fire-and-forget — NUNCA bloquean ni revierten la transacción
     try {
+      // ── Notificación 1: AL ANALISTA → EMAIL con template HTML + IN_APP ─────
+      // Solo si el round-robin encontró un analista activo (cargo_id = 14)
+      if (result.analistaId) {
+        this.notifications.notifyAnalystNewSolicitud(
+          result.analistaId,
+          result.solicitudId,
+          result.documentosInsertados,
+          solicitudData,
+        );
+      }
+    } catch {
+      // Ignorado intencionalmente — la notificación al analista es best-effort
+    }
+
+    try {
+      // ── Notificación 2: AL CLIENTE → EMAIL con template HTML + IN_APP ──────
       this.notifications.notifyDocsSubmitted(
         dto.userId,
         result.solicitudId,
         result.documentosInsertados,
+        solicitudData,
       );
     } catch {
-      // Ignorado intencionalmente — la notificación es best-effort
+      // Ignorado intencionalmente — la notificación al cliente es best-effort
     }
 
     return result;

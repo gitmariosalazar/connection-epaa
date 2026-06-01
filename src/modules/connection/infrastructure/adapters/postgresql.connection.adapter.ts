@@ -202,6 +202,17 @@ export class ConnectionSqlAdapter {
             propertyGeometricZone: connection.property.property_geometric_zone,
           }
         : null,
+      lastReadings: connection.last_readings
+        ? connection.last_readings.map((reading) => ({
+            cadastralKey: reading.cadastral_key,
+            readingDate: reading.reading_date,
+            readingTime: reading.reading_time,
+            readingMonth: reading.reading_month,
+            readingValueCurrent: reading.reading_value_current,
+            readingValuePreview: reading.reading_value_preview,
+            novelty: reading.novelty,
+          }))
+        : null,
     };
   }
 
@@ -266,6 +277,17 @@ export class ConnectionSqlAdapter {
             propertyGeometricZone: property.property_geometric_zone,
           }))
         : [],
+      lastReadings: connection.last_readings
+        ? connection.last_readings.map((reading) => ({
+            cadastralKey: reading.cadastral_key,
+            readingDate: reading.reading_date,
+            readingTime: reading.reading_time,
+            readingMonth: reading.reading_month,
+            readingValueCurrent: reading.reading_value_current,
+            readingValuePreview: reading.reading_value_preview,
+            novelty: reading.novelty,
+          }))
+        : null,
     };
   }
 
@@ -312,6 +334,17 @@ export class ConnectionSqlAdapter {
         : null,
       person: connection.person
         ? this.fromPersonSqlResponseToPersonResponse(connection.person)
+        : null,
+      lastReadings: connection.last_readings
+        ? connection.last_readings.map((reading) => ({
+            cadastralKey: reading.cadastral_key,
+            readingDate: reading.reading_date,
+            readingTime: reading.reading_time,
+            readingMonth: reading.reading_month,
+            readingValueCurrent: reading.reading_value_current,
+            readingValuePreview: reading.reading_value_preview,
+            novelty: reading.novelty,
+          }))
         : null,
     };
   }

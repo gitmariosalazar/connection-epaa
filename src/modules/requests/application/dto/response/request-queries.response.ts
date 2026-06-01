@@ -53,6 +53,7 @@ export interface ExpedienteResponse {
   numeroMedidor: string | null;
   servicioActivo: boolean | null;
   fechaActivacion: Date | null;
+  solicitudNumero: string | null;
 }
 
 // ─── Historial de estados ─────────────────────────────────────────────────────
@@ -85,4 +86,83 @@ export interface SolicitudOrdenTrabajoResponse {
   fechaAsignacion: Date | null;
   fechaCompletada: Date | null;
   tecnicoAsignado: string | null;
+}
+
+// ─── Tracking en tiempo real (wizard de seguimiento del cliente) ──────────────
+
+export interface HistorialTrackingEntry {
+  estado: string;
+  estadoLabel: string;
+  estadoAnterior: string | null;
+  fecha: Date;
+  comentario: string | null;
+}
+
+export interface TrackingSolicitudResponse {
+  // ── Identificación
+  id: string;                          // UUID de la solicitud
+  codigo: string;                      // SOL-EPAA-2026-XXXXXXX
+  tipoAcometida: string;
+  usoPredio: string;
+  direccion: string;
+  claveCatastral: string | null;
+
+  // ── Fecha formateada en español
+  fechaCreacion: string;               // "07 de febrero, 2026"
+
+  // ── Estado actual
+  estadoCodigo: string;                // "INSTALACION_EN_PROCESO"
+  estadoActualLabel: string;           // "Instalación en Proceso"
+
+  // ── Paso en el wizard (7 fases del BPMN)
+  currentStep: string;                 // solicitud | documentos | pago | inspeccion | contrato | instalacion | catastro | completado | anulada | rechazada
+  stepIndex: number;                   // 0-6 (progreso), -1 (terminal negativo)
+
+  // ── Métricas
+  diasEnProceso: number;
+  ultimoMovimiento: Date | null;
+  ultimoComentario: string | null;
+
+  // ── Documentos
+  docsTotal: number;
+  docsAprobados: number;
+  docsRechazados: number;
+
+  // ── Pago de inspección
+  numeroFactura: string | null;
+  montoInspeccion: number | null;
+  estadoPago: string | null;
+  vencimientoPago: Date | null;
+  fechaPago: Date | null;
+  metodoPago: string | null;
+
+  // ── Inspección
+  resultadoInspeccion: string | null;
+  distanciaRedM: number | null;
+  costoEstimado: number | null;
+  informeAprobado: boolean | null;
+  obsInspeccion: string | null;
+
+  // ── Contrato
+  numeroContrato: string | null;
+  valorContrato: number | null;
+  estadoFirma: string | null;
+  fechaFirmaUsuario: Date | null;
+  fechaFirmaEpaa: Date | null;
+
+  // ── Instalación / Catastro
+  numeroMedidor: string | null;
+  numeroCuenta: string | null;
+  servicioActivo: boolean | null;
+  fechaActivacion: Date | null;
+
+  // ── Analista asignado
+  analista: string | null;
+
+  // ── Timeline completo (ordenado cronológicamente)
+  historial: HistorialTrackingEntry[];
+
+  // ── Auditoría
+  createdAt: Date;
+  updatedAt: Date;
 }

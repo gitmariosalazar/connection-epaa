@@ -6,6 +6,8 @@ import { AppConnectionModulesUsingPostgreSQL } from './factory/postgresql/module
 import { AppConnectionModulesUsingMySQL } from './factory/mysql/modules-using-mysql.module';
 import { environments } from './settings/environments/environments';
 import { DatabasePersistenceModule } from './shared/connections/database/database-persistence.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
 
 const connectionModules = environments.DATABASE_TYPE === 'mysql'
   ? AppConnectionModulesUsingMySQL
@@ -15,7 +17,12 @@ const connectionModules = environments.DATABASE_TYPE === 'mysql'
   imports: [
     HomeModule, 
     connectionModules,
-    DatabasePersistenceModule
+    DatabasePersistenceModule,
+    ServeStaticModule.forRoot({
+      rootPath: path.dirname(environments.CONNECTION_DOCUMENTS_UPLOAD_DIR),
+      serveRoot: '/uploads',
+      serveStaticOptions: { index: false, redirect: false },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

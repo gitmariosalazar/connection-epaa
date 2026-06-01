@@ -5,8 +5,37 @@
  */
 export interface INotificationPort {
   // ── Fase 2 ───────────────────────────────────────────────────────────────────────────
-  /** Documentos enviados por el cliente (DRAFT → DOCS_SUBMITTED) → al ANALISTA */
-  notifyDocsSubmitted(userId: string, solicitudId: string, numDocumentos: number): void;
+  /** Documentos enviados por el cliente (DRAFT → DOCS_SUBMITTED) → al ANALISTA + EMAIL al cliente */
+  notifyDocsSubmitted(
+    userId: string,
+    solicitudId: string,
+    numDocumentos: number,
+    clientData?: {
+      nombre?: string;
+      numeroSolicitud?: string;
+      tipoAcometida?: string;
+      tipoPersona?: string;
+      direccion?: string;
+      claveCatastral?: string;
+    },
+  ): void;
+
+  /**
+   * Nueva solicitud asignada al analista por round-robin.
+   * Canal: EMAIL (template nueva-solicitud-analista.html) + IN_APP.
+   */
+  notifyAnalystNewSolicitud(
+    analistaId: string,
+    solicitudId: string,
+    numDocumentos: number,
+    data: {
+      numeroSolicitud: string;
+      tipoAcometida:   string;
+      tipoPersona:     string;
+      direccion:       string;
+      claveCatastral:  string;
+    },
+  ): void;
 
   // ── Fase 3 ─────────────────────────────────────────────────────────────────
   /** Documentos rechazados → al CLIENTE */

@@ -17,6 +17,8 @@ import { DatabasePersistenceModule } from '../../../../../shared/connections/dat
 import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
 import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
 import { KafkaNotificationAdapter } from '../../../../../shared/notifications/kafka-notification.adapter';
+import { GetExpedienteByClienteIdUseCase } from '../../../application/usecases/commands/GetExpedienteByClienteIdUseCase';
+import { GetTrackingByClienteIdUseCase } from '../../../application/usecases/commands/GetTrackingByClienteIdUseCase';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -33,6 +35,8 @@ import { KafkaNotificationAdapter } from '../../../../../shared/notifications/ka
     GetOrdenesTrabajoUseCase,
     SubmitRequestUseCase,
     SubmitWithDocumentsUseCase,
+    GetExpedienteByClienteIdUseCase,
+    GetTrackingByClienteIdUseCase,
     UploadFileService,
     {
       provide: 'InterfaceFileStorageService',
@@ -50,4 +54,3 @@ import { KafkaNotificationAdapter } from '../../../../../shared/notifications/ka
   exports: [],
 })
 export class PostgresqlRequestModule {}
-

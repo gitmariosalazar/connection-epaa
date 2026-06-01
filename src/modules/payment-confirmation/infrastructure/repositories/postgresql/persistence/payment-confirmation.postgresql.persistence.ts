@@ -45,7 +45,7 @@ export class PaymentConfirmationPostgreSQLPersistence
 
   async getClientIdBySolicitud(solicitudId: string): Promise<string | null> {
     const result = await this.databaseService.query<{ id_cliente: string }>(
-      `SELECT id_cliente FROM acometidas.solicitud WHERE solicitud_id = $1`,
+      `SELECT id_cliente FROM acometidas.solicitud WHERE id_solicitud = $1`,
       [solicitudId],
     );
     return result.length > 0 ? result[0].id_cliente : null;

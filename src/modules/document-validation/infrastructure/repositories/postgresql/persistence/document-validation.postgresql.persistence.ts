@@ -9,12 +9,29 @@ export class DocumentValidationPostgreSQLPersistence
 {
   constructor(private readonly databaseService: DatabaseAbstract) {}
 
+  /**
+   * Mapea el valor de la API al valor del catálogo de la BD.
+   * API:  APROBADO  → BD: VALIDO
+   * API:  RECHAZADO → BD: INVALIDO
+   * Cualquier otro valor (ej: PENDIENTE) se pasa sin cambio.
+   */
+  private mapStatusToDb(validationStatus: string): string {
+    const map: Record<string, string> = {
+      APROBADO:  'VALIDO',
+      RECHAZADO: 'INVALIDO',
+    };
+    return map[validationStatus] ?? validationStatus;
+  }
+
   async validateDocument(
     documentId: string,
     validationStatus: string,
     observation: string | null,
     validatorId: string,
   ): Promise<DocumentValidationModel | null> {
+    // Convertir APROBADO/RECHAZADO → VALIDO/INVALIDO antes de persistir
+    const dbStatus = this.mapStatusToDb(validationStatus);
+
     const query = `
       UPDATE acometidas.documento_adjunto
       SET estado_validacion = $1,
@@ -38,7 +55,7 @@ export class DocumentValidationPostgreSQLPersistence
       validator_id: string;
       validation_date: Date | null;
       updated_at: Date;
-    }>(query, [validationStatus, observation, validatorId, documentId]);
+    }>(query, [dbStatus, observation, validatorId, documentId]);
 
     if (result.length === 0) return null;
     const row = result[0];
@@ -77,7 +94,7 @@ export class DocumentValidationPostgreSQLPersistence
 
   async getClientIdBySolicitud(solicitudId: string): Promise<string | null> {
     const result = await this.databaseService.query<{ id_cliente: string }>(
-      `SELECT id_cliente FROM acometidas.solicitud WHERE solicitud_id = $1`,
+      `SELECT id_cliente FROM acometidas.solicitud WHERE id_solicitud = $1`,
       [solicitudId],
     );
     return result.length > 0 ? result[0].id_cliente : null;

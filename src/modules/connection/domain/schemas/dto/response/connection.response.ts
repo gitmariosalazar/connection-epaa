@@ -66,6 +66,17 @@ export interface ConnectionAndPropertyResponse {
   person: ClientResponse | null;
   // Property Data
   property: PropertyResponse | null;
+  lastReadings: LastReadingResponse[] | null;
+}
+
+export interface LastReadingResponse {
+  cadastralKey: string;
+  readingDate: string | Date;
+  readingTime: string;
+  readingMonth: string;
+  readingValueCurrent: number | null;
+  readingValuePreview: number | null;
+  novelty: string | null;
 }
 
 export interface PropertyResponse {
@@ -136,6 +147,7 @@ export interface ConnectionWithPropertyResponse {
   person: ClientResponse | null;
   // Property Data
   properties: PropertyResponse[];
+  lastReadings: LastReadingResponse[] | null;
 }
 
 export interface ConnectionWithoutPropertyResponse {
@@ -171,6 +183,7 @@ export interface ConnectionWithoutPropertyResponse {
   // Client Data
   company: CompanyResponse | null;
   person: ClientResponse | null;
+  lastReadings: LastReadingResponse[] | null;
 }
 
 export interface ClientResponse {

@@ -34,7 +34,11 @@ export class SubmitDocumentItem {
 }
 
 export interface SubmitWithDocumentsResponse {
-  solicitudId: string;
-  estado: string;
+  solicitudId:          string;
+  /** Número legible generado por el trigger: SOL-EPAA-2026-0000035 */
+  numeroSolicitud:      string;
+  estado:               string;
   documentosInsertados: number;
+  /** UUID del analista asignado por round-robin. null si no hay analistas activos. */
+  analistaId:           string | null;
 }

@@ -871,7 +871,29 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                             'property_type_name', tp.nombre
                     )
                 ELSE NULL
-            END AS "property"
+            END AS "property",
+              -- Ultimas 10 lecturas
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'cadastral_key', sub_lr.clave_catastral,
+                        'reading_date', sub_lr.fecha_lectura,
+                        'reading_time', sub_lr.hora_lectura,
+                        'reading_month', sub_lr.mes_lectura,
+                        'reading_value_current', sub_lr.lectura_actual,
+                        'reading_value_preview', sub_lr.lectura_anterior,
+                        'novelty', sub_lr.novedad
+                    ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
+                )
+                FROM (
+                    SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
+                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                    FROM public.lectura lr
+                    WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
+                    ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
+                    LIMIT 10
+                ) sub_lr
+            ) AS "last_readings"
         FROM acometida a
         INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
         LEFT JOIN predio p         ON p.clave_catastral = a.predio_clave_catastral
@@ -1013,7 +1035,29 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                     WHERE p.cliente_id = a.cliente_id
                 ),
                 '[]'::jsonb
-            ) AS "properties"
+            ) AS "properties",
+              -- Ultimas 10 lecturas
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'cadastral_key', sub_lr.clave_catastral,
+                        'reading_date', sub_lr.fecha_lectura,
+                        'reading_time', sub_lr.hora_lectura,
+                        'reading_month', sub_lr.mes_lectura,
+                        'reading_value_current', sub_lr.lectura_actual,
+                        'reading_value_preview', sub_lr.lectura_anterior,
+                        'novelty', sub_lr.novedad
+                    ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
+                )
+                FROM (
+                    SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
+                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                    FROM public.lectura lr
+                    WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
+                    ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
+                    LIMIT 10
+                ) sub_lr
+            ) AS "last_readings"
 
         FROM acometida a
         INNER JOIN cliente c           ON c.cliente_id = a.cliente_id
@@ -1146,7 +1190,29 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                         'emails', cc.correos
                     )
                 ELSE NULL
-            END AS "person"
+            END AS "person",
+              -- Ultimas 10 lecturas
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'cadastral_key', sub_lr.clave_catastral,
+                        'reading_date', sub_lr.fecha_lectura,
+                        'reading_time', sub_lr.hora_lectura,
+                        'reading_month', sub_lr.mes_lectura,
+                        'reading_value_current', sub_lr.lectura_actual,
+                        'reading_value_preview', sub_lr.lectura_anterior,
+                        'novelty', sub_lr.novedad
+                    ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
+                )
+                FROM (
+                    SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
+                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                    FROM public.lectura lr
+                    WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
+                    ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
+                    LIMIT 10
+                ) sub_lr
+            ) AS "last_readings"
 
         FROM acometida a
         INNER JOIN cliente c           ON c.cliente_id = a.cliente_id
