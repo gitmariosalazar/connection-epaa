@@ -8,19 +8,19 @@ import { ExpedienteResponse } from '../../dto/response/request-queries.response'
  * de un cliente con todos sus módulos relacionados.
  */
 @Injectable()
-export class GetExpedienteByClienteIdUseCase {
+export class GetExpedienteByAnalistaIdUseCase {
   constructor(
     @Inject('InterfaceConnectionRequestRepository')
     private readonly repository: InterfaceConnectionRequestRepository,
   ) {}
 
-  async execute(clienteId: string): Promise<ExpedienteResponse[]> {
+  async execute(analistaId: string): Promise<ExpedienteResponse[]> {
     const expediente =
-      await this.repository.getExpedientesByClienteId(clienteId);
+      await this.repository.getExpedientesByAnalistaId(analistaId);
     if (!expediente || expediente.length === 0) {
       throw new RpcException({
         statusCode: 404,
-        message: `Cliente ${clienteId} no encontrado`,
+        message: `Analista ${analistaId} no encontrado`,
       });
     }
     return expediente;

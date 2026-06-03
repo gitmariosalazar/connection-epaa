@@ -66,7 +66,7 @@ export class CreateConnectionDocumentMapper {
       request.validationStatus,
       request.observation,
       request.validatorId,
-      existingModel.validationDate, // Keep the same validationDate
+      request.validationStatus === 'PENDIENTE' ? null : existingModel.validationDate, // Reset validationDate if status is PENDIENTE
       existingModel.isDeleted, // Keep the same isDeleted status
       existingModel.deletedAt, // Keep the same deletedAt value
       existingModel.createdAt, // Keep the same createdAt date

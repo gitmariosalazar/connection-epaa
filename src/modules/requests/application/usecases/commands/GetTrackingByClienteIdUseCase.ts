@@ -25,6 +25,7 @@ export class GetTrackingByClienteIdUseCase {
    * - Timeline completo (historial)
    *
    * @param clienteId Cédula (10 dígitos) o RUC (13 dígitos) del cliente
+   * @return Listado de solicitudes enriquecidas con su tracking
    */
   async execute(clienteId: string): Promise<TrackingSolicitudResponse[]> {
     if (!clienteId?.trim()) {

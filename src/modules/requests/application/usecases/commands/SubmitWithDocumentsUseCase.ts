@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InterfaceConnectionRequestRepository } from '../../../domain/contracts/new-connection-request.interface.repository';
 import { INotificationPort } from '../../../../../shared/notifications/notification.port';
-import { SubmitWithDocumentsRequest, SubmitWithDocumentsResponse } from '../../dto/request/submit-with-documents.request';
+import {
+  SubmitWithDocumentsRequest,
+  SubmitWithDocumentsResponse,
+} from '../../dto/request/submit-with-documents.request';
 
 /**
  * FASE ÚNICA — Operación atómica: Crear Solicitud + Documentos + DOCS_SUBMITTED
@@ -19,17 +22,20 @@ export class SubmitWithDocumentsUseCase {
     private readonly notifications: INotificationPort,
   ) {}
 
-  async execute(dto: SubmitWithDocumentsRequest): Promise<SubmitWithDocumentsResponse> {
+  async execute(
+    dto: SubmitWithDocumentsRequest,
+  ): Promise<SubmitWithDocumentsResponse> {
     // Transacción atómica: INSERT solicitud + round-robin analista + documentos + cambio de estado
+    console.log('Ejecutando SubmitWithDocumentsUseCase con DTO:', dto);
     const result = await this.repository.submitWithDocuments(dto);
 
     // Datos de la solicitud que se usan en AMBOS templates (analista y cliente)
     const solicitudData = {
       numeroSolicitud: result.numeroSolicitud,
-      tipoAcometida:   dto.connectionType ?? 'Nueva Acometida de Agua Potable',
-      tipoPersona:     dto.personType     ?? 'No especificado',
-      direccion:       dto.address        ?? 'No especificada',
-      claveCatastral:  dto.cadastralKey   ?? 'No disponible',
+      tipoAcometida: dto.connectionType ?? 'Nueva Acometida de Agua Potable',
+      tipoPersona: dto.personType ?? 'No especificado',
+      direccion: dto.address ?? 'No especificada',
+      claveCatastral: dto.cadastralKey ?? 'No disponible',
     };
 
     // Notificaciones fire-and-forget — NUNCA bloquean ni revierten la transacción

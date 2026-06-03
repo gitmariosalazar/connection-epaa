@@ -171,9 +171,52 @@ export class ConnectionDocumentPostgreSQLPersistence implements InterfaceConnect
       }
 
       const updatedDocument = result[0];
+
+      try {
+        const getRequestStatusQuery = `
+          SELECT estado, id_cliente FROM acometidas.solicitud WHERE id_solicitud = $1;
+        `;
+        const reqStatusResult = await this.databaseSService.query<{
+          estado: string;
+          id_cliente: string;
+        }>(getRequestStatusQuery, [updatedDocument.request_id]);
+        
+        if (reqStatusResult.length > 0) {
+          const currentReqStatus = reqStatusResult[0].estado;
+          if (currentReqStatus === 'DOCS_REJECTED') {
+            // Find the customer user's ID (cliente_usuario_id) from public.cliente_usuario
+            const getClientUserQuery = `
+              SELECT cliente_usuario_id FROM public.cliente_usuario WHERE cliente_id = $1 LIMIT 1;
+            `;
+            const clientUserResult = await this.databaseSService.query<{
+              cliente_usuario_id: string;
+            }>(getClientUserQuery, [reqStatusResult[0].id_cliente]);
+            
+            let userIdForTransition = updatedData.validatorId; // fallback
+            if (clientUserResult.length > 0) {
+              userIdForTransition = clientUserResult[0].cliente_usuario_id;
+            }
+            
+            if (userIdForTransition) {
+              const changeStatusQuery = `
+                SELECT acometidas.fn_cambiar_estado_solicitud($1, $2, $3, $4);
+              `;
+              await this.databaseSService.query(changeStatusQuery, [
+                updatedDocument.request_id,
+                'DOCS_SUBMITTED',
+                userIdForTransition,
+                'Documentación corregida y reemplazada por el cliente (re-enviado para validación)',
+              ]);
+            }
+          }
+        }
+      } catch (transitionError) {
+        console.error('Error transitioning request status after document update:', transitionError);
+      }
+
       return ConnectionDocumentAdapter.fromConnectionDocumentSQLResultToModel(
         updatedDocument,
-      ); // Adjust this as needed based on your database schema and requirements
+      );
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;

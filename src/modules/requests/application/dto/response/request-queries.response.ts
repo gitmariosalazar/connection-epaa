@@ -56,6 +56,50 @@ export interface ExpedienteResponse {
   solicitudNumero: string | null;
 }
 
+export interface PhoneResponse {
+  telefonoId: number;
+  numero: string;
+}
+
+export interface EmailResponse {
+  correoElectronicoId: number;
+  correo: string;
+}
+
+export interface ClientResponse {
+  address: string;
+  country: string;
+  genderId: number;
+  lastName: string;
+  parishId: string;
+  personId: string;
+  birthDate: string;
+  firstName: string;
+  isDeceased: boolean | null | number;
+  professionId: number;
+  civilStatusId: number;
+  phones: PhoneResponse[];
+  emails: EmailResponse[];
+}
+
+export interface CompanyResponse {
+  ruc: string;
+  address: string;
+  country: string;
+  clientId: string;
+  parishId: string;
+  companyId: number;
+  businessName: string;
+  commercialName: string;
+  phones: PhoneResponse[];
+  emails: EmailResponse[];
+}
+
+export interface RequestDetailByClientResponse extends ExpedienteResponse {
+  company: CompanyResponse | null;
+  person: ClientResponse | null;
+}
+
 // ─── Historial de estados ─────────────────────────────────────────────────────
 export interface HistorialEstadoResponse {
   estadoAnterior: string;
@@ -100,23 +144,23 @@ export interface HistorialTrackingEntry {
 
 export interface TrackingSolicitudResponse {
   // ── Identificación
-  id: string;                          // UUID de la solicitud
-  codigo: string;                      // SOL-EPAA-2026-XXXXXXX
+  id: string; // UUID de la solicitud
+  codigo: string; // SOL-EPAA-2026-XXXXXXX
   tipoAcometida: string;
   usoPredio: string;
   direccion: string;
   claveCatastral: string | null;
 
   // ── Fecha formateada en español
-  fechaCreacion: string;               // "07 de febrero, 2026"
+  fechaCreacion: string; // "07 de febrero, 2026"
 
   // ── Estado actual
-  estadoCodigo: string;                // "INSTALACION_EN_PROCESO"
-  estadoActualLabel: string;           // "Instalación en Proceso"
+  estadoCodigo: string; // "INSTALACION_EN_PROCESO"
+  estadoActualLabel: string; // "Instalación en Proceso"
 
   // ── Paso en el wizard (7 fases del BPMN)
-  currentStep: string;                 // solicitud | documentos | pago | inspeccion | contrato | instalacion | catastro | completado | anulada | rechazada
-  stepIndex: number;                   // 0-6 (progreso), -1 (terminal negativo)
+  currentStep: string; // solicitud | documentos | pago | inspeccion | contrato | instalacion | catastro | completado | anulada | rechazada
+  stepIndex: number; // 0-6 (progreso), -1 (terminal negativo)
 
   // ── Métricas
   diasEnProceso: number;

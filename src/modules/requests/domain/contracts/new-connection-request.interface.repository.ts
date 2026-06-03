@@ -3,6 +3,7 @@ import {
   DashboardKpisResponse,
   ExpedienteResponse,
   HistorialEstadoResponse,
+  RequestDetailByClientResponse,
   SolicitudOrdenTrabajoResponse,
   TrackingSolicitudResponse,
 } from '../../application/dto/response/request-queries.response';
@@ -44,7 +45,11 @@ export interface InterfaceConnectionRequestRepository {
   getExpedienteBySolicitudId(
     solicitudId: string,
   ): Promise<ExpedienteResponse | null>;
-  getExpedienteByClienteId(clienteId: string): Promise<ExpedienteResponse[]>;
+  getRequestDetailByRequestIdOrNumber(
+    requestNumberOrId: string,
+  ): Promise<RequestDetailByClientResponse | null>;
+  getExpedientesByAnalistaId(analistaId: string): Promise<ExpedienteResponse[]>;
+  getExpedientesByClienteId(clienteId: string): Promise<ExpedienteResponse[]>;
   /** Timeline de cambios de estado para el stepper del frontend */
   getHistorialBySolicitudId(
     solicitudId: string,
@@ -60,5 +65,13 @@ export interface InterfaceConnectionRequestRepository {
    * Tracking en tiempo real: retorna todas las solicitudes de un cliente
    * enriquecidas con fase del BPMN, métricas y timeline para el wizard del frontend.
    */
-  getTrackingByClienteId(clienteId: string): Promise<TrackingSolicitudResponse[]>;
+  getTrackingByClienteId(
+    clienteId: string,
+  ): Promise<TrackingSolicitudResponse[]>;
+  getTrackingBySolicitudId(
+    solicitudId: string,
+  ): Promise<TrackingSolicitudResponse | null>;
+  getTrackingByAnalistaId(
+    analistaId: string,
+  ): Promise<TrackingSolicitudResponse[]>;
 }

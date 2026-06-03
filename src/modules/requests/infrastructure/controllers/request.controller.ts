@@ -26,6 +26,10 @@ import { UpdateRequestRequest } from '../../application/dto/request/update-reque
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { GetExpedienteByClienteIdUseCase } from '../../application/usecases/commands/GetExpedienteByClienteIdUseCase';
 import { GetTrackingByClienteIdUseCase } from '../../application/usecases/commands/GetTrackingByClienteIdUseCase';
+import { GetExpedienteByAnalistaIdUseCase } from '../../application/usecases/commands/GetExpedienteByAnalistaIdUseCase';
+import { GetTrackingBySolicitudIdUseCase } from '../../application/usecases/commands/GetTrackingBySolicitudIdUseCase';
+import { GetTrackingByAnalistaIdUseCase } from '../../application/usecases/commands/GetTrackingByAnalistaIdUseCase';
+import { GetRequestDetailByRequestIdOrNumberUseCase } from '../../application/usecases/commands/GetRequestDetailByRequestIdOrNumberUseCase';
 
 @Controller('requests')
 export class RequestController {
@@ -37,12 +41,16 @@ export class RequestController {
     private readonly deleteConnectionRequestUseCase: DeleteConnectionRequestUseCase,
     private readonly getExpedienteUseCase: GetExpedienteUseCase,
     private readonly getExpedienteByClienteIdUseCase: GetExpedienteByClienteIdUseCase,
+    private readonly getExpedienteByAnalistaIdUseCase: GetExpedienteByAnalistaIdUseCase,
     private readonly getHistorialEstadoUseCase: GetHistorialEstadoUseCase,
     private readonly getDashboardKpisUseCase: GetDashboardKpisUseCase,
     private readonly getOrdenesTrabajoUseCase: GetOrdenesTrabajoUseCase,
     private readonly submitRequestUseCase: SubmitRequestUseCase,
     private readonly submitWithDocumentsUseCase: SubmitWithDocumentsUseCase,
     private readonly getTrackingByClienteIdUseCase: GetTrackingByClienteIdUseCase,
+    private readonly getTrackingByAnalistaIdUseCase: GetTrackingByAnalistaIdUseCase,
+    private readonly getTrackingBySolicitudIdUseCase: GetTrackingBySolicitudIdUseCase,
+    private readonly getRequestDetailByRequestIdOrNumberUseCase: GetRequestDetailByRequestIdOrNumberUseCase,
   ) {}
 
   @Post()
@@ -111,6 +119,12 @@ export class RequestController {
     return await this.getExpedienteByClienteIdUseCase.execute(clienteId);
   }
 
+  @Get(':analistaId/expedientes')
+  @MessagePattern('requests.get_expedientes_by_analista')
+  async getExpedientesByAnalista(@Payload() analistaId: string) {
+    return await this.getExpedienteByAnalistaIdUseCase.execute(analistaId);
+  }
+
   @Get(':solicitudId/historial')
   @MessagePattern('requests.get_historial')
   async getHistorial(@Payload() solicitudId: string) {
@@ -164,5 +178,27 @@ export class RequestController {
   @MessagePattern('requests.get_tracking')
   async getTracking(@Payload() clienteId: string) {
     return await this.getTrackingByClienteIdUseCase.execute(clienteId);
+  }
+
+  @Get(':analistaId/tracking-internal-user')
+  @MessagePattern('requests.get_tracking_by_analista_id')
+  async getTrackingByAnalista(@Payload() analistaId: string) {
+    return await this.getTrackingByAnalistaIdUseCase.execute(analistaId);
+  }
+
+  @Get(':solicitudId/tracking-by-solicitud-id')
+  @MessagePattern('requests.get_tracking_by_solicitud_id')
+  async getTrackingBySolicitud(@Payload() solicitudId: string) {
+    return await this.getTrackingBySolicitudIdUseCase.execute(solicitudId);
+  }
+
+  @Get(':requestNumberOrId/detail-by-id-or-number')
+  @MessagePattern('requests.get_request_detail_by_request_id_or_number')
+  async getRequestDetailByRequestIdOrNumber(
+    @Payload() requestNumberOrId: string,
+  ) {
+    return await this.getRequestDetailByRequestIdOrNumberUseCase.execute(
+      requestNumberOrId,
+    );
   }
 }

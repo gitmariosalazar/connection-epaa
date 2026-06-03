@@ -21,8 +21,12 @@ export class ValidateDocumentsUseCase {
     solicitudId: string,
     dto: ValidateDocumentsRequest,
   ): Promise<{ success: boolean; solicitudId: string; newStatus: string }> {
-    // 1. Validar cada documento individualmente
-    for (const decision of dto.decisions) {
+    const actionableDecisions = dto.decisions.filter(
+      (d) => d.validationStatus !== 'PENDIENTE',
+    );
+
+    // 1. Validar cada documento individualmente (PENDIENTE no genera cambios)
+    for (const decision of actionableDecisions) {
       await this.repository.validateDocument(
         decision.documentId,
         decision.validationStatus,
@@ -31,8 +35,13 @@ export class ValidateDocumentsUseCase {
       );
     }
 
+    // Si solo llegaron PENDIENTE, no alterar estado ni notificar.
+    if (actionableDecisions.length === 0) {
+      return { success: true, solicitudId, newStatus: 'DOCS_SUBMITTED' };
+    }
+
     // 2. Determinar el estado global de la solicitud
-    const allApproved = dto.decisions.every(
+    const allApproved = actionableDecisions.every(
       (d) => d.validationStatus === 'APROBADO',
     );
     const newStatus = allApproved ? 'DOCS_APPROVED' : 'DOCS_REJECTED';
@@ -53,7 +62,8 @@ export class ValidateDocumentsUseCase {
     if (clientId) {
       if (newStatus === 'DOCS_REJECTED') {
         this.notification.notifyDocsRechazados(
-          clientId, solicitudId,
+          clientId,
+          solicitudId,
           'Uno o más documentos presentan observaciones. Revise el detalle en el sistema.',
         );
       } else {

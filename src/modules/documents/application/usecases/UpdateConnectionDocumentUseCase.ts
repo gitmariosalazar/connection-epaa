@@ -69,10 +69,15 @@ export class UpdateConnectionDocumentUseCase {
         mimeType: fileMetadata.mimeType,
         sizeInBytes: fileMetadata.sizeInBytes,
         hashSha256: fileMetadata.hashSha256,
-        validationStatus:
-          request.validationStatus ?? existingDocument.validationStatus,
-        observation: request.observation ?? existingDocument.observation,
-        validatorId: request.validatorId ?? existingDocument.validatorId,
+        validationStatus: request.fileBase64
+          ? 'PENDIENTE'
+          : (request.validationStatus ?? existingDocument.validationStatus),
+        observation: request.fileBase64
+          ? null
+          : (request.observation ?? existingDocument.observation),
+        validatorId: request.fileBase64
+          ? null
+          : (request.validatorId ?? existingDocument.validatorId),
       } as UpdateConnectionDocumentRequest;
 
       const updatedDataModel: ConnectionDocumentModel =

@@ -19,6 +19,10 @@ import { UploadFileService } from '../../../../documents/application/services/up
 import { KafkaNotificationAdapter } from '../../../../../shared/notifications/kafka-notification.adapter';
 import { GetExpedienteByClienteIdUseCase } from '../../../application/usecases/commands/GetExpedienteByClienteIdUseCase';
 import { GetTrackingByClienteIdUseCase } from '../../../application/usecases/commands/GetTrackingByClienteIdUseCase';
+import { GetExpedienteByAnalistaIdUseCase } from '../../../application/usecases/commands/GetExpedienteByAnalistaIdUseCase';
+import { GetTrackingBySolicitudIdUseCase } from '../../../application/usecases/commands/GetTrackingBySolicitudIdUseCase';
+import { GetTrackingByAnalistaIdUseCase } from '../../../application/usecases/commands/GetTrackingByAnalistaIdUseCase';
+import { GetRequestDetailByRequestIdOrNumberUseCase } from '../../../application/usecases/commands/GetRequestDetailByRequestIdOrNumberUseCase';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -37,6 +41,10 @@ import { GetTrackingByClienteIdUseCase } from '../../../application/usecases/com
     SubmitWithDocumentsUseCase,
     GetExpedienteByClienteIdUseCase,
     GetTrackingByClienteIdUseCase,
+    GetExpedienteByAnalistaIdUseCase,
+    GetTrackingBySolicitudIdUseCase,
+    GetTrackingByAnalistaIdUseCase,
+    GetRequestDetailByRequestIdOrNumberUseCase,
     UploadFileService,
     {
       provide: 'InterfaceFileStorageService',
