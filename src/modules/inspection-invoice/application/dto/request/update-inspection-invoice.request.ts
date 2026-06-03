@@ -12,5 +12,8 @@ export class UpdateInspectionInvoiceRequest {
     public readonly paymentReference?: string,
     public readonly proofOfPayment?: string,
     public readonly collectorId?: UUID,
+    public readonly fileBase64?: string,
+    public readonly originalName?: string,
+    public readonly mimeType?: string,
   ) {}
 }

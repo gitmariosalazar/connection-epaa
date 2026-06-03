@@ -8,11 +8,12 @@ import {
   StoredFileResult,
 } from '../../../domain/contracts/file-storage.interface.service';
 import { statusCode } from '../../../../../settings/environments/status-code';
+import { environments } from '../../../../../settings/environments/environments';
 
 @Injectable()
 export class LocalFileStorageService implements InterfaceFileStorageService {
   private readonly diskUploadDir: string =
-    process.env.CONNECTION_DOCUMENTS_UPLOAD_DIR ??
+    environments.CONNECTION_DOCUMENTS_UPLOAD_DIR ??
     join(process.cwd(), 'uploads', 'connection-documents');
   private readonly publicUploadPrefix = '/uploads/connection-documents';
 

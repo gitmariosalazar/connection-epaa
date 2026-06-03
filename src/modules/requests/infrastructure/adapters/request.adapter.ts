@@ -186,6 +186,7 @@ export class RequestAdapter {
       fechaVencimiento: row.fecha_vencimiento,
       fechaPago: row.fecha_pago,
       metodoPago: row.metodo_pago,
+      urlComprobante: row.url_comprobante || null,
       informeId: row.id_informe,
       resultadoInforme: row.resultado_informe,
       costoMateriales: RequestAdapter.toNumberOrNull(row.costo_materiales),

@@ -34,6 +34,7 @@ export interface ExpedienteResponse {
   fechaVencimiento: Date | null;
   fechaPago: Date | null;
   metodoPago: string | null;
+  urlComprobante: string | null;
   // Informe técnico
   informeId: string | null;
   resultadoInforme: string | null;

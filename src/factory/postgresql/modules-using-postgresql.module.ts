@@ -12,6 +12,8 @@ import { PaymentConfirmationPostgreSQLModule } from '../../modules/payment-confi
 import { InspectionReportPostgreSQLModule } from '../../modules/inspection-report/infrastructure/modules/postgresql/inspection-report.postgresql.module';
 import { ContractsPostgreSQLModule } from '../../modules/contracts/infrastructure/modules/postgresql/contracts.postgresql.module';
 import { CadastralPostgreSQLModule } from '../../modules/cadastral/infrastructure/modules/postgresql/cadastral.postgresql.module';
+import { InspectionOrderPostgreSQLModule } from '../../modules/inspection-order/infrastructure/modules/postgresql/inspection-order.postgresql.module';
+import { InstallationOrderPostgreSQLModule } from '../../modules/installation-order/infrastructure/modules/postgresql/installation-order.postgresql.module';
 
 @Module({
   imports: [
@@ -29,6 +31,9 @@ import { CadastralPostgreSQLModule } from '../../modules/cadastral/infrastructur
     InspectionReportPostgreSQLModule,
     ContractsPostgreSQLModule,
     CadastralPostgreSQLModule,
+    // Nuevos módulos del proceso BPMN (Fases 6-7, 12-13)
+    InspectionOrderPostgreSQLModule,
+    InstallationOrderPostgreSQLModule,
   ],
   controllers: [],
   providers: [],

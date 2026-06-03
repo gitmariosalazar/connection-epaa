@@ -6,12 +6,20 @@ import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../settings/environments/status-code';
 import { InspectionInvoiceModel } from '../../domain/schemas/models/InspectionInvoiceModel';
 import { InspectionInvoiceMapper } from '../mappers/inspection-invoice.mapper';
+import { UploadFileService } from '../../../documents/application/services/upload-file.service';
 
 export class UpdateInspectionInvoiceUseCase {
+  private readonly inspectionInvoiceRepository: InterfaceInspectionInvoiceRepository;
+  private readonly uploadFileService: UploadFileService;
+
   constructor(
     @Inject('InterfaceInspectionInvoiceRepository')
-    private readonly inspectionInvoiceRepository: InterfaceInspectionInvoiceRepository,
-  ) {}
+    inspectionInvoiceRepository: InterfaceInspectionInvoiceRepository,
+    uploadFileService: UploadFileService,
+  ) {
+    this.inspectionInvoiceRepository = inspectionInvoiceRepository;
+    this.uploadFileService = uploadFileService;
+  }
 
   async execute(
     requestId: string,
@@ -39,9 +47,25 @@ export class UpdateInspectionInvoiceUseCase {
         });
       }
 
+      let proofOfPaymentUrl = request.proofOfPayment ?? existingInvoice.proofOfPayment;
+
+      if (request.fileBase64) {
+        const fileMetadata = await this.uploadFileService.uploadDocument({
+          fileBase64: request.fileBase64,
+          originalName: request.originalName ?? 'comprobante_pago.pdf',
+          mimeType: request.mimeType,
+        });
+        proofOfPaymentUrl = fileMetadata.fileUrl;
+      }
+
+      const normalizedRequest = {
+        ...request,
+        proofOfPayment: proofOfPaymentUrl,
+      } as UpdateInspectionInvoiceRequest;
+
       const updateDataModel: InspectionInvoiceModel =
         InspectionInvoiceMapper.toModelForUpdate(
-          request as UpdateInspectionInvoiceRequest,
+          normalizedRequest,
           existingInvoice,
         );
 

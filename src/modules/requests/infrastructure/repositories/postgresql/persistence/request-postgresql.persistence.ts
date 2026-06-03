@@ -428,7 +428,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
           )) FILTER (WHERE d.id_documento IS NOT NULL), '[]') AS documentos,
           -- Factura
           f.id_factura, f.numero_factura, f.monto AS monto_factura,
-          f.estado AS estado_pago, f.fecha_vencimiento, f.fecha_pago, f.metodo_pago,
+          f.estado AS estado_pago, f.fecha_vencimiento, f.fecha_pago, f.metodo_pago, f.url_comprobante AS url_comprobante,
           -- Informe
           i.id_informe, i.resultado AS resultado_informe,
           i.costo_materiales, i.costo_mano_obra, i.costo_total,
@@ -498,6 +498,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             f.fecha_vencimiento,
             f.fecha_pago,
             f.metodo_pago,
+            f.url_comprobante AS url_comprobante,
 
             -- Detalle del Informe de Inspección
             i.id_informe,
@@ -663,6 +664,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             f.fecha_vencimiento,
             f.fecha_pago,
             f.metodo_pago,
+            f.url_comprobante AS url_comprobante,
             
             -- Detalle del Informe de Inspección
             i.id_informe,
@@ -768,6 +770,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             f.fecha_vencimiento,
             f.fecha_pago,
             f.metodo_pago,
+            f.url_comprobante AS url_comprobante,
             
             -- Detalle del Informe de Inspección
             i.id_informe,

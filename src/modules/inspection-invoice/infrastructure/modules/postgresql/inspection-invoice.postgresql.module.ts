@@ -10,6 +10,8 @@ import { FindAllInspectionInvoicesByRequestIdUseCase } from '../../../applicatio
 import { FindAllInspectionInvoicesUseCase } from '../../../application/usecases/FindAllInspectionInvoicesUseCase';
 import { GetInspectionInvoiceByIdUseCase } from '../../../application/usecases/GetInspectionInvoiceByIdUseCase';
 import { InspectionInvoicePostgreSqlPersistence } from '../../repositories/postgresql/persistence/inspection-invoice.postgresql.persistence';
+import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
+import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule, NotificationSharedModule],
@@ -22,6 +24,11 @@ import { InspectionInvoicePostgreSqlPersistence } from '../../repositories/postg
     FindAllInspectionInvoicesUseCase,
     FindAllInspectionInvoicesByRequestIdUseCase,
     DeleteInspectionInvoiceUseCase,
+    UploadFileService,
+    {
+      provide: 'InterfaceFileStorageService',
+      useClass: LocalFileStorageService,
+    },
     {
       provide: 'InterfaceInspectionInvoiceRepository',
       useClass: InspectionInvoicePostgreSqlPersistence,

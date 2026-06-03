@@ -46,6 +46,7 @@ export interface ExpedienteSqlResult {
   fecha_vencimiento: Date | null;
   fecha_pago: Date | null;
   metodo_pago: string | null;
+  url_comprobante?: string | null;
   id_informe: string | null;
   resultado_informe: string | null;
   costo_materiales: number | string | null;
