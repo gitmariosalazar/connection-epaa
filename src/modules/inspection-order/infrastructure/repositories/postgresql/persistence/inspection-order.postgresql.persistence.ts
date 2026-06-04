@@ -23,30 +23,41 @@ export class InspectionOrderPostgreSQLPersistence
     scheduledDate: string | null,
     creatorId: string,
   ): Promise<{ workOrderId: string; codigoOrden: string }> {
-    // 1. Insertar la OT — la tabla usa id_tipo_orden (FK) y estado (FK a estado_orden_trabajo)
+    /**
+     * La tabla work_orders.orden_trabajo:
+     *  - codigo_orden  → generado automáticamente por el TRIGGER trg_generar_codigo_orden
+     *                    (usa numero_secuencial DEFAULT nextval('work_orders.orden_trabajo_seq'))
+     *  - id_tipo_trabajo → NOT NULL, usamos el tipo "AGUA POTABLE" (id=2) para acometidas
+     *  - estado         → FK a work_orders.estado_orden_trabajo, buscamos 'PENDIENTE'
+     *  - id_cliente     → cedula del cliente de la solicitud
+     */
     const otResult = await this.databaseService.query<{
       id_orden_trabajo: string;
       codigo_orden: string;
     }>(
       `INSERT INTO work_orders.orden_trabajo (
-         codigo_orden,
-         descripcion,
+         id_tipo_trabajo,
          id_prioridad,
-         estado,
          id_cliente,
+         estado,
+         descripcion,
+         usuario_creacion,
          usuario_asignacion,
          fecha_asignacion
        ) VALUES (
-         'OT-INSP-' || TO_CHAR(NOW(), 'YYYYMMDD-') || NEXTVAL('work_orders.seq_orden_codigo'),
+         (SELECT id_tipo_trabajo FROM work_orders.tipo_trabajo
+          WHERE UPPER(nombre) = 'AGUA POTABLE' LIMIT 1),
          $1,
-         $2,
-         (SELECT id_estado FROM work_orders.estado_orden_trabajo WHERE UPPER(nombre_estado) = 'PENDIENTE' LIMIT 1),
-         (SELECT id_cliente FROM acometidas.solicitud WHERE id_solicitud = $3),
-         $4,
-         CASE WHEN $4 IS NULL THEN NULL ELSE NOW() END
+         (SELECT id_cliente FROM acometidas.solicitud WHERE id_solicitud = $2),
+         (SELECT id_estado FROM work_orders.estado_orden_trabajo
+          WHERE UPPER(nombre_estado) = 'PENDIENTE' LIMIT 1),
+         $3,
+         $4::uuid,
+         $5::uuid,
+         CASE WHEN $5 IS NULL THEN NULL ELSE NOW() END
        )
        RETURNING id_orden_trabajo, codigo_orden`,
-      [description, priorityId, solicitudId, technicianId],
+      [priorityId, solicitudId, description, creatorId, technicianId],
     );
 
     const workOrderId = otResult[0].id_orden_trabajo;
@@ -61,6 +72,7 @@ export class InspectionOrderPostgreSQLPersistence
 
     return { workOrderId, codigoOrden };
   }
+
 
   async startInspectionOrder(
     workOrderId: string,
