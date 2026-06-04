@@ -15,7 +15,8 @@ export class LocalFileStorageService implements InterfaceFileStorageService {
   private readonly diskUploadDir: string =
     environments.CONNECTION_DOCUMENTS_UPLOAD_DIR ??
     join(process.cwd(), 'uploads', 'connection-documents');
-  private readonly publicUploadPrefix = '/uploads/connection-documents';
+  private readonly publicUploadPrefix =
+    environments.CONNECTION_DOCUMENTS_PUBLIC_PREFIX;
 
   async saveFile(
     fileBase64: string,

@@ -9,17 +9,18 @@ import { DatabasePersistenceModule } from './shared/connections/database/databas
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 
-const connectionModules = environments.DATABASE_TYPE === 'mysql'
-  ? AppConnectionModulesUsingMySQL
-  : AppConnectionModulesUsingPostgreSQL;
+const connectionModules =
+  environments.DATABASE_TYPE === 'mysql'
+    ? AppConnectionModulesUsingMySQL
+    : AppConnectionModulesUsingPostgreSQL;
 
 @Module({
   imports: [
-    HomeModule, 
+    HomeModule,
     connectionModules,
     DatabasePersistenceModule,
     ServeStaticModule.forRoot({
-      rootPath: path.dirname(environments.CONNECTION_DOCUMENTS_UPLOAD_DIR),
+      rootPath: environments.CONNECTION_DOCUMENTS_UPLOAD_ROOT,
       serveRoot: '/uploads',
       serveStaticOptions: { index: false, redirect: false },
     }),

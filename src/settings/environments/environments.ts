@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
+import { basename, dirname } from 'path';
 
 dotenv.config({
   path:
@@ -27,6 +28,8 @@ interface EnvironmentsVariables {
   KAFKA_BROKER_EXTERNAL: string;
   DATABASE_TYPE: 'mysql' | 'postgres';
   CONNECTION_DOCUMENTS_UPLOAD_DIR: string;
+  CONNECTION_DOCUMENTS_UPLOAD_ROOT: string;
+  CONNECTION_DOCUMENTS_PUBLIC_PREFIX: string;
 }
 
 const environmentsSchema = Joi.object<EnvironmentsVariables>({
@@ -49,7 +52,9 @@ const environmentsSchema = Joi.object<EnvironmentsVariables>({
   KAFKA_BROKER_INTERNAL: Joi.string().required(),
   KAFKA_BROKER_EXTERNAL: Joi.string().required(),
   DATABASE_TYPE: Joi.string().valid('mysql', 'postgres').default('postgres'),
-  CONNECTION_DOCUMENTS_UPLOAD_DIR: Joi.string().optional().default('/usr/src/app/uploads/connection-documents'),
+  CONNECTION_DOCUMENTS_UPLOAD_DIR: Joi.string()
+    .optional()
+    .default('/usr/src/app/uploads/connection-documents'),
 }).unknown(true);
 
 const { error, value: envVars } = environmentsSchema.validate(process.env);
@@ -57,6 +62,9 @@ const { error, value: envVars } = environmentsSchema.validate(process.env);
 if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
+
+const connectionDocumentsUploadDir = envVars.CONNECTION_DOCUMENTS_UPLOAD_DIR;
+const connectionDocumentsDirectoryName = basename(connectionDocumentsUploadDir);
 
 export const environments: EnvironmentsVariables = {
   NODE_ENV: envVars.NODE_ENV,
@@ -77,5 +85,7 @@ export const environments: EnvironmentsVariables = {
   KAFKA_BROKER_EXTERNAL: envVars.KAFKA_BROKER_EXTERNAL,
   KAFKA_BROKER_INTERNAL: envVars.KAFKA_BROKER_INTERNAL,
   DATABASE_TYPE: envVars.DATABASE_TYPE as 'mysql' | 'postgres',
-  CONNECTION_DOCUMENTS_UPLOAD_DIR: envVars.CONNECTION_DOCUMENTS_UPLOAD_DIR,
+  CONNECTION_DOCUMENTS_UPLOAD_DIR: connectionDocumentsUploadDir,
+  CONNECTION_DOCUMENTS_UPLOAD_ROOT: dirname(connectionDocumentsUploadDir),
+  CONNECTION_DOCUMENTS_PUBLIC_PREFIX: `/uploads/${connectionDocumentsDirectoryName}`,
 };
