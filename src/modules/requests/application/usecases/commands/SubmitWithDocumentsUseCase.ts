@@ -26,7 +26,7 @@ export class SubmitWithDocumentsUseCase {
     dto: SubmitWithDocumentsRequest,
   ): Promise<SubmitWithDocumentsResponse> {
     // Transacción atómica: INSERT solicitud + round-robin analista + documentos + cambio de estado
-    console.log('Ejecutando SubmitWithDocumentsUseCase con DTO:', dto);
+    //console.log('Ejecutando SubmitWithDocumentsUseCase con DTO:', dto);
     const result = await this.repository.submitWithDocuments(dto);
 
     // Datos de la solicitud que se usan en AMBOS templates (analista y cliente)
