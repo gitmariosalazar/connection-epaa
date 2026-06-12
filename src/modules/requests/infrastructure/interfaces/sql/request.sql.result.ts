@@ -38,6 +38,7 @@ export interface ExpedienteSqlResult {
   dias_en_proceso: number;
   cliente_id: string;
   analista_username: string | null;
+  analista_nombre: string | null;
   documentos: DocumentoAdjuntoSqlResult[] | null;
   id_factura: string | null;
   numero_factura: string | null;
@@ -127,6 +128,7 @@ export interface DashboardKpisSqlResult {
 }
 
 export interface SolicitudOrdenTrabajoSqlResult {
+  work_order_id: string;  // UUID de la OT — requerido para acciones como iniciar
   tipo_orden: string;
   codigo_orden: string;
   descripcion: string;
@@ -183,6 +185,7 @@ export interface TrackingSolicitudSqlResult {
   servicio_activo: boolean | null;
   fecha_activacion: Date | null;
   analista: string | null;
+  analista_nombre: string | null;
   historial: HistorialTrackingSqlResult[] | null;
   created_at: Date;
   updated_at: Date;

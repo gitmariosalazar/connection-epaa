@@ -3,9 +3,7 @@ import { DatabaseAbstract } from '../../../../../../shared/connections/database/
 import { InterfaceInstallationOrderRepository } from '../../../../domain/contracts/installation-order.interface.repository';
 
 @Injectable()
-export class InstallationOrderPostgreSQLPersistence
-  implements InterfaceInstallationOrderRepository
-{
+export class InstallationOrderPostgreSQLPersistence implements InterfaceInstallationOrderRepository {
   constructor(private readonly databaseService: DatabaseAbstract) {}
 
   async issueInstallationOrder(
@@ -22,38 +20,60 @@ export class InstallationOrderPostgreSQLPersistence
       codigo_orden: string;
     }>(
       `INSERT INTO work_orders.orden_trabajo (
+         origen,
+         id_entidad_origen,
          id_tipo_trabajo,
          id_prioridad,
          id_cliente,
          estado,
-         descripcion,
-         usuario_creacion,
+         direccion,
+         metadata,
+         created_by,
+         usuario_asignado,
          usuario_asignacion,
          fecha_asignacion
        ) VALUES (
+         'SOLICITUD',
+         $2::uuid,
          (SELECT id_tipo_trabajo FROM work_orders.tipo_trabajo
-          WHERE UPPER(nombre) = 'AGUA POTABLE' LIMIT 1),
+          WHERE UPPER(nombre) = UPPER('Instalación y Calibración de Medidor') LIMIT 1),
          $1,
          (SELECT id_cliente FROM acometidas.solicitud WHERE id_solicitud = $2),
-         (SELECT id_estado FROM work_orders.estado_orden_trabajo
-          WHERE UPPER(nombre_estado) = 'PENDIENTE' LIMIT 1),
-         $3,
+         CASE WHEN $5::uuid IS NULL THEN 'NOTIFICADA_INSTALACION' ELSE 'PENDIENTE_INSTALACION' END,
+         (SELECT direccion FROM acometidas.solicitud WHERE id_solicitud = $2),
+         jsonb_build_object(
+           'descripcion', $3::text,
+           'scheduled_date', $6::text,
+           'module', 'connection.installation-order'
+         ),
          $4::uuid,
          $5::uuid,
-         CASE WHEN $5 IS NULL THEN NULL ELSE NOW() END
+         $4::uuid,
+         CASE WHEN $5::uuid IS NULL THEN NULL ELSE NOW() END
        )
        RETURNING id_orden_trabajo, codigo_orden`,
-      [priorityId, solicitudId, description, creatorId, technicianId],
+      [
+        priorityId,
+        solicitudId,
+        description,
+        creatorId,
+        technicianId,
+        scheduledDate,
+      ],
     );
 
     const workOrderId = otResult[0].id_orden_trabajo;
     const codigoOrden = otResult[0].codigo_orden;
 
+    console.log(
+      `OT creada con ID: ${workOrderId} y código: ${codigoOrden} para solicitud: ${solicitudId}`,
+    );
+
     // 2. Vincular con la solicitud como tipo INSTALACION
     await this.databaseService.query(
-      `INSERT INTO acometidas.solicitud_orden_trabajo (id_solicitud, id_orden_trabajo, tipo_orden)
-       VALUES ($1, $2, 'INSTALACION')`,
-      [solicitudId, workOrderId],
+      `INSERT INTO acometidas.solicitud_orden_trabajo (id_solicitud, id_orden_trabajo, tipo_orden, numero_orden)
+       VALUES ($1, $2, 'INSTALACION', $3)`,
+      [solicitudId, workOrderId, codigoOrden],
     );
 
     return { workOrderId, codigoOrden };
@@ -62,21 +82,32 @@ export class InstallationOrderPostgreSQLPersistence
   async startInstallationOrder(
     workOrderId: string,
     technicianId: string,
-    startStatusId: number,
+    _startStatusId: number,
   ): Promise<{ solicitudId: string } | null> {
+    /**
+     * Flujo exclusivo de instalación de acometidas (SRP):
+     *   PENDIENTE_INSTALACION → EN_PROCESO_INSTALACION
+     *
+     * Un único UPDATE simple — el trigger fn_enforce_state_machine valida
+     * que esta transición esté permitida en fn_validar_transicion_estado.
+     */
     await this.databaseService.query(
       `UPDATE work_orders.orden_trabajo
-       SET estado = $1,
-           usuario_asignacion = $2,
-           fecha_asignacion = NOW()
-       WHERE id_orden_trabajo = $3`,
-      [startStatusId, technicianId, workOrderId],
+         SET estado             = 'EN_PROCESO_INSTALACION',
+             usuario_asignado   = $2::uuid,
+             usuario_asignacion = $2::uuid,
+             fecha_asignacion   = NOW(),
+             fecha_inicio_campo = NOW(),
+             updated_at         = NOW()
+       WHERE id_orden_trabajo   = $1::uuid
+         AND estado             = 'PENDIENTE_INSTALACION'`,
+      [workOrderId, technicianId],
     );
 
     const result = await this.databaseService.query<{ id_solicitud: string }>(
       `SELECT id_solicitud
        FROM acometidas.solicitud_orden_trabajo
-       WHERE id_orden_trabajo = $1 AND tipo_orden = 'INSTALACION'`,
+       WHERE id_orden_trabajo = $1::uuid AND tipo_orden = 'INSTALACION'`,
       [workOrderId],
     );
 
@@ -85,14 +116,14 @@ export class InstallationOrderPostgreSQLPersistence
 
   async completeInstallationOrder(
     workOrderId: string,
-    completedStatusId: number,
+    _completedStatusId: number,
   ): Promise<{ solicitudId: string } | null> {
     await this.databaseService.query(
       `UPDATE work_orders.orden_trabajo
-       SET estado = $1,
+       SET estado = 'COMPLETADA',
            fecha_completada = NOW()
-       WHERE id_orden_trabajo = $2`,
-      [completedStatusId, workOrderId],
+       WHERE id_orden_trabajo = $1`,
+      [workOrderId],
     );
 
     const result = await this.databaseService.query<{ id_solicitud: string }>(
@@ -107,24 +138,30 @@ export class InstallationOrderPostgreSQLPersistence
 
   async failInstallationOrder(
     workOrderId: string,
-    failedStatusId: number,
+    _failedStatusId: number,
     failureReason: string,
   ): Promise<{ solicitudId: string } | null> {
     await this.databaseService.query(
       `UPDATE work_orders.orden_trabajo
-       SET estado = $1
-       WHERE id_orden_trabajo = $2`,
-      [failedStatusId, workOrderId],
+       SET estado = 'RECHAZADA_TECNICA'
+       WHERE id_orden_trabajo = $1`,
+      [workOrderId],
     );
 
     // Registrar el motivo en observaciones (tabla correcta según schema)
-    await this.databaseService.query(
-      `INSERT INTO work_orders.observaciones_orden_trabajo (id_orden_trabajo, texto)
-       VALUES ($1, $2)`,
-      [workOrderId, `Falla en instalación: ${failureReason}`],
-    ).catch(() => {
-      // Si hay error en observaciones no bloquea el flujo principal
-    });
+    await this.databaseService
+      .query(
+        `INSERT INTO work_orders.observaciones_orden_trabajo (id_orden_trabajo, texto, created_by)
+       VALUES (
+         $1,
+         $2,
+         (SELECT created_by FROM work_orders.orden_trabajo WHERE id_orden_trabajo = $1)
+       )`,
+        [workOrderId, `Falla en instalación: ${failureReason}`],
+      )
+      .catch(() => {
+        // Si hay error en observaciones no bloquea el flujo principal
+      });
 
     const result = await this.databaseService.query<{ id_solicitud: string }>(
       `SELECT id_solicitud
@@ -143,7 +180,7 @@ export class InstallationOrderPostgreSQLPersistence
     comment: string,
   ): Promise<void> {
     await this.databaseService.query(
-      `SELECT acometidas.fn_cambiar_estado_solicitud($1, $2, $3, $4)`,
+      `SELECT acometidas.fn_cambiar_estado_solicitud($1::uuid, $2::text, $3::uuid, $4::text, '{}'::jsonb)`,
       [solicitudId, newStatus, userId, comment],
     );
   }

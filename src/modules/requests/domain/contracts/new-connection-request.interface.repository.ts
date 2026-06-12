@@ -56,6 +56,9 @@ export interface InterfaceConnectionRequestRepository {
   ): Promise<HistorialEstadoResponse[]>;
   /** Métricas globales para el panel administrativo */
   getDashboardKpis(): Promise<DashboardKpisResponse>;
+  getDashboardKpisByClienteId(
+    clienteId: string,
+  ): Promise<DashboardKpisResponse>;
   /** Órdenes de trabajo (inspección e instalación) ligadas a una solicitud */
   getOrdenesTrabajoBysSolicitudId(
     solicitudId: string,

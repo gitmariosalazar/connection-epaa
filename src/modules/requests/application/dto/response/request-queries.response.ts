@@ -24,6 +24,8 @@ export interface ExpedienteResponse {
   // Cliente y analista
   clienteId: string;
   analistaUsername: string | null;
+  analistaNombre: string | null;
+
   // Documentos
   documentos: DocumentoAdjuntoResponse[];
   // Factura
@@ -122,7 +124,9 @@ export interface DashboardKpisResponse {
 
 // ─── OTs vinculadas a una solicitud ──────────────────────────────────────────
 export interface SolicitudOrdenTrabajoResponse {
-  tipoOrden: string;
+  /** UUID de la OT — requerido para acciones como iniciar inspección/instalación */
+  workOrderId: string;
+  tipoOrden: string;        // 'INSPECCION' | 'INSTALACION'
   codigoOrden: string;
   descripcion: string;
   estadoOt: string;
@@ -203,6 +207,7 @@ export interface TrackingSolicitudResponse {
 
   // ── Analista asignado
   analista: string | null;
+  analistaNombre: string | null;
 
   // ── Timeline completo (ordenado cronológicamente)
   historial: HistorialTrackingEntry[];

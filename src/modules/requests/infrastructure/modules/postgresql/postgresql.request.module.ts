@@ -23,6 +23,8 @@ import { GetExpedienteByAnalistaIdUseCase } from '../../../application/usecases/
 import { GetTrackingBySolicitudIdUseCase } from '../../../application/usecases/commands/GetTrackingBySolicitudIdUseCase';
 import { GetTrackingByAnalistaIdUseCase } from '../../../application/usecases/commands/GetTrackingByAnalistaIdUseCase';
 import { GetRequestDetailByRequestIdOrNumberUseCase } from '../../../application/usecases/commands/GetRequestDetailByRequestIdOrNumberUseCase';
+import { GetNotificationValidationMatrixUseCase } from '../../../application/usecases/commands/GetNotificationValidationMatrixUseCase';
+import { GetDashboardKpisByClientIdUseCase } from '../../../application/usecases/commands/GetDashboardKpisByClientIdUseCase';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -45,6 +47,8 @@ import { GetRequestDetailByRequestIdOrNumberUseCase } from '../../../application
     GetTrackingBySolicitudIdUseCase,
     GetTrackingByAnalistaIdUseCase,
     GetRequestDetailByRequestIdOrNumberUseCase,
+    GetNotificationValidationMatrixUseCase,
+    GetDashboardKpisByClientIdUseCase,
     UploadFileService,
     {
       provide: 'InterfaceFileStorageService',

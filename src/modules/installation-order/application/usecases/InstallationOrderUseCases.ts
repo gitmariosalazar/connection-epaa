@@ -16,14 +16,14 @@ export class IssueInstallationOrderDto {
 export class StartInstallationDto {
   workOrderId: string;
   technicianId: string;
-  /** ID del estado "EN_PROCESO" en work_orders.estado_orden_trabajo */
+  /** Legacy field: se mantiene por compatibilidad del contrato */
   startStatusId: number;
 }
 
 export class CompleteInstallationDto {
   workOrderId: string;
   userId: string;
-  /** ID del estado "COMPLETADA" en work_orders.estado_orden_trabajo */
+  /** Legacy field: se mantiene por compatibilidad del contrato */
   completedStatusId: number;
 }
 
@@ -31,7 +31,7 @@ export class FailInstallationDto {
   workOrderId: string;
   userId: string;
   failureReason: string;
-  /** ID del estado "FALLIDA" en work_orders.estado_orden_trabajo */
+  /** Legacy field: se mantiene por compatibilidad del contrato */
   failedStatusId: number;
 }
 
@@ -50,15 +50,22 @@ export class IssueInstallationOrderUseCase {
     private readonly notification: INotificationPort,
   ) {}
 
-  async execute(dto: IssueInstallationOrderDto): Promise<{ workOrderId: string; codigoOrden: string; solicitudId: string }> {
-    const { workOrderId, codigoOrden } = await this.repository.issueInstallationOrder(
-      dto.solicitudId,
-      dto.technicianId,
-      dto.description,
-      dto.priorityId,
-      dto.scheduledDate,
-      dto.creatorId,
-    );
+  async execute(
+    dto: IssueInstallationOrderDto,
+  ): Promise<{
+    workOrderId: string;
+    codigoOrden: string;
+    solicitudId: string;
+  }> {
+    const { workOrderId, codigoOrden } =
+      await this.repository.issueInstallationOrder(
+        dto.solicitudId,
+        dto.technicianId,
+        dto.description,
+        dto.priorityId,
+        dto.scheduledDate,
+        dto.creatorId,
+      );
 
     await this.repository.changeRequestStatus(
       dto.solicitudId,
@@ -67,7 +74,7 @@ export class IssueInstallationOrderUseCase {
       `Orden de instalación ${codigoOrden} emitida`,
     );
 
-    // Notificar a la cuadrilla técnica
+    // Notificar al técnico responsable
     if (dto.technicianId) {
       this.notification.notifyOTInstalacionEmitida(
         dto.technicianId,
@@ -91,7 +98,9 @@ export class StartInstallationUseCase {
     private readonly repository: InterfaceInstallationOrderRepository,
   ) {}
 
-  async execute(dto: StartInstallationDto): Promise<{ solicitudId: string; newStatus: string }> {
+  async execute(
+    dto: StartInstallationDto,
+  ): Promise<{ solicitudId: string; newStatus: string }> {
     const result = await this.repository.startInstallationOrder(
       dto.workOrderId,
       dto.technicianId,
@@ -99,17 +108,22 @@ export class StartInstallationUseCase {
     );
 
     if (!result) {
-      throw new NotFoundException(`OT de instalación ${dto.workOrderId} no encontrada`);
+      throw new NotFoundException(
+        `OT de instalación ${dto.workOrderId} no encontrada`,
+      );
     }
 
     await this.repository.changeRequestStatus(
       result.solicitudId,
       'INSTALACION_EN_PROCESO',
       dto.technicianId,
-      'Cuadrilla técnica confirmó inicio de la instalación en campo',
+      'Técnico confirmó inicio de la instalación en campo',
     );
 
-    return { solicitudId: result.solicitudId, newStatus: 'INSTALACION_EN_PROCESO' };
+    return {
+      solicitudId: result.solicitudId,
+      newStatus: 'INSTALACION_EN_PROCESO',
+    };
   }
 }
 
@@ -127,14 +141,18 @@ export class CompleteInstallationUseCase {
     private readonly repository: InterfaceInstallationOrderRepository,
   ) {}
 
-  async execute(dto: CompleteInstallationDto): Promise<{ solicitudId: string; newStatus: string }> {
+  async execute(
+    dto: CompleteInstallationDto,
+  ): Promise<{ solicitudId: string; newStatus: string }> {
     const result = await this.repository.completeInstallationOrder(
       dto.workOrderId,
       dto.completedStatusId,
     );
 
     if (!result) {
-      throw new NotFoundException(`OT de instalación ${dto.workOrderId} no encontrada`);
+      throw new NotFoundException(
+        `OT de instalación ${dto.workOrderId} no encontrada`,
+      );
     }
 
     // Paso 1: marcar como completada
@@ -153,7 +171,10 @@ export class CompleteInstallationUseCase {
       'Solicitud derivada a oficina catastral para registro y activación del suministro',
     );
 
-    return { solicitudId: result.solicitudId, newStatus: 'REGISTRO_CATASTRAL_PENDIENTE' };
+    return {
+      solicitudId: result.solicitudId,
+      newStatus: 'REGISTRO_CATASTRAL_PENDIENTE',
+    };
   }
 }
 
@@ -168,7 +189,9 @@ export class FailInstallationUseCase {
     private readonly repository: InterfaceInstallationOrderRepository,
   ) {}
 
-  async execute(dto: FailInstallationDto): Promise<{ solicitudId: string; newStatus: string }> {
+  async execute(
+    dto: FailInstallationDto,
+  ): Promise<{ solicitudId: string; newStatus: string }> {
     const result = await this.repository.failInstallationOrder(
       dto.workOrderId,
       dto.failedStatusId,
@@ -176,7 +199,9 @@ export class FailInstallationUseCase {
     );
 
     if (!result) {
-      throw new NotFoundException(`OT de instalación ${dto.workOrderId} no encontrada`);
+      throw new NotFoundException(
+        `OT de instalación ${dto.workOrderId} no encontrada`,
+      );
     }
 
     await this.repository.changeRequestStatus(
@@ -186,6 +211,9 @@ export class FailInstallationUseCase {
       `Instalación fallida: ${dto.failureReason}`,
     );
 
-    return { solicitudId: result.solicitudId, newStatus: 'INSTALACION_FALLIDA' };
+    return {
+      solicitudId: result.solicitudId,
+      newStatus: 'INSTALACION_FALLIDA',
+    };
   }
 }

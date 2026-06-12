@@ -32,17 +32,30 @@ export class SubmitInspectionReportUseCase {
     private readonly notification: INotificationPort,
   ) {}
 
-  async execute(dto: SubmitInspectionReportDto): Promise<InspectionReportModel> {
-    const geom = dto.longitude && dto.latitude
-      ? `POINT(${dto.longitude} ${dto.latitude})`
-      : null;
+  async execute(
+    dto: SubmitInspectionReportDto,
+  ): Promise<InspectionReportModel> {
+    const geom =
+      dto.longitude && dto.latitude
+        ? `POINT(${dto.longitude} ${dto.latitude})`
+        : null;
 
     const report = new InspectionReportModel(
-      null, dto.workOrderId, dto.solicitudId, dto.result,
-      dto.networkDistanceM ?? null, dto.connectionDiameter ?? null,
-      dto.terrainConditions ?? null, dto.observations ?? null,
-      geom, dto.materialCost ?? null, dto.laborCost ?? null,
-      null, null, null, null,
+      null,
+      dto.workOrderId,
+      dto.solicitudId,
+      dto.result,
+      dto.networkDistanceM ?? null,
+      dto.connectionDiameter ?? null,
+      dto.terrainConditions ?? null,
+      dto.observations ?? null,
+      geom,
+      dto.materialCost ?? null,
+      dto.laborCost ?? null,
+      null,
+      null,
+      null,
+      null,
     );
 
     // 1. Guardar informe
@@ -50,16 +63,27 @@ export class SubmitInspectionReportUseCase {
     if (!saved) throw new NotFoundException('No se pudo guardar el informe');
 
     // 2. Cerrar OT en work_orders
-    await this.repository.closeWorkOrder(dto.workOrderId, dto.completedStatusId);
+    await this.repository.closeWorkOrder(
+      dto.workOrderId,
+      dto.completedStatusId,
+    );
 
     // 3. Transición de estado (siempre via función BD)
     await this.repository.changeRequestStatus(
-      dto.solicitudId, 'INFORME_EN_REVISION', dto.technicianId,
+      dto.solicitudId,
+      'INFORME_EN_REVISION',
+      dto.technicianId,
       'Informe técnico enviado, pendiente de revisión administrativa',
     );
 
-    // 4. Notificar a la jefatura que hay un informe pendiente de revisión (Fase 8)
-    this.notification.notifyInformeSubido(dto.technicianId, dto.solicitudId);
+    // 4. Notificar al analista responsable que hay un informe pendiente de revisión (Fase 8)
+    const analystId = await this.repository.getAnalystIdBySolicitud(
+      dto.solicitudId,
+    );
+    this.notification.notifyInformeSubido(
+      analystId ?? dto.technicianId,
+      dto.solicitudId,
+    );
 
     return saved;
   }
@@ -84,11 +108,17 @@ export class ApproveInspectionReportUseCase {
     private readonly notification: INotificationPort,
   ) {}
 
-  async execute(dto: ApproveInspectionReportDto): Promise<{ solicitudId: string; newStatus: string }> {
+  async execute(
+    dto: ApproveInspectionReportDto,
+  ): Promise<{ solicitudId: string; newStatus: string }> {
     const result = await this.repository.approveInspectionReport(
-      dto.reportId, dto.approved, dto.rejectionReason ?? null, dto.approverId,
+      dto.reportId,
+      dto.approved,
+      dto.rejectionReason ?? null,
+      dto.approverId,
     );
-    if (!result) throw new NotFoundException(`Informe ${dto.reportId} no encontrado`);
+    if (!result)
+      throw new NotFoundException(`Informe ${dto.reportId} no encontrado`);
 
     const newStatus = dto.approved ? 'INFORME_APROBADO' : 'RECHAZADA_TECNICA';
     const comment = dto.approved
@@ -96,18 +126,28 @@ export class ApproveInspectionReportUseCase {
       : `Informe técnico rechazado: ${dto.rejectionReason ?? 'Sin motivo especificado'}`;
 
     await this.repository.changeRequestStatus(
-      result.solicitudId, newStatus, dto.approverId, comment,
+      result.solicitudId,
+      newStatus,
+      dto.approverId,
+      comment,
+    );
+
+    const clientId = await this.repository.getClientIdBySolicitud(
+      result.solicitudId,
     );
 
     // Notificar al cliente según el resultado (Fase 9)
-    if (newStatus === 'INFORME_APROBADO') {
-      this.notification.notifyInformeAprobado(result.solicitudId, result.solicitudId);
-    } else {
-      this.notification.notifyInformeRechazado(
-        result.solicitudId,
-        result.solicitudId,
-        dto.rejectionReason ?? 'El informe técnico no cumple con los requisitos de factibilidad.',
-      );
+    if (clientId) {
+      if (newStatus === 'INFORME_APROBADO') {
+        this.notification.notifyInformeAprobado(clientId, result.solicitudId);
+      } else {
+        this.notification.notifyInformeRechazado(
+          clientId,
+          result.solicitudId,
+          dto.rejectionReason ??
+            'El informe técnico no cumple con los requisitos de factibilidad.',
+        );
+      }
     }
 
     return { solicitudId: result.solicitudId, newStatus };

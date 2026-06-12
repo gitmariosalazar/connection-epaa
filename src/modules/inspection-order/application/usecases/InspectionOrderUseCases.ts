@@ -19,7 +19,7 @@ export class IssueInspectionOrderDto {
 export class StartInspectionDto {
   workOrderId: string;
   technicianId: string;
-  /** ID del estado "EN_PROCESO" en work_orders.estado_orden_trabajo */
+  /** Legacy field: se mantiene por compatibilidad del contrato */
   startStatusId: number;
 }
 
@@ -41,16 +41,23 @@ export class IssueInspectionOrderUseCase {
     private readonly notification: INotificationPort,
   ) {}
 
-  async execute(dto: IssueInspectionOrderDto): Promise<{ workOrderId: string; codigoOrden: string; solicitudId: string }> {
+  async execute(
+    dto: IssueInspectionOrderDto,
+  ): Promise<{
+    workOrderId: string;
+    codigoOrden: string;
+    solicitudId: string;
+  }> {
     // 1. Crear la OT y vincularla con la solicitud
-    const { workOrderId, codigoOrden } = await this.repository.issueInspectionOrder(
-      dto.solicitudId,
-      dto.technicianId,
-      dto.description,
-      dto.priorityId,
-      dto.scheduledDate,
-      dto.creatorId,
-    );
+    const { workOrderId, codigoOrden } =
+      await this.repository.issueInspectionOrder(
+        dto.solicitudId,
+        dto.technicianId,
+        dto.description,
+        dto.priorityId,
+        dto.scheduledDate,
+        dto.creatorId,
+      );
 
     // 2. Transición de estado (vía función BD, garantiza auditoría)
     await this.repository.changeRequestStatus(
@@ -62,7 +69,9 @@ export class IssueInspectionOrderUseCase {
 
     // 3. Notificar al inspector asignado (fire-and-forget)
     if (dto.technicianId) {
-      const address = await this.repository.getAddressBySolicitud(dto.solicitudId);
+      const address = await this.repository.getAddressBySolicitud(
+        dto.solicitudId,
+      );
       this.notification.notifyInspeccionAsignada(
         dto.technicianId,
         dto.solicitudId,
@@ -86,7 +95,9 @@ export class StartInspectionUseCase {
     private readonly repository: InterfaceInspectionOrderRepository,
   ) {}
 
-  async execute(dto: StartInspectionDto): Promise<{ solicitudId: string; newStatus: string }> {
+  async execute(
+    dto: StartInspectionDto,
+  ): Promise<{ solicitudId: string; newStatus: string }> {
     const result = await this.repository.startInspectionOrder(
       dto.workOrderId,
       dto.technicianId,
@@ -94,7 +105,9 @@ export class StartInspectionUseCase {
     );
 
     if (!result) {
-      throw new NotFoundException(`Orden de trabajo ${dto.workOrderId} no encontrada`);
+      throw new NotFoundException(
+        `Orden de trabajo ${dto.workOrderId} no encontrada`,
+      );
     }
 
     await this.repository.changeRequestStatus(
@@ -104,6 +117,9 @@ export class StartInspectionUseCase {
       'Inspector confirmó inicio de la visita técnica al predio',
     );
 
-    return { solicitudId: result.solicitudId, newStatus: 'INSPECCION_EN_PROCESO' };
+    return {
+      solicitudId: result.solicitudId,
+      newStatus: 'INSPECCION_EN_PROCESO',
+    };
   }
 }

@@ -39,151 +39,188 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
   async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
     try {
       const query = `
-      SELECT json_build_object(
-        'resumen', (
-            SELECT row_to_json(r) 
-            FROM (
-                SELECT 
-                    COUNT(*) as total_universo,
-                    ROUND(AVG(actualizacion_completa::int) * 100, 1) as pct_progreso_total,
-                    COUNT(*) FILTER (WHERE ultima_modificacion_global > date_trunc('day', now())) as actualizaciones_hoy
-                FROM public.vw_avance_actualizacion_acometidas
-            ) r
+        WITH data_avance AS (
+            -- 1. Evaluamos la vista una sola vez (PostgreSQL cachea / materializa el CTE)
+            SELECT * FROM public.vw_avance_actualizacion_acometidas
         ),
-        'historico', COALESCE((
-            SELECT json_agg(h)
-            FROM (
-                SELECT 
-                    date_trunc('day', ultima_modificacion_global)::date as fecha,
-                    count(*) as registros_completados
-                FROM public.vw_avance_actualizacion_acometidas
-                WHERE actualizacion_completa = true
-                  AND ultima_modificacion_global > now() - INTERVAL '30 days'
-                GROUP BY 1
-                ORDER BY 1
-            ) h
-        ), '[]'::json),
-        'distribucion', COALESCE((
-            SELECT json_agg(d)
-            FROM (
-                SELECT 
-                    CASE 
-                        WHEN actualizacion_completa THEN 'Completado (Full)'
-                        WHEN NOT cliente_actualizado THEN 'Pendiente Datos Cliente'
-                        WHEN NOT predio_actualizado THEN 'Pendiente Ficha Predial'
-                        ELSE 'Pendiente Geolocalización'
-                    END as categoria,
-                    count(*) as cantidad
-                FROM public.vw_avance_actualizacion_acometidas
-                GROUP BY 1
-            ) d
-        ), '[]'::json),
-        'porZonas', COALESCE((
-            SELECT json_agg(z)
-            FROM (
-                SELECT 
-                    zona_id,
-                    count(*) as total,
-                    SUM(CASE WHEN actualizacion_completa THEN 1 ELSE 0 END) as completados,
-                    SUM(CASE WHEN NOT actualizacion_completa THEN 1 ELSE 0 END) as pendientes
-                FROM public.vw_avance_actualizacion_acometidas
-                GROUP BY 1
-                ORDER BY total DESC
-            ) z
-        ), '[]'::json),
-        
-        'distribucionTarifas', COALESCE((
-            SELECT json_agg(dt)
-            FROM (
-                SELECT 
-                    ct.nombre as tarifa,
-                    count(a.acometida_id) as cantidad
-                FROM public.acometida a
-                LEFT JOIN public.tarifa t ON t.tarifa_id = a.tarifa_id
-                LEFT JOIN public.categoria ct ON ct.categoria_id = t.categoria_id
-                GROUP BY ct.nombre
-                ORDER BY cantidad DESC
-            ) dt
-        ), '[]'::json),
-
-        'coberturaAlcantarillado', (
-            SELECT row_to_json(ca)
-            FROM (
-                SELECT 
-                    COALESCE(SUM(CASE WHEN alcantarillado = true THEN 1 ELSE 0 END), 0) as con_alcantarillado,
-                    COALESCE(SUM(CASE WHEN alcantarillado = false OR alcantarillado IS NULL THEN 1 ELSE 0 END), 0) as sin_alcantarillado
-                FROM public.acometida
-            ) ca
+        cte_resumen AS (
+            SELECT 
+                COUNT(*)::int as total_universo,
+                ROUND(AVG(actualizacion_completa::int) * 100, 1)::float as pct_progreso_total,
+                COUNT(*) FILTER (WHERE ultima_modificacion_global > date_trunc('day', now()))::int as actualizaciones_hoy
+            FROM data_avance
         ),
-
-        'calidadGps', (
-            SELECT row_to_json(cg)
-            FROM (
-                SELECT 
-                    COALESCE(ROUND(AVG(precision)::numeric, 2), 0) as precision_promedio
-                FROM public.acometida WHERE precision IS NOT NULL AND precision > 0
-            ) cg
+        cte_historico AS (
+            SELECT 
+                date_trunc('day', ultima_modificacion_global)::date as fecha,
+                count(*)::int as registros_completados
+            FROM data_avance
+            WHERE actualizacion_completa = true
+              AND ultima_modificacion_global > now() - INTERVAL '30 days'
+            GROUP BY 1
+            ORDER BY 1
         ),
-
-        'instalacionesRecientesCoords', COALESCE((
-            SELECT json_agg(irc)
-            FROM (
-                SELECT 
-                    coordenadas,
-                    fecha_instalacion as fecha
-                FROM public.acometida
-                WHERE fecha_instalacion >= date_trunc('year', now())
-                  AND coordenadas IS NOT NULL
-                LIMIT 100
-            ) irc
-        ), '[]'::json),
-
-        'curvaCrecimiento', COALESCE((
-            SELECT json_agg(cc)
-            FROM (
-                SELECT 
-                    to_char(fecha_instalacion, 'YYYY-MM') as mes,
-                    count(*) as nuevas_acometidas
-                FROM public.acometida
-                WHERE fecha_instalacion IS NOT NULL
-                  AND fecha_instalacion >= now() - INTERVAL '12 months'
-                GROUP BY 1
-                ORDER BY 1 ASC
-            ) cc
-        ), '[]'::json),
-
-        'poblacionServida', (
-            SELECT row_to_json(ps)
-            FROM (
-                SELECT 
-                    COALESCE(SUM(a.numero_personas), 0) as total_habitantes
-                FROM public.acometida a
-                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
-                WHERE est.permite_lectura = TRUE
-            ) ps
+        cte_distribucion AS (
+            SELECT 
+                CASE 
+                    WHEN actualizacion_completa THEN 'Completado (Full)'
+                    WHEN NOT cliente_actualizado THEN 'Pendiente Datos Cliente'
+                    WHEN NOT predio_actualizado THEN 'Pendiente Ficha Predial'
+                    ELSE 'Pendiente Geolocalización'
+                END as categoria,
+                count(*)::int as cantidad
+            FROM data_avance
+            GROUP BY 1
         ),
-
-        'coberturaMedidores', (
-            SELECT row_to_json(cm)
-            FROM (
-                SELECT 
-                    SUM(CASE WHEN numero_medidor IS NOT NULL AND numero_medidor != '' AND UPPER(numero_medidor) != 'S/M' THEN 1 ELSE 0 END) as con_medidor,
-                    SUM(CASE WHEN numero_medidor IS NULL OR numero_medidor = '' OR UPPER(numero_medidor) = 'S/M' THEN 1 ELSE 0 END) as sin_medidor
-                FROM public.acometida
-            ) cm
+        cte_por_zonas AS (
+            SELECT 
+                zona_id,
+                count(*)::int as total,
+                SUM(CASE WHEN actualizacion_completa THEN 1 ELSE 0 END)::int as completados,
+                SUM(CASE WHEN NOT actualizacion_completa THEN 1 ELSE 0 END)::int as pendientes
+            FROM data_avance
+            GROUP BY 1
+            ORDER BY total DESC
         ),
-
-        'estadoRed', (
-            SELECT row_to_json(er)
-            FROM (
-                SELECT 
-                    SUM(CASE WHEN est.permite_lectura = TRUE  THEN 1 ELSE 0 END) as activas,
-                    SUM(CASE WHEN est.permite_lectura = FALSE THEN 1 ELSE 0 END) as inactivas
-                FROM public.acometida a
-                JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
-            ) er
+        cte_distribucion_tarifas AS (
+            SELECT 
+                COALESCE(ct.nombre, 'Sin tarifa asignada') as tarifa,
+                count(a.acometida_id)::int as cantidad
+            FROM public.acometida a
+            LEFT JOIN public.tarifa t ON t.tarifa_id = a.tarifa_id
+            LEFT JOIN public.categoria ct ON ct.categoria_id = t.categoria_id
+            GROUP BY ct.nombre
+            ORDER BY cantidad DESC
+        ),
+        cte_metricas_acometida AS (
+            -- ESCANEO ÚNICO A LA TABLA ACOMETIDA
+            SELECT 
+                -- Cobertura de Alcantarillado
+                COALESCE(SUM(CASE WHEN a.alcantarillado = true THEN 1 ELSE 0 END), 0)::int as con_alcantarillado,
+                COALESCE(SUM(CASE WHEN a.alcantarillado = false OR a.alcantarillado IS NULL THEN 1 ELSE 0 END), 0)::int as sin_alcantarillado,
+                
+                -- Calidad GPS (precisión)
+                COALESCE(ROUND(AVG(CASE WHEN a.precision > 0 THEN a.precision ELSE NULL END)::numeric, 2), 0)::float as precision_promedio,
+                
+                -- Cobertura de Medidores
+                SUM(CASE WHEN a.numero_medidor IS NOT NULL AND a.numero_medidor != '' AND UPPER(a.numero_medidor) != 'S/M' THEN 1 ELSE 0 END)::int as con_medidor,
+                SUM(CASE WHEN a.numero_medidor IS NULL OR a.numero_medidor = '' OR UPPER(a.numero_medidor) = 'S/M' THEN 1 ELSE 0 END)::int as sin_medidor,
+                
+                -- Estado de la Red (Activas vs Inactivas)
+                SUM(CASE WHEN est.permite_lectura = TRUE  THEN 1 ELSE 0 END)::int as activas,
+                SUM(CASE WHEN est.permite_lectura = FALSE THEN 1 ELSE 0 END)::int as inactivas,
+                
+                -- Población Servida
+                COALESCE(SUM(CASE WHEN est.permite_lectura = TRUE THEN a.numero_personas ELSE 0 END), 0)::int as total_habitantes
+            FROM public.acometida a
+            LEFT JOIN public.cat_estados_acometida est ON a.estado_id = est.id_estado
+        ),
+        cte_instalaciones_recientes AS (
+            SELECT 
+                coordenadas,
+                fecha_instalacion as fecha
+            FROM public.acometida
+            WHERE fecha_instalacion >= date_trunc('year', now())
+              AND coordenadas IS NOT NULL
+            LIMIT 100
+        ),
+        cte_curva_crecimiento AS (
+            SELECT 
+                to_char(fecha_instalacion, 'YYYY-MM') as mes,
+                count(*)::int as nuevas_acometidas
+            FROM public.acometida
+            WHERE fecha_instalacion IS NOT NULL
+              AND fecha_instalacion >= now() - INTERVAL '12 months'
+            GROUP BY 1
+            ORDER BY 1 ASC
+        ),
+        cte_embudo AS (
+            -- EMBUDO DE CALIDAD
+            SELECT 
+                count(*)::int as total_acometidas,
+                SUM(CASE WHEN a.predio_clave_catastral IS NOT NULL THEN 1 ELSE 0 END)::int as con_predio,
+                SUM(da.cliente_actualizado::int)::int as con_cliente,
+                SUM(da.actualizacion_completa::int)::int as completa
+            FROM public.acometida a
+            JOIN data_avance da ON a.acometida_id = da.acometida_id
+        ),
+        cte_por_sectores AS (
+            -- 2. DESGLOSE DE AVANCE DETALLADO POR SECTOR (camelCase en JSON)
+            SELECT
+                a.sector,
+                COUNT(*)::int as total,
+                SUM(CASE WHEN da.actualizacion_completa THEN 1 ELSE 0 END)::int as "totalActualizadas",
+                SUM(CASE WHEN NOT da.actualizacion_completa THEN 1 ELSE 0 END)::int as pendientes,
+                ROUND(AVG(da.actualizacion_completa::int) * 100, 1)::float as porcentaje,
+                -- Auditoría detallada: qué falta georreferenciar/cargar por sector
+                SUM(CASE WHEN NOT da.acometida_actualizada THEN 1 ELSE 0 END)::int as "sinGeolocalizacion",
+                SUM(CASE WHEN NOT da.predio_actualizado THEN 1 ELSE 0 END)::int as "sinPredio",
+                SUM(CASE WHEN NOT da.cliente_actualizado THEN 1 ELSE 0 END)::int as "sinCliente"
+            FROM public.acometida a
+            JOIN data_avance da ON a.acometida_id = da.acometida_id
+            GROUP BY a.sector
+            ORDER BY a.sector ASC
         )
-      ) as stats;
+        SELECT jsonb_build_object(
+            'resumen', (SELECT to_jsonb(r) FROM cte_resumen r),
+            
+            'historico', COALESCE((SELECT jsonb_agg(h) FROM cte_historico h), '[]'::jsonb),
+            
+            'distribucion', COALESCE((SELECT jsonb_agg(d) FROM cte_distribucion d), '[]'::jsonb),
+            
+            'porZonas', COALESCE((SELECT jsonb_agg(z) FROM cte_por_zonas z), '[]'::jsonb),
+            
+            'distribucionTarifas', COALESCE((SELECT jsonb_agg(dt) FROM cte_distribucion_tarifas dt), '[]'::jsonb),
+            
+            'coberturaAlcantarillado', (
+                SELECT jsonb_build_object(
+                    'con_alcantarillado', con_alcantarillado,
+                    'sin_alcantarillado', sin_alcantarillado
+                ) FROM cte_metricas_acometida
+            ),
+            
+            'calidadGps', (
+                SELECT jsonb_build_object(
+                    'precision_promedio', precision_promedio
+                ) FROM cte_metricas_acometida
+            ),
+            
+            'instalacionesRecientesCoords', COALESCE((SELECT jsonb_agg(irc) FROM cte_instalaciones_recientes irc), '[]'::jsonb),
+            
+            'curvaCrecimiento', COALESCE((SELECT jsonb_agg(cc) FROM cte_curva_crecimiento cc), '[]'::jsonb),
+            
+            'poblacionServida', (
+                SELECT jsonb_build_object(
+                    'total_habitantes', total_habitantes
+                ) FROM cte_metricas_acometida
+            ),
+            
+            'coberturaMedidores', (
+                SELECT jsonb_build_object(
+                    'con_medidor', con_medidor,
+                    'sin_medidor', sin_medidor
+                ) FROM cte_metricas_acometida
+            ),
+            
+            'estadoRed', (
+                SELECT jsonb_build_object(
+                    'activas', activas,
+                    'inactivas', inactivas
+                ) FROM cte_metricas_acometida
+            ),
+            
+            'embudo', (
+                SELECT jsonb_build_array(
+                    jsonb_build_object('paso', '1. Total Acometidas', 'total', total_acometidas),
+                    jsonb_build_object('paso', '2. Con Predio Vinculado', 'total', con_predio),
+                    jsonb_build_object('paso', '3. Con Cliente Validado', 'total', con_cliente),
+                    jsonb_build_object('paso', '4. Actualización Completa', 'total', completa)
+                ) FROM cte_embudo
+            ),
+            
+            -- Agregamos la colección por sectores con formato limpio
+            'porSectores', COALESCE((SELECT jsonb_agg(s) FROM cte_por_sectores s), '[]'::jsonb)
+        ) as stats;
       `;
       const result = await this.databaseService.query<any>(query, []);
       if (!result || result.length === 0) {

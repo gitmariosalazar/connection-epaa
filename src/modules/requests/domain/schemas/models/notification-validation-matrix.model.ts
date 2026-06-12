@@ -1,0 +1,193 @@
+export interface NotificationValidationMatrixRowModel {
+  phaseCode: string;
+  phaseName: string;
+  workflowTransition: string;
+  kafkaEvent: string;
+  destinationRole: string;
+  destinationSource: string;
+  producerService: string;
+  consumerService: string;
+  channels: string;
+  implementedInNotifications: boolean;
+  qaCheck: string;
+}
+
+export const NOTIFICATION_VALIDATION_MATRIX: ReadonlyArray<NotificationValidationMatrixRowModel> =
+  [
+    {
+      phaseCode: 'F2',
+      phaseName: 'Documentos Enviados',
+      workflowTransition: 'DRAFT -> DOCS_SUBMITTED',
+      kafkaEvent: 'notifications.acometidas.docs_submitted',
+      destinationRole: 'Analista',
+      destinationSource: 'acometidas.solicitud.id_analista',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, IN_APP',
+      implementedInNotifications: true,
+      qaCheck:
+        'Verificar que el analista asignado reciba alerta con numero de solicitud y documentos.',
+    },
+    {
+      phaseCode: 'F2',
+      phaseName: 'Confirmacion al Cliente',
+      workflowTransition: 'DRAFT -> DOCS_SUBMITTED',
+      kafkaEvent: 'notifications.acometidas.acometida_confirmacion',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, IN_APP',
+      implementedInNotifications: true,
+      qaCheck:
+        'Verificar correo de confirmacion al cliente con datos de solicitud.',
+    },
+    {
+      phaseCode: 'F3',
+      phaseName: 'Documentos Rechazados',
+      workflowTransition: 'DOCS_SUBMITTED -> DOCS_REJECTED',
+      kafkaEvent: 'notifications.acometidas.docs_rechazados',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: true,
+      qaCheck: 'Verificar mensaje con motivo de rechazo visible para cliente.',
+    },
+    {
+      phaseCode: 'F3',
+      phaseName: 'Documentos Aprobados',
+      workflowTransition: 'DOCS_SUBMITTED -> DOCS_APPROVED',
+      kafkaEvent: 'notifications.acometidas.docs_aprobados',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, IN_APP',
+      implementedInNotifications: false,
+      qaCheck:
+        'Verificar si existe consumidor para el evento; actualmente marcado como pendiente.',
+    },
+    {
+      phaseCode: 'F6',
+      phaseName: 'Orden de Inspeccion Emitida',
+      workflowTransition: 'PAGO_CONFIRMADO -> ORDEN_INSPECCION_EMITIDA',
+      kafkaEvent: 'notifications.acometidas.inspeccion_asignada',
+      destinationRole: 'Tecnico Inspector',
+      destinationSource: 'payload.technicianId',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'IN_APP',
+      implementedInNotifications: true,
+      qaCheck:
+        'Verificar notificacion al tecnico correcto con direccion del predio.',
+    },
+    {
+      phaseCode: 'F8',
+      phaseName: 'Informe Tecnico Subido',
+      workflowTransition: 'INSPECCION_EN_PROCESO -> INFORME_EN_REVISION',
+      kafkaEvent: 'notifications.acometidas.informe_subido',
+      destinationRole: 'Analista Revisor',
+      destinationSource: 'acometidas.solicitud.id_analista',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'IN_APP',
+      implementedInNotifications: true,
+      qaCheck:
+        'Verificar alerta al analista de informe pendiente de aprobacion.',
+    },
+    {
+      phaseCode: 'F9',
+      phaseName: 'Informe Aprobado',
+      workflowTransition: 'INFORME_EN_REVISION -> INFORME_APROBADO',
+      kafkaEvent: 'notifications.acometidas.informe_aprobado',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: true,
+      qaCheck:
+        'Verificar confirmacion al cliente cuando el informe es aprobado.',
+    },
+    {
+      phaseCode: 'F9',
+      phaseName: 'Informe Rechazado',
+      workflowTransition: 'INFORME_EN_REVISION -> RECHAZADA_TECNICA',
+      kafkaEvent: 'notifications.acometidas.informe_rechazado',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: true,
+      qaCheck: 'Verificar notificacion de rechazo incluyendo motivo tecnico.',
+    },
+    {
+      phaseCode: 'F10',
+      phaseName: 'Factura de Inspeccion Emitida',
+      workflowTransition: 'INFORME_APROBADO -> FACTURA_INSPECCION_EMITIDA',
+      kafkaEvent: 'notifications.acometidas.factura_emitida',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: false,
+      qaCheck: 'Verificar consumidor y contenido de monto/numero de factura.',
+    },
+    {
+      phaseCode: 'F11',
+      phaseName: 'Pago Confirmado',
+      workflowTransition: 'FACTURA_INSPECCION_EMITIDA -> PAGO_CONFIRMADO',
+      kafkaEvent: 'notifications.acometidas.pago_confirmado',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: false,
+      qaCheck: 'Validar envio de confirmacion posterior al registro del pago.',
+    },
+    {
+      phaseCode: 'F12',
+      phaseName: 'Contrato Generado',
+      workflowTransition: 'PAGO_CONFIRMADO -> CONTRATO_GENERADO',
+      kafkaEvent: 'notifications.acometidas.contrato_generado',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, IN_APP',
+      implementedInNotifications: false,
+      qaCheck:
+        'Validar entrega al cliente del aviso de contrato listo para firma.',
+    },
+    {
+      phaseCode: 'F12',
+      phaseName: 'OT de Instalacion Emitida',
+      workflowTransition: 'CONTRATO_FIRMADO -> OT_INSTALACION_EMITIDA',
+      kafkaEvent: 'notifications.acometidas.ot_instalacion_emitida',
+      destinationRole: 'Tecnico Instalador',
+      destinationSource: 'payload.technicianId',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'IN_APP',
+      implementedInNotifications: true,
+      qaCheck: 'Validar notificacion al instalador con codigo de OT.',
+    },
+    {
+      phaseCode: 'F14',
+      phaseName: 'Suministro Activo',
+      workflowTransition: 'REGISTRO_CATASTRAL_PENDIENTE -> SUMINISTRO_ACTIVO',
+      kafkaEvent: 'notifications.acometidas.suministro_activo',
+      destinationRole: 'Cliente',
+      destinationSource: 'acometidas.solicitud.id_cliente',
+      producerService: 'connection',
+      consumerService: 'notifications',
+      channels: 'EMAIL, WHATSAPP, IN_APP',
+      implementedInNotifications: true,
+      qaCheck: 'Validar mensaje final con numero de cuenta y medidor.',
+    },
+  ];

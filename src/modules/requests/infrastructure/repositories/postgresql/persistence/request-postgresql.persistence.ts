@@ -412,41 +412,78 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
     solicitudId: string,
   ): Promise<ExpedienteResponse | null> {
     const result = await this.databaseSService.query<ExpedienteSqlResult>(
-      `SELECT
-          s.id_solicitud AS solicitud_id, s.estado, s.tipo_persona, s.tipo_acometida,
-          s.uso_predio, s.direccion, s.clave_catastral,
-          ST_AsText(s.geom) AS coordenadas, s.datos_adicionales,
-          s.created_at AS fecha_solicitud, s.updated_at,
-          EXTRACT(DAY FROM (NOW() - s.created_at))::INT AS dias_en_proceso,
-          s.id_cliente AS cliente_id,
-          a.username AS analista_username,
-          -- Documentos como JSON array
-          COALESCE(json_agg(DISTINCT jsonb_build_object(
-            'id', d.id_documento, 'tipodocumento', d.id_tipo_documento,
-            'url', d.url_archivo, 'estadoValidacion', d.estado_validacion,
-            'observacion', d.observacion
-          )) FILTER (WHERE d.id_documento IS NOT NULL), '[]') AS documentos,
-          -- Factura
-          f.id_factura, f.numero_factura, f.monto AS monto_factura,
-          f.estado AS estado_pago, f.fecha_vencimiento, f.fecha_pago, f.metodo_pago, f.url_comprobante AS url_comprobante,
-          -- Informe
-          i.id_informe, i.resultado AS resultado_informe,
-          i.costo_materiales, i.costo_mano_obra, i.costo_total,
-          i.aprobado AS informe_aprobado, i.motivo_rechazo,
-          -- Contrato
-          c.id_contrato, c.numero_contrato, c.estado_firma, c.valor_total,
-          c.url_contrato_firmado,
-          -- Registro catastral
-          r.numero_cuenta, r.numero_medidor, r.activo AS servicio_activo, r.fecha_activacion
+      `
+        SELECT
+            s.id_solicitud AS solicitud_id,
+            s.estado,
+            s.tipo_persona,
+            s.tipo_acometida,
+            s.uso_predio,
+            s.direccion,
+            s.clave_catastral,
+            ST_AsText(s.geom) AS coordenadas,
+            s.datos_adicionales,
+            s.created_at AS fecha_solicitud,
+            s.updated_at,
+            EXTRACT(DAY FROM (NOW() - s.created_at))::INT AS dias_en_proceso,
+            s.id_cliente AS cliente_id,
+            a.username AS analista_username,
+            concat(e.nombres, ' ', e.apellidos) AS usuario_nombre,
+
+            -- Documentos como JSON array
+            COALESCE(json_agg(DISTINCT jsonb_build_object(
+                'id', d.id_documento,
+                'tipodocumento', d.id_tipo_documento,
+                'url', d.url_archivo,
+                'estadoValidacion', d.estado_validacion,
+                'observacion', d.observacion
+            )) FILTER (WHERE d.id_documento IS NOT NULL), '[]') AS documentos,
+
+            -- Factura
+            f.id_factura,
+            f.numero_factura,
+            f.monto AS monto_factura,
+            f.estado AS estado_pago,
+            f.fecha_vencimiento,
+            f.fecha_pago,
+            f.metodo_pago,
+            f.url_comprobante AS url_comprobante,
+
+            -- Informe
+            i.id_informe,
+            i.resultado AS resultado_informe,
+            i.costo_materiales,
+            i.costo_mano_obra,
+            i.costo_total,
+            i.aprobado AS informe_aprobado,
+            i.motivo_rechazo,
+
+            -- Contrato
+            c.id_contrato,
+            c.numero_contrato,
+            c.estado_firma,
+            c.valor_total,
+            c.url_contrato_firmado,
+
+            -- Registro catastral
+            r.numero_cuenta,
+            r.numero_medidor,
+            r.activo AS servicio_activo,
+            r.fecha_activacion
+
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a ON a.usuario_id = s.id_analista
+        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d ON d.id_solicitud = s.id_solicitud AND d.is_deleted = FALSE
         LEFT JOIN acometidas.factura_inspeccion f ON f.id_solicitud = s.id_solicitud
         LEFT JOIN acometidas.informe_inspeccion i ON i.id_solicitud = s.id_solicitud AND i.is_deleted = FALSE
         LEFT JOIN acometidas.contrato_servicio c ON c.id_solicitud = s.id_solicitud AND c.is_deleted = FALSE
         LEFT JOIN acometidas.registro_catastral r ON r.id_solicitud = s.id_solicitud AND r.is_deleted = FALSE
-        WHERE s.id_solicitud = $1 AND s.is_deleted = FALSE
-        GROUP BY s.id_solicitud, a.username, f.id_factura, i.id_informe, c.id_contrato, r.id_registro`,
+
+        WHERE s.id_solicitud = 'e52fe136-333c-4531-a7db-f9501c77a4ff'
+          AND s.is_deleted = FALSE
+            GROUP BY s.id_solicitud, a.username, f.id_factura, i.id_informe, c.id_contrato, r.id_registro, usuario;
+      `,
       [solicitudId],
     );
     if (result.length === 0) return null;
@@ -477,6 +514,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
             -- Analista asignado
             a.username AS analista_username,
+            concat(emp.nombres, ' ', emp.apellidos) AS analista_nombre,
 
             -- Documentos agrupados como JSON array
             COALESCE(
@@ -563,6 +601,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a ON a.usuario_id = s.id_analista
+        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d
             ON d.id_solicitud = s.id_solicitud
            AND d.is_deleted = FALSE
@@ -592,6 +631,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             i.id_informe,
             c.id_contrato,
             r.id_registro,
+            analista_nombre,
             person,
             company;`,
         [requestNumberOrId],
@@ -643,6 +683,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             
             -- Analista asignado
             a.username AS analista_username,
+            concat(emp.nombres, ' ', emp.apellidos) AS analista_nombre,
             
             -- Documentos agrupados como JSON array
             COALESCE(
@@ -691,6 +732,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a 
             ON a.usuario_id = s.id_analista
+        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d 
             ON d.id_solicitud = s.id_solicitud 
           AND d.is_deleted = FALSE
@@ -714,6 +756,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
         GROUP BY 
             s.id_solicitud, 
             a.username, 
+            analista_nombre,
             f.id_factura, 
             i.id_informe, 
             c.id_contrato, 
@@ -749,6 +792,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             
             -- Analista asignado
             a.username AS analista_username,
+            concat(emp.nombres, ' ', emp.apellidos) AS analista_nombre,
             
             -- Documentos agrupados como JSON array
             COALESCE(
@@ -797,6 +841,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a 
             ON a.usuario_id = s.id_analista
+        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d 
             ON d.id_solicitud = s.id_solicitud 
           AND d.is_deleted = FALSE
@@ -819,7 +864,8 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
           
         GROUP BY 
             s.id_solicitud, 
-            a.username, 
+            a.username,
+            analista_nombre, 
             f.id_factura, 
             i.id_informe, 
             c.id_contrato, 
@@ -853,23 +899,58 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
     return RequestAdapter.toDashboardKpisResponseFromSqlResult(result[0]);
   }
 
+  async getDashboardKpisByClienteId(
+    clienteId: string,
+  ): Promise<DashboardKpisResponse> {
+    const result = await this.databaseSService.query<DashboardKpisSqlResult>(
+      `
+        SELECT
+          COUNT(*) FILTER (WHERE s.is_deleted = FALSE) AS total_solicitudes,
+          COUNT(*) FILTER (WHERE s.estado = 'DRAFT' AND s.is_deleted = FALSE) AS en_borrador,
+          COUNT(*) FILTER (WHERE s.estado IN (
+            'DOCS_SUBMITTED','DOCS_APPROVED','FACTURA_INSPECCION_EMITIDA',
+            'PAGO_CONFIRMADO','ORDEN_INSPECCION_EMITIDA','INSPECCION_EN_PROCESO',
+            'INFORME_EN_REVISION','INFORME_APROBADO','CONTRATO_GENERADO',
+            'CONTRATO_FIRMADO','OT_INSTALACION_EMITIDA','INSTALACION_EN_PROCESO',
+            'REGISTRO_CATASTRAL_PENDIENTE'
+          ) AND s.is_deleted = FALSE) AS en_proceso,
+          COUNT(*) FILTER (WHERE s.estado = 'SUMINISTRO_ACTIVO' AND s.is_deleted = FALSE) AS completadas,
+          COUNT(*) FILTER (WHERE s.estado IN ('DOCS_REJECTED','RECHAZADA_TECNICA','ANULADA') AND s.is_deleted = FALSE) AS rechazadas,
+
+          -- AQUÍ SE CORRIGE EL ERROR AGREGANDO EL ALIAS 's.' --
+          ROUND(AVG(EXTRACT(DAY FROM (s.updated_at - s.created_at)))
+            FILTER (WHERE s.estado = 'SUMINISTRO_ACTIVO'), 1) AS promedio_dias_proceso
+
+        FROM acometidas.solicitud s
+        INNER JOIN cliente_usuario cu ON cu.cliente_id = s.id_cliente
+        WHERE cu.cliente_usuario_id::text = $1 AND s.is_deleted = FALSE;
+      `,
+      [clienteId],
+    );
+    return RequestAdapter.toDashboardKpisResponseFromSqlResult(result[0]);
+  }
+
   async getOrdenesTrabajoBysSolicitudId(
     solicitudId: string,
   ): Promise<SolicitudOrdenTrabajoResponse[]> {
     const result =
       await this.databaseSService.query<SolicitudOrdenTrabajoSqlResult>(
         `SELECT
+          sot.id_orden_trabajo AS work_order_id,
           sot.tipo_orden,
-          ot.codigo_orden, ot.descripcion,
-          eot.nombre_estado AS estado_ot,
+          ot.codigo_orden,
+          COALESCE(ot.metadata ->> 'descripcion', '') AS descripcion,
+          eot.nombre AS estado_ot,
           pot.nivel AS prioridad,
           ot.fecha_creacion, ot.fecha_asignacion, ot.fecha_completada,
-          u.username AS tecnico_asignado
+          u.username AS tecnico_asignado,
+          concat(e.nombres, ' ', e.apellidos) AS tecnico_nombre
         FROM acometidas.solicitud_orden_trabajo sot
         JOIN work_orders.orden_trabajo ot ON ot.id_orden_trabajo = sot.id_orden_trabajo
-        JOIN work_orders.estado_orden_trabajo eot ON eot.id_estado = ot.estado
+        JOIN work_orders.cat_estado_orden eot ON eot.codigo = ot.estado
         JOIN work_orders.prioridad_orden_trabajo pot ON pot.id_prioridad = ot.id_prioridad
-        LEFT JOIN public.usuarios u ON u.usuario_id = ot.usuario_asignacion
+        LEFT JOIN public.usuarios u ON u.usuario_id = ot.usuario_asignado
+        LEFT JOIN empleados e ON u.usuario_id = e.usuario_id
         WHERE sot.id_solicitud = $1
         ORDER BY ot.fecha_creacion ASC`,
         [solicitudId],
@@ -996,6 +1077,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
           -- Analista
           u.username                                              AS analista,
+          concat(emp.nombres, ' ', emp.apellidos)                     AS analista_nombre,
 
           -- Timeline (JSON ordenado)
           (SELECT jsonb_agg(
@@ -1018,6 +1100,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
       FROM acometidas.solicitud s
       JOIN acometidas.cat_estado_solicitud  ces ON ces.codigo = s.estado
       LEFT JOIN public.usuarios             u   ON u.usuario_id   = s.id_analista
+      LEFT JOIN empleados                   emp   ON u.usuario_id   = emp.usuario_id
       LEFT JOIN acometidas.factura_inspeccion fi ON fi.id_solicitud = s.id_solicitud
       -- Informe: via orden de trabajo tipo INSPECCION
       LEFT JOIN acometidas.solicitud_orden_trabajo sot
@@ -1138,6 +1221,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
           -- Analista
           u.username                                              AS analista,
+          concat(emp.nombres, ' ', emp.apellidos)                     AS analista_nombre,
 
           -- Timeline (JSON ordenado)
           (SELECT jsonb_agg(
@@ -1160,6 +1244,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
       FROM acometidas.solicitud s
       JOIN acometidas.cat_estado_solicitud  ces ON ces.codigo = s.estado
       LEFT JOIN public.usuarios             u   ON u.usuario_id   = s.id_analista
+      LEFT JOIN empleados                   emp   ON u.usuario_id   = emp.usuario_id
       LEFT JOIN acometidas.factura_inspeccion fi ON fi.id_solicitud = s.id_solicitud
       -- Informe: via orden de trabajo tipo INSPECCION
       LEFT JOIN acometidas.solicitud_orden_trabajo sot
@@ -1281,6 +1366,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
           -- Analista
           u.username                                              AS analista,
+          concat(emp.nombres, ' ', emp.apellidos)                     AS analista_nombre,
 
           -- Timeline (JSON ordenado)
           (SELECT jsonb_agg(
@@ -1303,6 +1389,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
       FROM acometidas.solicitud s
       JOIN acometidas.cat_estado_solicitud  ces ON ces.codigo = s.estado
       LEFT JOIN public.usuarios             u   ON u.usuario_id   = s.id_analista
+      LEFT JOIN empleados                   emp   ON u.usuario_id   = emp.usuario_id
       LEFT JOIN acometidas.factura_inspeccion fi ON fi.id_solicitud = s.id_solicitud
       -- Informe: via orden de trabajo tipo INSPECCION
       LEFT JOIN acometidas.solicitud_orden_trabajo sot

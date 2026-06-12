@@ -13,7 +13,7 @@ export interface InterfaceInspectionOrderRepository {
   ): Promise<{ workOrderId: string; codigoOrden: string }>;
 
   /**
-   * Actualiza el estado de la OT a EN_PROCESO (estado BD numérico).
+   * Actualiza el estado de la OT a EN_PROCESO.
    * Devuelve el solicitudId vinculado para poder transicionar el workflow.
    */
   startInspectionOrder(

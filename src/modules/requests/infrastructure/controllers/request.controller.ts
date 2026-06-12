@@ -30,6 +30,8 @@ import { GetExpedienteByAnalistaIdUseCase } from '../../application/usecases/com
 import { GetTrackingBySolicitudIdUseCase } from '../../application/usecases/commands/GetTrackingBySolicitudIdUseCase';
 import { GetTrackingByAnalistaIdUseCase } from '../../application/usecases/commands/GetTrackingByAnalistaIdUseCase';
 import { GetRequestDetailByRequestIdOrNumberUseCase } from '../../application/usecases/commands/GetRequestDetailByRequestIdOrNumberUseCase';
+import { GetNotificationValidationMatrixUseCase } from '../../application/usecases/commands/GetNotificationValidationMatrixUseCase';
+import { GetDashboardKpisByClientIdUseCase } from '../../application/usecases/commands/GetDashboardKpisByClientIdUseCase';
 
 @Controller('requests')
 export class RequestController {
@@ -51,6 +53,8 @@ export class RequestController {
     private readonly getTrackingByAnalistaIdUseCase: GetTrackingByAnalistaIdUseCase,
     private readonly getTrackingBySolicitudIdUseCase: GetTrackingBySolicitudIdUseCase,
     private readonly getRequestDetailByRequestIdOrNumberUseCase: GetRequestDetailByRequestIdOrNumberUseCase,
+    private readonly getNotificationValidationMatrixUseCase: GetNotificationValidationMatrixUseCase,
+    private readonly getDashboardKpisByClientIdUseCase: GetDashboardKpisByClientIdUseCase,
   ) {}
 
   @Post()
@@ -137,6 +141,12 @@ export class RequestController {
     return await this.getDashboardKpisUseCase.execute();
   }
 
+  @Get('/dashboard/kpis/:clienteId')
+  @MessagePattern('requests.get_dashboard_kpis_by_cliente_id')
+  async getDashboardKpisByClienteId(@Payload() clienteId: string) {
+    return await this.getDashboardKpisByClientIdUseCase.execute(clienteId);
+  }
+
   @Get(':solicitudId/ordenes-trabajo')
   @MessagePattern('requests.get_ordenes_trabajo')
   async getOrdenesTrabajo(@Payload() solicitudId: string) {
@@ -200,5 +210,11 @@ export class RequestController {
     return await this.getRequestDetailByRequestIdOrNumberUseCase.execute(
       requestNumberOrId,
     );
+  }
+
+  @Get('notifications/validation-matrix')
+  @MessagePattern('requests.get_notification_validation_matrix')
+  async getNotificationValidationMatrix() {
+    return this.getNotificationValidationMatrixUseCase.execute();
   }
 }
