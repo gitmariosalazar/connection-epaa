@@ -7,7 +7,10 @@ import {
   ConnectionWithPropertyResponse,
   PropertyWithClientResponse,
 } from '../../../../domain/schemas/dto/response/connection.response';
-import { DashboardAdvanceResponse } from '../../../../domain/schemas/dto/response/dashboard.response';
+import {
+  DashboardAdvanceResponse,
+  LiveMapConnectionResponse,
+} from '../../../../domain/schemas/dto/response/dashboard.response';
 import { ConnectionSqlAdapter } from '../../../adapters/postgresql.connection.adapter';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../../../settings/environments/status-code';
@@ -18,6 +21,7 @@ import {
   ConnectionSqlResponse,
   ConnectionWithoutPropertySqlResponse,
   ConnectionWithPropertySqlResponse,
+  LiveMapConnectionSqlResponse,
   PropertyWithClientSqlResponse,
 } from '../../../interfaces/sql/connection.sql.response';
 import {
@@ -230,6 +234,58 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         });
       }
       return result[0].stats as DashboardAdvanceResponse;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]> {
+    try {
+      const query = `
+        SELECT 
+          a.acometida_id AS connection_id,
+          a.clave_catastral AS cadastral_key,
+          COALESCE(CONCAT(ci.nombres, ' ', ci.apellidos), e.razon_social, 'Sin Nombre') AS client_name,
+          a.direccion AS address,
+          a.sector,
+          a.zona_id,
+          -- 1. Extracción numérica directa de coordenadas (PostGIS)
+          public.ST_Y(a.coordenadas) AS latitude,
+          public.ST_X(a.coordenadas) AS longitude,
+          -- 2. Fecha de geolocalización o última modificación global
+          COALESCE(da.ultima_modificacion_global, a.fecha_geolocalizacion) AS last_updated,
+          -- 3. Clasificación en vivo del avance
+          CASE 
+              WHEN da.actualizacion_completa THEN 'Completado (Full)'
+              WHEN NOT da.cliente_actualizado THEN 'Pendiente Datos Cliente'
+              WHEN NOT da.predio_actualizado THEN 'Pendiente Ficha Predial'
+              ELSE 'Pendiente Geolocalización'
+          END AS status_category,
+          -- 4. Color semántico profesional para los marcadores en el mapa
+          CASE 
+              WHEN da.actualizacion_completa THEN '#10b981'  -- Verde (Completado)
+              WHEN NOT da.cliente_actualizado THEN '#f59e0b' -- Naranja (Falta Cliente)
+              WHEN NOT da.predio_actualizado THEN '#3b82f6'  -- Azul (Falta Predio)
+              ELSE '#ef4444'                                  -- Rojo (Falta GPS)
+          END AS marker_color
+      FROM public.acometida a
+      JOIN public.cliente c ON a.cliente_id = c.cliente_id
+      LEFT JOIN public.ciudadano ci ON c.cliente_id = ci.ciudadano_id
+      LEFT JOIN public.empresa e ON c.cliente_id = e.ruc
+      JOIN public.vw_avance_actualizacion_acometidas da ON a.acometida_id = da.acometida_id
+      WHERE a.coordenadas IS NOT NULL 
+        -- 5. Filtrar coordenadas vacías o basura en 0,0 (evita que se rendericen en el mar cerca de África)
+        AND NOT (public.ST_Y(a.coordenadas) = 0 AND public.ST_X(a.coordenadas) = 0)
+      ORDER BY last_updated DESC;
+      `;
+      const result =
+        await this.databaseService.query<LiveMapConnectionSqlResponse>(
+          query,
+          [],
+        );
+      return result.map((connection) =>
+        ConnectionSqlAdapter.toResponse(connection),
+      );
     } catch (error) {
       throw error;
     }
@@ -1310,7 +1366,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           a.clave_catastral ILIKE $${paramCounter} OR
           a.numero_medidor ILIKE $${paramCounter} OR
           a.direccion ILIKE $${paramCounter} OR
-          a.cliente_id::text ILIKE $${paramCounter}
+          a.cliente_id::text ILIKE $${paramCounter} OR
+          a.sector::text ILIKE $${paramCounter} OR
+          a.cuenta::text ILIKE $${paramCounter} OR
+          ci.nombres ILIKE $${paramCounter} OR
+          ci.apellidos ILIKE $${paramCounter} OR
+          e.razon_social ILIKE $${paramCounter} OR
+          e.nombre_comercial ILIKE $${paramCounter}
         )
       `;
         paramsQuery.push(`%${query.trim()}%`);
@@ -1350,12 +1412,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         z.nombre AS "zone_name"
       FROM acometida a
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+      LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
+      LEFT JOIN empresa e ON e.ruc = c.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN public.zona z ON z.zona_id = a.zona_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       ${whereClause}
-      ORDER BY a.acometida_id
+      ORDER BY a.updated_at DESC, a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
 

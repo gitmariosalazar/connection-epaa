@@ -7,7 +7,10 @@ import {
   ConnectionWithPropertyResponse,
   PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
-import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
+import {
+  DashboardAdvanceResponse,
+  LiveMapConnectionResponse,
+} from '../../domain/schemas/dto/response/dashboard.response';
 import {
   BulkStateChangeResponse,
   ConnectionsByStateResponse,
@@ -18,6 +21,7 @@ import {
 
 export interface InterfaceConnectionUseCase {
   getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
+  getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]>;
 
   updateConnection(
     connectionId: string,

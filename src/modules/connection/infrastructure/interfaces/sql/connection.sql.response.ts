@@ -224,3 +224,21 @@ export interface EmailSqlResponse {
   correo_electronico_id: number;
   correo: string;
 }
+
+export interface LiveMapConnectionSqlResponse {
+  connection_id: string;
+  cadastral_key: string;
+  client_name: string;
+  address: string | null;
+  sector: number;
+  zona_id: number;
+  latitude: number; // Recibido como number gracias a ST_Y
+  longitude: number; // Recibido como number gracias a ST_X
+  last_updated: Date | string;
+  status_category:
+    | 'Completado (Full)'
+    | 'Pendiente Datos Cliente'
+    | 'Pendiente Ficha Predial'
+    | 'Pendiente Geolocalización';
+  marker_color: '#10b981' | '#f59e0b' | '#3b82f6' | '#ef4444';
+}

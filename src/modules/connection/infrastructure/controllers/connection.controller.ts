@@ -14,6 +14,12 @@ export class ConnectionController {
     return this.connectionService.getAdvanceDashboardStats();
   }
 
+  @Get('live-update-map-connections')
+  @MessagePattern('connections.get-live-update-map-connections')
+  async getLiveUpdateMapConnections() {
+    return this.connectionService.getLiveUpdateMapConnections();
+  }
+
   // Implementation of controller methods
   @Post('create-connection')
   @MessagePattern('connections.create-connection')

@@ -9,7 +9,10 @@ import {
   ConnectionWithPropertyResponse,
   PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
-import { DashboardAdvanceResponse } from '../../domain/schemas/dto/response/dashboard.response';
+import {
+  DashboardAdvanceResponse,
+  LiveMapConnectionResponse,
+} from '../../domain/schemas/dto/response/dashboard.response';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../settings/environments/status-code';
 import { CreateConnectionRequest } from '../../domain/schemas/dto/request/create.connection.request';
@@ -39,6 +42,17 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       throw new RpcException({
         statusCode: statusCode.INTERNAL_SERVER_ERROR,
         message: 'Could not fetch dashboard advancement stats',
+      });
+    }
+  }
+
+  async getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]> {
+    try {
+      return await this.connectionRepository.getLiveUpdateMapConnections();
+    } catch (error) {
+      throw new RpcException({
+        statusCode: statusCode.INTERNAL_SERVER_ERROR,
+        message: 'Could not fetch live update map connections',
       });
     }
   }

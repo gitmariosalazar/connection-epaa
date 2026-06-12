@@ -7,7 +7,10 @@ import {
   ConnectionWithPropertyResponse,
   PropertyWithClientResponse,
 } from '../../../../domain/schemas/dto/response/connection.response';
-import { DashboardAdvanceResponse } from '../../../../domain/schemas/dto/response/dashboard.response';
+import {
+  DashboardAdvanceResponse,
+  LiveMapConnectionResponse,
+} from '../../../../domain/schemas/dto/response/dashboard.response';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../../../settings/environments/status-code';
 import { ConnectionModel } from '../../../../domain/schemas/models/connection.model';
@@ -191,6 +194,49 @@ export class MySQLConnectionPersistence implements InterfaceConnectionRepository
         });
       }
       return result[0].stats as DashboardAdvanceResponse;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]> {
+    try {
+      const query = `
+        SELECT 
+          a.acometida_id AS connection_id,
+          a.clave_catastral AS cadastral_key,
+          COALESCE(CONCAT(ci.nombres, ' ', ci.apellidos), e.razon_social, 'Sin Nombre') AS client_name,
+          a.direccion AS address,
+          a.sector,
+          a.zona_id,
+          ST_Y(a.coordenadas) AS latitude,
+          ST_X(a.coordenadas) AS longitude,
+          COALESCE(da.ultima_modificacion_global, a.fecha_geolocalizacion) AS last_updated,
+          CASE 
+              WHEN da.actualizacion_completa THEN 'Completado (Full)'
+              WHEN NOT da.cliente_actualizado THEN 'Pendiente Datos Cliente'
+              WHEN NOT da.predio_actualizado THEN 'Pendiente Ficha Predial'
+              ELSE 'Pendiente Geolocalización'
+          END AS status_category,
+          CASE 
+              WHEN da.actualizacion_completa THEN '#10b981'
+              WHEN NOT da.cliente_actualizado THEN '#f59e0b'
+              WHEN NOT da.predio_actualizado THEN '#3b82f6'
+              ELSE '#ef4444'
+          END AS marker_color
+        FROM acometida a
+        JOIN cliente c ON a.cliente_id = c.cliente_id
+        LEFT JOIN ciudadano ci ON c.cliente_id = ci.ciudadano_id
+        LEFT JOIN empresa e ON c.cliente_id = e.ruc
+        JOIN vw_avance_actualizacion_acometidas da ON a.acometida_id = da.acometida_id
+        WHERE a.coordenadas IS NOT NULL 
+          AND NOT (ST_Y(a.coordenadas) = 0 AND ST_X(a.coordenadas) = 0)
+        ORDER BY last_updated DESC;
+      `;
+      const result = await this.databaseService.query<any>(query, []);
+      return result.map((connection) =>
+        ConnectionSqlAdapter.toResponse(connection),
+      );
     } catch (error) {
       throw error;
     }
@@ -1168,7 +1214,13 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
           a.clave_catastral ILIKE $${paramCounter} OR
           a.numero_medidor ILIKE $${paramCounter} OR
           a.direccion ILIKE $${paramCounter} OR
-          a.cliente_id::text ILIKE $${paramCounter}
+          a.cliente_id::text ILIKE $${paramCounter} OR
+          a.sector::text ILIKE $${paramCounter} OR
+          a.cuenta::text ILIKE $${paramCounter} OR
+          ci.nombres ILIKE $${paramCounter} OR
+          ci.apellidos ILIKE $${paramCounter} OR
+          e.razon_social ILIKE $${paramCounter} OR
+          e.nombre_comercial ILIKE $${paramCounter}
         )
       `;
         paramsQuery.push(`%${query.trim()}%`);
@@ -1208,6 +1260,8 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
         z.nombre AS "zone_name"
       FROM acometida a
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
+      LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
+      LEFT JOIN empresa e ON e.ruc = c.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN zona z ON z.zona_id = a.zona_id

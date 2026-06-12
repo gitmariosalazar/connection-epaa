@@ -9,6 +9,7 @@ import {
   PhoneResponse,
   PropertyWithClientResponse,
 } from '../../domain/schemas/dto/response/connection.response';
+import { LiveMapConnectionResponse } from '../../domain/schemas/dto/response/dashboard.response';
 import {
   ClientSqlResponse,
   CompanySqlResponse,
@@ -17,6 +18,7 @@ import {
   ConnectionWithoutPropertySqlResponse,
   ConnectionWithPropertySqlResponse,
   EmailSqlResponse,
+  LiveMapConnectionSqlResponse,
   PhoneSqlResponse,
   PropertyWithClientSqlResponse,
 } from '../interfaces/sql/connection.sql.response';
@@ -346,6 +348,27 @@ export class ConnectionSqlAdapter {
             novelty: reading.novelty,
           }))
         : null,
+    };
+  }
+
+  static toResponse(
+    sql: LiveMapConnectionSqlResponse,
+  ): LiveMapConnectionResponse {
+    return {
+      connectionId: sql.connection_id,
+      cadastralKey: sql.cadastral_key,
+      clientName: sql.client_name,
+      address: sql.address,
+      sector: Number(sql.sector),
+      zoneId: Number(sql.zona_id),
+      latitude: Number(sql.latitude),
+      longitude: Number(sql.longitude),
+      lastUpdated:
+        sql.last_updated instanceof Date
+          ? sql.last_updated.toISOString()
+          : new Date(sql.last_updated).toISOString(),
+      statusCategory: sql.status_category,
+      markerColor: sql.marker_color,
     };
   }
 }

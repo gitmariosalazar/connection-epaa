@@ -64,3 +64,21 @@ export interface DashboardAdvanceResponse {
     sinCliente: number;
   }>;
 }
+
+export interface LiveMapConnectionResponse {
+  connectionId: string;
+  cadastralKey: string;
+  clientName: string;
+  address: string | null;
+  sector: number;
+  zoneId: number;
+  latitude: number;
+  longitude: number;
+  lastUpdated: string; // Fecha formateada en ISO string
+  statusCategory:
+    | 'Completado (Full)'
+    | 'Pendiente Datos Cliente'
+    | 'Pendiente Ficha Predial'
+    | 'Pendiente Geolocalización';
+  markerColor: string;
+}
