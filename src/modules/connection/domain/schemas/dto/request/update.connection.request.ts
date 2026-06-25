@@ -4,9 +4,9 @@ export class UpdateConnectionRequest {
   connectionRateId: number;
   connectionRateName: string;
   connectionMeterNumber: string;
-  connectionSector: number;
-  connectionAccount: number;
-  connectionCadastralKey: string;
+  connectionSector!: number;
+  connectionAccount!: number;
+  connectionCadastralKey!: string;
   connectionContractNumber: string;
   connectionSewerage: boolean;
   connectionStatus: boolean;

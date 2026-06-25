@@ -4,18 +4,18 @@ import { CadastralRegistrationModel } from '../../domain/schemas/models/Cadastra
 import { INotificationPort } from '../../../../shared/notifications/notification.port';
 
 export class RegisterCadastralDto {
-  solicitudId: string;
+  solicitudId!: string;
   contractId?: string;
-  cadastralKey: string;
-  meterNumber: string;
-  exactAddress: string;
-  longitude: number;
-  latitude: number;
+  cadastralKey!: string;
+  meterNumber!: string;
+  exactAddress!: string;
+  longitude!: number;
+  latitude!: number;
   connectionDiameter?: string;
   serviceType?: string;
-  installationDate: string;
-  accountNumber: string;
-  registratorId: string;
+  installationDate!: string;
+  accountNumber!: string;
+  registratorId!: string;
 }
 
 /**
@@ -32,18 +32,29 @@ export class RegisterCadastralAndActivateUseCase {
     private readonly notification: INotificationPort,
   ) {}
 
-  async execute(dto: RegisterCadastralDto): Promise<{ solicitudId: string; accountNumber: string; status: string }> {
+  async execute(
+    dto: RegisterCadastralDto,
+  ): Promise<{ solicitudId: string; accountNumber: string; status: string }> {
     const registration = new CadastralRegistrationModel(
-      null, dto.solicitudId, dto.contractId ?? null,
-      dto.cadastralKey, dto.meterNumber, dto.exactAddress,
-      dto.longitude, dto.latitude, dto.connectionDiameter ?? null,
-      dto.serviceType ?? null, dto.installationDate,
-      dto.accountNumber, dto.registratorId,
+      null,
+      dto.solicitudId,
+      dto.contractId ?? null,
+      dto.cadastralKey,
+      dto.meterNumber,
+      dto.exactAddress,
+      dto.longitude,
+      dto.latitude,
+      dto.connectionDiameter ?? null,
+      dto.serviceType ?? null,
+      dto.installationDate,
+      dto.accountNumber,
+      dto.registratorId,
     );
 
     // 1. Insertar registro catastral definitivo
     const saved = await this.repository.registerCadastral(registration);
-    if (!saved) throw new NotFoundException('No se pudo registrar el predio en catastro');
+    if (!saved)
+      throw new NotFoundException('No se pudo registrar el predio en catastro');
 
     // 2. Transición de cierre (estado final del proceso BPMN)
     await this.repository.changeRequestStatus(
@@ -54,7 +65,9 @@ export class RegisterCadastralAndActivateUseCase {
     );
 
     // 3. Notificación final al cliente: su suministro está activo (BPMN Punto 3)
-    const clientId = await this.repository.getClientIdBySolicitud(dto.solicitudId);
+    const clientId = await this.repository.getClientIdBySolicitud(
+      dto.solicitudId,
+    );
     if (clientId) {
       this.notification.notifySuministroActivo(
         clientId,
