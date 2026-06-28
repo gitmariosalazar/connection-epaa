@@ -334,11 +334,20 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             a.fecha_geolocalizacion as "connection_geolocation_date",
             a.zona_geometrica as "connection_geometric_zone",
             a.predio_clave_catastral as "property_cadastral_key",
-            a.zona_id as "zone_id"
+            a.zona_id as "zone_id",
+            a.zona_code as "zone_code",
+            a.zona_name as "zone_name",
+            COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END ), 0) as incidents
         FROM acometida a INNER JOIN cliente c ON c.cliente_id = a.cliente_id
         INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        LEFT JOIN incidente_medidor im ON a.acometida_id = im.acometida_id
+        GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
+                a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
+                est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
+                a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
+                a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
         WHERE a.acometida_id = ?;
       `;
       const params: string[] = [connectionId];
@@ -399,12 +408,21 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           a.fecha_geolocalizacion as "connection_geolocation_date",
           a.zona_geometrica as "connection_geometric_zone",
           a.predio_clave_catastral as "property_cadastral_key",
-          a.zona_id as "zone_id"
+          a.zona_id as "zone_id",
+          a.zona_code as "zone_code",
+          a.zona_name as "zone_name",
+          COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END ), 0) as incidents
       FROM acometida a
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+      LEFT JOIN public.incidente_medidor im on a.acometida_id = im.acometida_id
+      GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
+                a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
+                est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
+                a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
+                a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
       WHERE a.sector = ?
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
@@ -467,12 +485,21 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           a.fecha_geolocalizacion as "connection_geolocation_date",
           a.zona_geometrica as "connection_geometric_zone",
           a.predio_clave_catastral as "property_cadastral_key",
-          a.zona_id as "zone_id"
+          a.zona_id as "zone_id",
+          a.zona_code as "zone_code",
+          a.zona_name as "zone_name",
+          COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END ), 0) as incidents
       FROM acometida a
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+      LEFT JOIN public.incidente_medidor im on a.acometida_id = im.acometida_id
+      GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
+                a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
+                est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
+                a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
+                a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
       WHERE a.cliente_id = ?
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
@@ -534,12 +561,21 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             a.fecha_geolocalizacion as "connection_geolocation_date",
             a.zona_geometrica as "connection_geometric_zone",
             a.predio_clave_catastral as "property_cadastral_key",
-            a.zona_id as "zone_id"
+            a.zona_id as "zone_id",
+            a.zona_code as "zone_code",
+            a.zona_name as "zone_name",
+            COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END ), 0) as incidents
         FROM acometida a
         INNER JOIN cliente c ON c.cliente_id = a.cliente_id
         INNER JOIN tarifa t ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        LEFT JOIN public.incidente_medidor im on a.acometida_id = im.acometida_id
+        group by a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
+                a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
+                est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
+                a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
+                a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.created_at
         ORDER BY a.created_at DESC,a.acometida_id
         LIMIT ? OFFSET ?;
       `;
@@ -639,7 +675,11 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           fecha_geolocalizacion as "connection_geolocation_date",
           zona_geometrica as "connection_geometric_zone",
           predio_clave_catastral as "property_cadastral_key",
-          zona_id as "zone_id";
+          zona_id as "zone_id",
+          '' as "zone_code",
+          '' as "zone_name",
+          0 AS incidents
+          ;
       `;
       const params: any[] = [
         connection.getConnectionId(),
@@ -737,7 +777,10 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           fecha_geolocalizacion as "connection_geolocation_date",
           zona_geometrica as "connection_geometric_zone",
           predio_clave_catastral as "property_cadastral_key",
-          zona_id as "zone_id";
+          zona_id as "zone_id",
+          '' as "zone_code",
+          '' as "zone_name",
+          0 AS incidents;
       `;
       const params: any[] = [
         connection.getClientId(),
@@ -1349,20 +1392,25 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     limit = 50,
     offset = 0,
     query,
+    hasIncidents,
+    status,
+    sewerage,
   }: {
     limit?: number;
     offset?: number;
     query?: string;
+    hasIncidents?: 'yes' | 'no';
+    status?: string;
+    sewerage?: 'yes' | 'no';
   }): Promise<ConnectionResponse[]> {
     try {
       const paramsQuery: any[] = [];
-      let whereClause = '';
+      const whereConditions: string[] = [];
       let paramCounter = 1;
 
-      // Si hay query de búsqueda, agregamos el filtro
+      // ── Filtro de texto libre ─────────────────────────────────────────────
       if (query && query.trim()) {
-        whereClause = `
-        WHERE (
+        whereConditions.push(`(
           a.clave_catastral ILIKE $${paramCounter} OR
           a.numero_medidor ILIKE $${paramCounter} OR
           a.direccion ILIKE $${paramCounter} OR
@@ -1373,13 +1421,39 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           ci.apellidos ILIKE $${paramCounter} OR
           e.razon_social ILIKE $${paramCounter} OR
           e.nombre_comercial ILIKE $${paramCounter}
-        )
-      `;
+        )`);
         paramsQuery.push(`%${query.trim()}%`);
         paramCounter++;
       }
 
-      // Consulta base con todos los campos que necesitas
+      // ── Filtro de estado (permite_lectura o nombre) ───────────────────────
+      if (status && status.trim()) {
+        whereConditions.push(`est.nombre = $${paramCounter}`);
+        paramsQuery.push(status.trim());
+        paramCounter++;
+      }
+
+      // ── Filtro de alcantarillado ──────────────────────────────────────────
+      if (sewerage === 'yes') {
+        whereConditions.push(`a.alcantarillado = TRUE`);
+      } else if (sewerage === 'no') {
+        whereConditions.push(`a.alcantarillado = FALSE OR a.alcantarillado IS NULL`);
+      }
+
+      const whereClause =
+        whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(' AND ')}`
+          : '';
+
+      // ── HAVING: filtro sobre el agregado incidents (COUNT) ────────────────
+      // No puede ir en WHERE porque incidents es resultado de GROUP BY.
+      let havingClause = '';
+      if (hasIncidents === 'yes') {
+        havingClause = `HAVING COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END), 0) > 0`;
+      } else if (hasIncidents === 'no') {
+        havingClause = `HAVING COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END), 0) = 0`;
+      }
+
       const sql = `
       SELECT
         a.acometida_id AS "connection_id",
@@ -1409,7 +1483,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         a.predio_clave_catastral AS "property_cadastral_key",
         a.zona_id AS "zone_id",
         z.codigo AS "zone_code",
-        z.nombre AS "zone_name"
+        z.nombre AS "zone_name",
+        COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END), 0) AS incidents
       FROM acometida a
       INNER JOIN cliente c ON c.cliente_id = a.cliente_id
       LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
@@ -1418,7 +1493,15 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN public.zona z ON z.zona_id = a.zona_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+      LEFT JOIN public.incidente_medidor im ON a.acometida_id = im.acometida_id
       ${whereClause}
+      GROUP BY
+        a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
+        a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
+        est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
+        a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
+        a.zona_geometrica, a.predio_clave_catastral, a.zona_id, z.codigo, z.nombre
+      ${havingClause}
       ORDER BY a.updated_at DESC, a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
@@ -1430,7 +1513,6 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         paramsQuery,
       );
 
-      // Mapeo a tu respuesta
       const response = result.map((row) =>
         ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(row),
       );

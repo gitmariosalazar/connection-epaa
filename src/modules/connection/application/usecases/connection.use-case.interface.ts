@@ -62,6 +62,9 @@ export interface InterfaceConnectionUseCase {
     limit: number;
     offset: number;
     query?: string;
+    hasIncidents?: 'yes' | 'no';
+    status?: string;
+    sewerage?: 'yes' | 'no';
   }): Promise<ConnectionResponse[]>;
 
   findConnectionsBySector(

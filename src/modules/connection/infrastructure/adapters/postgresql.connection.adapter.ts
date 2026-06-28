@@ -58,6 +58,9 @@ export class ConnectionSqlAdapter {
       connectionGeometricZone: connection.connection_geometric_zone,
       propertyCadastralKey: connection.property_cadastral_key,
       zoneId: connection.zone_id,
+      zoneCode: connection.zone_code,
+      zoneName: connection.zone_name,
+      incidents: connection.incidents, // Total incidents associated with the connection
     };
   }
 

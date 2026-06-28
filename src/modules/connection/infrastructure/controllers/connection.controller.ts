@@ -142,6 +142,9 @@ export class ConnectionController {
       limit: number;
       offset: number;
       query?: string;
+      hasIncidents?: 'yes' | 'no';
+      status?: string;
+      sewerage?: 'yes' | 'no';
     },
   ) {
     return this.connectionService.getConnectionsPaginated(params);

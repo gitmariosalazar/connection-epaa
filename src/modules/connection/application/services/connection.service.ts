@@ -374,6 +374,9 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     limit: number;
     offset: number;
     query?: string;
+    hasIncidents?: 'yes' | 'no';
+    status?: string;
+    sewerage?: 'yes' | 'no';
   }): Promise<ConnectionResponse[]> {
     try {
       const connections =

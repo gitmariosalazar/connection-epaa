@@ -27,6 +27,9 @@ export interface ConnectionResponse {
   connectionGeometricZone: string;
   propertyCadastralKey: string;
   zoneId: number;
+  zoneCode: string;
+  zoneName: string;
+  incidents: number; // Total incidents associated with the connection
 }
 
 export interface ConnectionAndPropertyResponse {

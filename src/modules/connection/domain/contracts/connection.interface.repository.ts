@@ -72,6 +72,9 @@ export interface InterfaceConnectionRepository {
     limit: number;
     offset: number;
     query?: string;
+    hasIncidents?: 'yes' | 'no';
+    status?: string;
+    sewerage?: 'yes' | 'no';
   }): Promise<ConnectionResponse[]>;
 
   // ── State Management ──────────────────────────────────────────────────────
