@@ -24,6 +24,7 @@ import {
   SubmitWithDocumentsRequest,
   SubmitWithDocumentsResponse,
 } from '../../../../application/dto/request/submit-with-documents.request';
+import { SubmitCorrectionsRequest } from '../../../../application/dto/request/submit-corrections.request';
 import { UploadFileService } from '../../../../../documents/application/services/upload-file.service';
 
 @Injectable()
@@ -406,6 +407,55 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
     });
   }
 
+  async submitCorrections(dto: SubmitCorrectionsRequest): Promise<void> {
+    return this.databaseSService.transaction(async (client) => {
+      // 1. Guardar cada archivo corregido y actualizar el registro existente en documento_adjunto
+      for (const doc of dto.documents ?? []) {
+        // Subir al storage local → obtiene fileUrl real
+        const stored = await this.uploadFileService.uploadDocument({
+          fileBase64: (doc as any).fileBase64,
+          fileUrl: (doc as any).fileUrl, // En correcciones suele subirse desde cero
+          originalName: doc.originalName,
+          mimeType: doc.mimeType,
+          sizeInBytes: doc.sizeInBytes,
+        });
+
+        await client.query(
+          `UPDATE acometidas.documento_adjunto
+           SET url_archivo = $1,
+               nombre_original = $2,
+               mime_type = $3,
+               tamano_bytes = $4,
+               hash_sha256 = $5,
+               estado_validacion = 'PENDIENTE',
+               observacion = NULL,
+               id_validador = NULL,
+               updated_at = NOW()
+           WHERE id_documento = $6`,
+          [
+            stored.fileUrl,
+            doc.originalName,
+            stored.mimeType,
+            stored.sizeInBytes,
+            stored.hashSha256,
+            doc.documentId,
+          ],
+        );
+      }
+
+      // 2. Transición DOCS_REJECTED → DOCS_SUBMITTED (vuelve a revisión)
+      await client.query(
+        `SELECT acometidas.fn_cambiar_estado_solicitud($1, $2, $3, $4)`,
+        [
+          dto.solicitudId,
+          'DOCS_SUBMITTED',
+          dto.userId,
+          'Corrección de documentos enviada en lote por el cliente',
+        ],
+      );
+    });
+  }
+
   // ── Consultas enriquecidas para el frontend ──────────────────────────────
 
   async getExpedienteBySolicitudId(
@@ -480,7 +530,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
         LEFT JOIN acometidas.contrato_servicio c ON c.id_solicitud = s.id_solicitud AND c.is_deleted = FALSE
         LEFT JOIN acometidas.registro_catastral r ON r.id_solicitud = s.id_solicitud AND r.is_deleted = FALSE
 
-        WHERE s.id_solicitud = 'e52fe136-333c-4531-a7db-f9501c77a4ff'
+        WHERE s.id_solicitud = $1
           AND s.is_deleted = FALSE
             GROUP BY s.id_solicitud, a.username, f.id_factura, i.id_informe, c.id_contrato, r.id_registro, usuario;
       `,
@@ -601,7 +651,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a ON a.usuario_id = s.id_analista
-        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
+        LEFT JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d
             ON d.id_solicitud = s.id_solicitud
            AND d.is_deleted = FALSE

@@ -4,6 +4,7 @@ import { DatabasePersistenceModule } from '../../../../../shared/connections/dat
 import { NotificationSharedModule } from '../../../../../shared/notifications/notification-shared.module';
 import { PaymentConfirmationController } from '../../controllers/payment-confirmation.controller';
 import { ConfirmPaymentUseCase } from '../../../application/usecases/ConfirmPaymentUseCase';
+import { RejectPaymentUseCase } from '../../../application/usecases/RejectPaymentUseCase';
 import { PaymentConfirmationPostgreSQLPersistence } from '../../repositories/postgresql/persistence/payment-confirmation.postgresql.persistence';
 
 @Module({
@@ -11,10 +12,12 @@ import { PaymentConfirmationPostgreSQLPersistence } from '../../repositories/pos
   controllers: [PaymentConfirmationController],
   providers: [
     ConfirmPaymentUseCase,
+    RejectPaymentUseCase,
     {
       provide: 'InterfacePaymentConfirmationRepository',
       useClass: PaymentConfirmationPostgreSQLPersistence,
     },
   ],
+  exports: [ConfirmPaymentUseCase, RejectPaymentUseCase],
 })
 export class PaymentConfirmationPostgreSQLModule {}

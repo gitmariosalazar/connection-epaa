@@ -343,12 +343,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         LEFT JOIN incidente_medidor im ON a.acometida_id = im.acometida_id
+        WHERE a.acometida_id = ?
         GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
                 a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
                 est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
                 a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
                 a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
-        WHERE a.acometida_id = ?;
+        ORDER BY a.created_at DESC, a.acometida_id;
       `;
       const params: string[] = [connectionId];
       const result = await this.databaseService.query<ConnectionSqlResponse>(
@@ -418,12 +419,12 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       LEFT JOIN public.incidente_medidor im on a.acometida_id = im.acometida_id
+      WHERE a.sector = ?
       GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
                 a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
                 est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
                 a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
                 a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
-      WHERE a.sector = ?
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
     `;
@@ -495,12 +496,12 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
       LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
       LEFT JOIN public.incidente_medidor im on a.acometida_id = im.acometida_id
+      WHERE a.cliente_id = ?
       GROUP BY a.acometida_id, a.cliente_id, a.tarifa_id, ct.nombre, a.numero_medidor, a.sector,
                 a.cuenta, a.clave_catastral, a.numero_contrato, a.alcantarillado, a.estado_id,
                 est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
                 a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
                 a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name
-      WHERE a.cliente_id = ?
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
     `;
@@ -1437,7 +1438,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       if (sewerage === 'yes') {
         whereConditions.push(`a.alcantarillado = TRUE`);
       } else if (sewerage === 'no') {
-        whereConditions.push(`a.alcantarillado = FALSE OR a.alcantarillado IS NULL`);
+        whereConditions.push(
+          `a.alcantarillado = FALSE OR a.alcantarillado IS NULL`,
+        );
       }
 
       const whereClause =

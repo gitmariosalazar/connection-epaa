@@ -31,6 +31,19 @@ export class PaymentConfirmationPostgreSQLPersistence
     return result.length > 0 ? result[0].id_solicitud : null;
   }
 
+  async rejectInvoicePayment(invoiceId: string): Promise<string | null> {
+    const result = await this.databaseService.query<{ id_solicitud: string }>(
+      `UPDATE acometidas.factura_inspeccion
+       SET estado = 'PENDIENTE',
+           url_comprobante = NULL,
+           updated_at = NOW()
+       WHERE id_factura = $1
+       RETURNING id_solicitud`,
+      [invoiceId],
+    );
+    return result.length > 0 ? result[0].id_solicitud : null;
+  }
+
   async changeRequestStatus(
     solicitudId: string,
     newStatus: string,

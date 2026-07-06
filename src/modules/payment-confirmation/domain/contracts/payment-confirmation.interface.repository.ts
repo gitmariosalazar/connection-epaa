@@ -8,6 +8,9 @@ export interface InterfacePaymentConfirmationRepository {
     collectorId: string,
   ): Promise<string | null>; // Devuelve el id_solicitud
 
+  /** Rechaza un comprobante y devuelve el id_solicitud relacionado */
+  rejectInvoicePayment(invoiceId: string): Promise<string | null>;
+
   /** Transición de estado vía función de la BD */
   changeRequestStatus(
     solicitudId: string,

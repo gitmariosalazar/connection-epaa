@@ -11,6 +11,7 @@ import {
   SubmitWithDocumentsRequest,
   SubmitWithDocumentsResponse,
 } from '../../application/dto/request/submit-with-documents.request';
+import { SubmitCorrectionsRequest } from '../../application/dto/request/submit-corrections.request';
 
 export interface InterfaceConnectionRequestRepository {
   createConnectionRequest(request: RequestModel): Promise<RequestModel | null>;
@@ -39,6 +40,11 @@ export interface InterfaceConnectionRequestRepository {
   submitWithDocuments(
     dto: SubmitWithDocumentsRequest,
   ): Promise<SubmitWithDocumentsResponse>;
+
+  /**
+   * OPERACIÓN ATÓMICA: Actualiza documentos rechazados y transiciona a DOCS_SUBMITTED
+   */
+  submitCorrections(dto: SubmitCorrectionsRequest): Promise<void>;
 
   // ── Consultas enriquecidas para el frontend ──────────────────────────────
   /** Expediente completo de una solicitud (todos los módulos en un solo query) */

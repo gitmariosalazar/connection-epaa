@@ -19,7 +19,9 @@ import { GetDashboardKpisUseCase } from '../../application/usecases/commands/Get
 import { GetOrdenesTrabajoUseCase } from '../../application/usecases/commands/GetOrdenesTrabajoUseCase';
 import { SubmitRequestUseCase } from '../../application/usecases/commands/SubmitRequestUseCase';
 import { SubmitWithDocumentsUseCase } from '../../application/usecases/commands/SubmitWithDocumentsUseCase';
+import { SubmitCorrectionsUseCase } from '../../application/usecases/commands/SubmitCorrectionsUseCase';
 import { SubmitWithDocumentsRequest } from '../../application/dto/request/submit-with-documents.request';
+import { SubmitCorrectionsRequest } from '../../application/dto/request/submit-corrections.request';
 import { RequestResponse } from '../../application/dto/response/request.response';
 import { CreateRequestRequest } from '../../application/dto/request/create-request.request';
 import { UpdateRequestRequest } from '../../application/dto/request/update-request.request';
@@ -49,6 +51,7 @@ export class RequestController {
     private readonly getOrdenesTrabajoUseCase: GetOrdenesTrabajoUseCase,
     private readonly submitRequestUseCase: SubmitRequestUseCase,
     private readonly submitWithDocumentsUseCase: SubmitWithDocumentsUseCase,
+    private readonly submitCorrectionsUseCase: SubmitCorrectionsUseCase,
     private readonly getTrackingByClienteIdUseCase: GetTrackingByClienteIdUseCase,
     private readonly getTrackingByAnalistaIdUseCase: GetTrackingByAnalistaIdUseCase,
     private readonly getTrackingBySolicitudIdUseCase: GetTrackingBySolicitudIdUseCase,
@@ -177,6 +180,15 @@ export class RequestController {
   @MessagePattern('requests.submit_with_documents')
   async submitWithDocuments(@Payload() dto: SubmitWithDocumentsRequest) {
     return await this.submitWithDocumentsUseCase.execute(dto);
+  }
+
+  /**
+   * OPERACIÓN ATÓMICA: Actualizar múltiples documentos rechazados y transicionar a DOCS_SUBMITTED.
+   */
+  @Post('submit-corrections')
+  @MessagePattern('requests.submit_corrections')
+  async submitCorrections(@Payload() dto: SubmitCorrectionsRequest) {
+    return await this.submitCorrectionsUseCase.execute(dto);
   }
 
   /**

@@ -15,7 +15,7 @@ export class InspectionReportPostgreSQLPersistence implements InterfaceInspectio
          id_orden_trabajo, id_solicitud, resultado, distancia_red_m,
          diametro_conexion, condiciones_terreno, observaciones, geom_acometida,
          costo_materiales, costo_mano_obra
-       ) VALUES ($1::uuid, $2::uuid, $3::text, $4::numeric, $5::numeric, $6::text, $7::text,
+       ) VALUES ($1::uuid, $2::uuid, $3::text, $4::numeric, $5::text, $6::text, $7::text,
          CASE WHEN NULLIF($8::text, '') IS NULL THEN NULL ELSE ST_GeomFromText($8::text, 4326) END,
          $9::numeric, $10::numeric)
        RETURNING

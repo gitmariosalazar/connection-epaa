@@ -14,6 +14,7 @@ import { ContractsPostgreSQLModule } from '../../modules/contracts/infrastructur
 import { CadastralPostgreSQLModule } from '../../modules/cadastral/infrastructure/modules/postgresql/cadastral.postgresql.module';
 import { InspectionOrderPostgreSQLModule } from '../../modules/inspection-order/infrastructure/modules/postgresql/inspection-order.postgresql.module';
 import { InstallationOrderPostgreSQLModule } from '../../modules/installation-order/infrastructure/modules/postgresql/installation-order.postgresql.module';
+import { InstallationReportPostgreSQLModule } from '../../modules/installation-report/infrastructure/modules/postgresql/installation-report.postgresql.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { InstallationOrderPostgreSQLModule } from '../../modules/installation-or
     // Nuevos módulos del proceso BPMN (Fases 6-7, 12-13)
     InspectionOrderPostgreSQLModule,
     InstallationOrderPostgreSQLModule,
+    InstallationReportPostgreSQLModule,
   ],
   controllers: [],
   providers: [],
