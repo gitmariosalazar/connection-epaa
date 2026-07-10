@@ -65,6 +65,8 @@ export interface InterfaceConnectionUseCase {
     hasIncidents?: 'yes' | 'no';
     status?: string;
     sewerage?: 'yes' | 'no';
+    hasCoordinates?: 'yes' | 'no';
+    searchField?: string;
   }): Promise<ConnectionResponse[]>;
 
   findConnectionsBySector(

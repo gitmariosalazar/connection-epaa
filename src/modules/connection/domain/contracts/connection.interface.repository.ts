@@ -75,6 +75,8 @@ export interface InterfaceConnectionRepository {
     hasIncidents?: 'yes' | 'no';
     status?: string;
     sewerage?: 'yes' | 'no';
+    hasCoordinates?: 'yes' | 'no';
+    searchField?: string;
   }): Promise<ConnectionResponse[]>;
 
   // ── State Management ──────────────────────────────────────────────────────

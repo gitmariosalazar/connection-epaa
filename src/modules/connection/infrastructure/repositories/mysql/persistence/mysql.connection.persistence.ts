@@ -1197,10 +1197,20 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
     limit = 50,
     offset = 0,
     query,
+    hasIncidents,
+    status,
+    sewerage,
+    hasCoordinates,
+    searchField,
   }: {
-    limit?: number;
-    offset?: number;
+    limit: number;
+    offset: number;
     query?: string;
+    hasIncidents?: 'yes' | 'no';
+    status?: string;
+    sewerage?: 'yes' | 'no';
+    hasCoordinates?: 'yes' | 'no';
+    searchField?: string;
   }): Promise<ConnectionResponse[]> {
     try {
       const paramsQuery: any[] = [];

@@ -145,6 +145,8 @@ export class ConnectionController {
       hasIncidents?: 'yes' | 'no';
       status?: string;
       sewerage?: 'yes' | 'no';
+      hasCoordinates?: 'yes' | 'no';
+      searchField?: string;
     },
   ) {
     return this.connectionService.getConnectionsPaginated(params);

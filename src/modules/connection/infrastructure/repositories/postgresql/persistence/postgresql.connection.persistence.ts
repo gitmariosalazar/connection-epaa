@@ -730,7 +730,6 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      console.log(`Connection Model: `, connection);
       const query: string = `
         UPDATE acometida SET
           cliente_id = COALESCE(?, cliente_id),
@@ -1049,9 +1048,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             ORDER BY sub_hm.estado ASC, sub_hm.fecha_instalacion DESC
             LIMIT 1
         ) hm ON TRUE
-        WHERE a.acometida_id = ? OR a.cliente_id = ?;
+        WHERE a.acometida_id = ? OR a.cliente_id = ? OR a.numero_medidor = ?;
       `;
-      const params: string[] = [searchValue, searchValue];
+      const params: string[] = [searchValue, searchValue, searchValue];
       const result =
         await this.databaseService.query<ConnectionAndPropertySqlResponse>(
           query,
@@ -1390,47 +1389,95 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
   }
 
   async getConnectionsPaginated({
-    limit = 50,
-    offset = 0,
+    limit,
+    offset,
     query,
     hasIncidents,
     status,
     sewerage,
+    hasCoordinates,
+    searchField,
   }: {
-    limit?: number;
-    offset?: number;
+    limit: number;
+    offset: number;
     query?: string;
     hasIncidents?: 'yes' | 'no';
     status?: string;
     sewerage?: 'yes' | 'no';
+    hasCoordinates?: 'yes' | 'no';
+    searchField?: string;
   }): Promise<ConnectionResponse[]> {
     try {
-      const paramsQuery: any[] = [];
       const whereConditions: string[] = [];
+      const paramsQuery: any[] = [];
       let paramCounter = 1;
 
       // ── Filtro de texto libre ─────────────────────────────────────────────
       if (query && query.trim()) {
-        whereConditions.push(`(
-          a.clave_catastral ILIKE $${paramCounter} OR
-          a.numero_medidor ILIKE $${paramCounter} OR
-          a.direccion ILIKE $${paramCounter} OR
-          a.cliente_id::text ILIKE $${paramCounter} OR
-          a.sector::text ILIKE $${paramCounter} OR
-          a.cuenta::text ILIKE $${paramCounter} OR
-          ci.nombres ILIKE $${paramCounter} OR
-          ci.apellidos ILIKE $${paramCounter} OR
-          e.razon_social ILIKE $${paramCounter} OR
-          e.nombre_comercial ILIKE $${paramCounter}
-        )`);
-        paramsQuery.push(`%${query.trim()}%`);
-        paramCounter++;
+        const q = `%${query.trim()}%`;
+
+        if (searchField && searchField !== 'all') {
+          const fieldMap: Record<string, string> = {
+            connectionCadastralKey: 'a.clave_catastral',
+            connectionMeterNumber: 'a.numero_medidor',
+            connectionAddress: 'a.direccion',
+            clientId: 'a.cliente_id::text',
+            connectionSector: 'a.sector::text',
+            connectionAccount: 'a.cuenta::text',
+            connectionContractNumber: 'a.numero_contrato',
+            connectionReference: 'a.referencia',
+          };
+          const dbField = fieldMap[searchField];
+          if (dbField) {
+            whereConditions.push(`${dbField} ILIKE $${paramCounter}`);
+            paramsQuery.push(q);
+            paramCounter++;
+          } else {
+            whereConditions.push(`(
+              a.clave_catastral ILIKE $${paramCounter} OR
+              a.numero_medidor ILIKE $${paramCounter} OR
+              a.direccion ILIKE $${paramCounter} OR
+              a.cliente_id::text ILIKE $${paramCounter} OR
+              a.sector::text ILIKE $${paramCounter} OR
+              a.cuenta::text ILIKE $${paramCounter} OR
+              ci.nombres ILIKE $${paramCounter} OR
+              ci.apellidos ILIKE $${paramCounter} OR
+              e.razon_social ILIKE $${paramCounter} OR
+              e.nombre_comercial ILIKE $${paramCounter}
+            )`);
+            paramsQuery.push(q);
+            paramCounter++;
+          }
+        } else {
+          whereConditions.push(`(
+            a.clave_catastral ILIKE $${paramCounter} OR
+            a.numero_medidor ILIKE $${paramCounter} OR
+            a.direccion ILIKE $${paramCounter} OR
+            a.cliente_id::text ILIKE $${paramCounter} OR
+            a.sector::text ILIKE $${paramCounter} OR
+            a.cuenta::text ILIKE $${paramCounter} OR
+            ci.nombres ILIKE $${paramCounter} OR
+            ci.apellidos ILIKE $${paramCounter} OR
+            e.razon_social ILIKE $${paramCounter} OR
+            e.nombre_comercial ILIKE $${paramCounter}
+          )`);
+          paramsQuery.push(q);
+          paramCounter++;
+        }
       }
 
       // ── Filtro de estado (permite_lectura o nombre) ───────────────────────
       if (status && status.trim()) {
-        whereConditions.push(`est.nombre = $${paramCounter}`);
-        paramsQuery.push(status.trim());
+        let correctStatus: string =
+          status.trim().toUpperCase() === 'ACTIVE' ? 'ACTIVA' : '';
+        if (correctStatus) {
+          whereConditions.push(`est.nombre = $${paramCounter}`);
+          paramsQuery.push(correctStatus);
+        } else {
+          correctStatus = 'ACTIVA';
+          whereConditions.push(`est.nombre <> $${paramCounter}`);
+          paramsQuery.push(correctStatus);
+        }
         paramCounter++;
       }
 
@@ -1441,6 +1488,12 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         whereConditions.push(
           `a.alcantarillado = FALSE OR a.alcantarillado IS NULL`,
         );
+      }
+
+      if (hasCoordinates === 'yes') {
+        whereConditions.push(`a.coordenadas IS NOT NULL`);
+      } else if (hasCoordinates === 'no') {
+        whereConditions.push(`a.coordenadas IS NULL`);
       }
 
       const whereClause =
@@ -1508,6 +1561,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       ORDER BY a.updated_at DESC, a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
+
+      console.log('SQL Query:', whereClause);
 
       paramsQuery.push(limit, offset);
 
