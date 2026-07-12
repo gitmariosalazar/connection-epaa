@@ -8,6 +8,12 @@ import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update
 export class ConnectionController {
   constructor(private readonly connectionService: ConnectionService) {}
 
+  @Get('get-customer-dashboard/:clientId')
+  @MessagePattern('connections.get-customer-dashboard')
+  async getCustomerDashboard(@Payload() clientId: string) {
+    return this.connectionService.getCustomerDashboard(clientId);
+  }
+
   @Get('dashboard/advancement-stats')
   @MessagePattern('connections.get-advance-dashboard-stats')
   async getAdvanceDashboardStats() {

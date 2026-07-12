@@ -35,10 +35,104 @@ import {
   DatabaseAbstract,
   IDatabaseClient,
 } from '../../../../../../shared/connections/database/abstract/abstract.database';
+import { CustomerDashboardResponseDto } from '../../../../domain/schemas/dto/response/customer-dashboard.dto';
+import { CustomerDashboardMapper } from '../../../../application/mappers/customer-dashboard.mapper';
 
 @Injectable()
 export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
   constructor(private readonly databaseService: DatabaseAbstract) {}
+
+  async getCustomerDashboard(
+    clientId: string,
+  ): Promise<CustomerDashboardResponseDto | null> {
+    try {
+      const query = `
+        SELECT jsonb_build_object(
+            
+            -- 1. PERFIL DEL CLIENTE (Identidad y Contacto)
+            'perfil', (
+                SELECT COALESCE(
+                    person, 
+                    company, 
+                    jsonb_build_object('client_id', client_id, 'nombre', 'Cliente no detallado')
+                )
+                FROM public.view_acometida_detalle
+                WHERE client_id = $1
+                LIMIT 1
+            ),
+  
+            -- 2. RESUMEN DE SUS SERVICIOS (KPIs personales)
+            'resumen', (
+                SELECT jsonb_build_object(
+                    'total_acometidas', COUNT(*),
+                    'acometidas_activas', COUNT(*) FILTER (WHERE connection_status ILIKE '%activ%'),
+                    'total_incidentes_reportados', (
+                        SELECT COUNT(*) 
+                        FROM public.view_incidentes_detalle 
+                        WHERE connection_id IN (
+                            SELECT connection_id FROM public.view_acometida_detalle WHERE client_id = $1
+                        )
+                    )
+                )
+                FROM public.view_acometida_detalle
+                WHERE client_id = $1
+            ),
+  
+            -- 3. LISTADO DE SUS ACOMETIDAS / MEDIDORES (Para mostrar en tarjetas)
+            'acometidas', (
+                SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'connection_id', connection_id,
+                    'cadastral_key', connection_cadastral_key,
+                    'address', connection_address,
+                    'status', connection_status,
+                    'rate_name', connection_rate_name,
+                    'meter_number', connection_meter_number,
+                    'has_sewerage', connection_sewerage,
+                    'last_readings', last_readings
+                )), '[]'::jsonb)
+                FROM public.view_acometida_detalle
+                WHERE client_id = $1
+            ),
+  
+            -- 4. ÚLTIMOS INCIDENTES EN SUS ACOMETIDAS
+            'incidentes_recientes', (
+                SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'incident_code', incident_code,
+                    'connection_id', connection_id,
+                    'category', category_name,
+                    'status', status,
+                    'report_date', report_date
+                ) ORDER BY report_date DESC), '[]'::jsonb)
+                FROM public.view_incidentes_detalle
+                WHERE connection_id IN (
+                    SELECT connection_id 
+                    FROM public.view_acometida_detalle 
+                    WHERE client_id = $1
+                )
+                LIMIT 5
+            )
+  
+        ) AS "customer_dashboard_data";
+      `;
+      const result = await this.databaseService.query<Record<string, unknown>>(
+        query,
+        [clientId],
+      );
+
+      if (
+        !result ||
+        result.length === 0 ||
+        !result[0]?.customer_dashboard_data
+      ) {
+        return null;
+      }
+      return CustomerDashboardMapper.toDto(
+        result[0].customer_dashboard_data as Record<string, unknown>,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
     try {

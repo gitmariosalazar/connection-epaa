@@ -34,6 +34,7 @@ import {
   IDatabaseClient,
 } from '../../../../../../shared/connections/database/abstract/abstract.database';
 import { ConnectionSqlAdapter } from '../../../adapters/postgresql.connection.adapter';
+import { CustomerDashboardResponseDto } from '../../../../domain/schemas/dto/response/customer-dashboard.dto';
 
 @Injectable()
 export class MySQLConnectionPersistence implements InterfaceConnectionRepository {
@@ -1637,6 +1638,16 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
           row,
         ),
       );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getCustomerDashboard(
+    clientId: string,
+  ): Promise<CustomerDashboardResponseDto | null> {
+    try {
+      return null;
     } catch (error) {
       throw error;
     }

@@ -13,6 +13,7 @@ import {
   DashboardAdvanceResponse,
   LiveMapConnectionResponse,
 } from '../../domain/schemas/dto/response/dashboard.response';
+import { CustomerDashboardResponseDto } from '../../domain/schemas/dto/response/customer-dashboard.dto';
 import { RpcException } from '@nestjs/microservices';
 import { statusCode } from '../../../../settings/environments/status-code';
 import { CreateConnectionRequest } from '../../domain/schemas/dto/request/create.connection.request';
@@ -34,6 +35,30 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     @Inject('ConnectionRepository')
     private readonly connectionRepository: InterfaceConnectionRepository,
   ) {}
+
+  async getCustomerDashboard(clientId: string): Promise<CustomerDashboardResponseDto | null> {
+    try {
+      if (!clientId || clientId.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid clientId provided',
+        });
+      }
+
+      const dashboard = await this.connectionRepository.getCustomerDashboard(clientId);
+
+      if (!dashboard) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Dashboard data not found for client id ${clientId}`,
+        });
+      }
+
+      return dashboard;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse> {
     try {

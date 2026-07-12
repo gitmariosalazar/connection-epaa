@@ -17,8 +17,10 @@ import {
   ConnectionStateResponse,
   StateSummaryResponse,
 } from '../schemas/dto/response/connection-state.response';
+import { CustomerDashboardResponseDto } from '../schemas/dto/response/customer-dashboard.dto';
 
 export interface InterfaceConnectionRepository {
+  getCustomerDashboard(clientId: string): Promise<CustomerDashboardResponseDto | null>;
   getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
   getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]>;
   updateConnection(
