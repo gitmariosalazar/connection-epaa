@@ -116,9 +116,9 @@ export class InspectionReportPostgreSQLPersistence implements InterfaceInspectio
   ): Promise<void> {
     await this.databaseService.query(
       `UPDATE work_orders.orden_trabajo
-       SET estado = 'COMPLETADA', fecha_completada = NOW(), updated_at = NOW()
-       WHERE id_orden_trabajo = $2`,
-      [completedStatusId, workOrderId],
+       SET fecha_completada = NOW(), updated_at = NOW()
+       WHERE id_orden_trabajo = $1`,
+      [workOrderId],
     );
   }
 
