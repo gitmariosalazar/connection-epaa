@@ -19,7 +19,7 @@ export class InstallationReportController {
   async submitReport(
     @Payload() dto: SubmitInstallationReportDto,
   ): Promise<InstallationReportResponseDto> {
-    const technicianId = 'some-technician-id'; // Auth not strictly passed via payload in this MVP unless we extract from dto
+    const technicianId = '00000000-0000-0000-0000-000000000000'; // Auth not strictly passed via payload in this MVP unless we extract from dto
 
     const report = await this.submitInstallationReportUseCase.execute(
       dto,

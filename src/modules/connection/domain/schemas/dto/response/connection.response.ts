@@ -30,6 +30,8 @@ export interface ConnectionResponse {
   zoneCode: string;
   zoneName: string;
   incidents: number; // Total incidents associated with the connection
+  connectionType: string | null;
+  connectionTypeName: string | null;
 }
 
 export interface ConnectionAndPropertyResponse {
@@ -145,6 +147,8 @@ export interface ConnectionWithPropertyResponse {
   zoneId: number;
   zoneCode: string;
   zoneName: string;
+  connectionType: string | null;
+  connectionTypeName: string | null;
   // Client Data
   company: CompanyResponse | null;
   person: ClientResponse | null;

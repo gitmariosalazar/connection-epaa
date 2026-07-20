@@ -61,6 +61,8 @@ export class ConnectionSqlAdapter {
       zoneCode: connection.zone_code,
       zoneName: connection.zone_name,
       incidents: connection.incidents, // Total incidents associated with the connection
+      connectionType: connection.connection_type,
+      connectionTypeName: connection.connection_type_name,
     };
   }
 
@@ -258,6 +260,8 @@ export class ConnectionSqlAdapter {
       zoneId: connection.zone_id,
       zoneCode: connection.zone_code,
       zoneName: connection.zone_name,
+      connectionType: connection.connection_type,
+      connectionTypeName: connection.connection_type_name,
       // Client Data
       company: connection.company
         ? this.fromCompanySqlResponseToCompanyResponse(connection.company)
