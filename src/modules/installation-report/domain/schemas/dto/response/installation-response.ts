@@ -59,6 +59,7 @@ export interface MaterialResponse {
   quantity: number;
   unitCost: number;
   subtotal: number;
+  type: string;
 }
 
 export interface EvidenceAttachmentResponse {

@@ -1,18 +1,17 @@
 import {
-  SqlViewInstallationReport,
-  SqlViewWorkOrderDetail,
-  SqlViewRequestDetail,
+  GeoPointResponse,
+  InspectionReportResponse,
+  RequestDetailResponse,
+  WorkOrderDetailResponse,
+} from '../../domain/schemas/dto/response/inspection-response';
+import {
   GeoJsonPoint,
+  SqlViewInspectionReport,
+  SqlViewRequestDetail,
+  SqlViewWorkOrderDetail,
 } from '../interfaces/sql/sql-result';
 
-import {
-  InstallationReportResponse,
-  WorkOrderDetailResponse,
-  RequestDetailResponse,
-  GeoPointResponse,
-} from '../../domain/schemas/dto/response/installation-response';
-
-export class WorkOrderInstallationViewAdapter {
+export class WorkOrderViewInspectionAdapter {
   private static mapGeoJsonToPoint(
     geom: GeoJsonPoint | null,
   ): GeoPointResponse | null {
@@ -85,6 +84,7 @@ export class WorkOrderInstallationViewAdapter {
         quantity: m.quantity,
         unitCost: m.unit_cost,
         subtotal: m.subtotal,
+        type: m.type,
       })),
       evidenceAttachments: raw.attachments.map((a) => ({
         id: a.attachment_id,
@@ -100,24 +100,22 @@ export class WorkOrderInstallationViewAdapter {
     };
   }
 
-  public static mapInstallationViewToResponse(
-    raw: SqlViewInstallationReport,
-  ): InstallationReportResponse {
+  public static mapInspectionViewToResponse(
+    raw: SqlViewInspectionReport,
+  ): InspectionReportResponse {
     return {
       id: raw.report_id,
       result: raw.result,
-      installationDate: raw.installation_date,
-      meterNumber: raw.meter_number,
-      initialReading: raw.initial_reading,
-      securitySeal: raw.security_seal,
+      networkDistanceMeters: raw.network_distance_meters,
       connectionDiameter: raw.connection_diameter,
-      location: WorkOrderInstallationViewAdapter.mapGeoJsonToPoint(
-        raw.location,
-      ),
-      finalConditions: raw.final_conditions,
+      terrainConditions: raw.terrain_conditions,
       observations: raw.observations,
-      clientSignatureUrl: raw.client_signature_url,
+      location: WorkOrderViewInspectionAdapter.mapGeoJsonToPoint(raw.location),
+      materialsCost: raw.materials_cost,
+      laborCost: raw.labor_cost,
+      totalCost: raw.total_cost,
       isApproved: raw.is_approved,
+      rejectionReason: raw.rejection_reason,
       approvalDate: raw.approval_date,
       createdAt: raw.created_at,
 
@@ -131,10 +129,10 @@ export class WorkOrderInstallationViewAdapter {
           }
         : null,
 
-      request: WorkOrderInstallationViewAdapter.mapRequestDetail(
+      request: WorkOrderViewInspectionAdapter.mapRequestDetail(
         raw.request_detail,
       ),
-      workOrder: WorkOrderInstallationViewAdapter.mapWorkOrderDetail(
+      workOrder: WorkOrderViewInspectionAdapter.mapWorkOrderDetail(
         raw.work_order_detail,
       ),
     };

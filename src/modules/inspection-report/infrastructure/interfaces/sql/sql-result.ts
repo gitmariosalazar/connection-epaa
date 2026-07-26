@@ -62,6 +62,7 @@ export interface SqlViewMaterial {
   quantity: number;
   unit_cost: number;
   subtotal: number;
+  type: string;
 }
 
 export interface SqlViewAttachment {
