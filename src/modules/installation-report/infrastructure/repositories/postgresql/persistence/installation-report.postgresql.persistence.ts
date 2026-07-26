@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseAbstract } from '../../../../../../shared/connections/database/abstract/abstract.database';
 import { InterfaceInstallationReportRepository } from '../../../../domain/contracts/installation-report.interface.repository';
 import { InstallationReportModel } from '../../../../domain/schemas/models/InstallationReportModel';
+import { InstallationReportResponse } from '../../../../domain/schemas/dto/response/installation-response';
+import { SqlViewInstallationReport } from '../../../interfaces/sql/sql-result';
+import { WorkOrderInstallationViewAdapter } from '../../../adapters/vies-adapter';
 
 @Injectable()
 export class InstallationReportPostgreSQLPersistence implements InterfaceInstallationReportRepository {
@@ -10,11 +13,12 @@ export class InstallationReportPostgreSQLPersistence implements InterfaceInstall
   async createInstallationReport(
     report: InstallationReportModel,
   ): Promise<InstallationReportModel | null> {
-    
     // First find the solicitud id
-    const solResult = await this.databaseService.query<{ id_solicitud: string }>(
+    const solResult = await this.databaseService.query<{
+      id_solicitud: string;
+    }>(
       `SELECT id_solicitud FROM acometidas.solicitud_orden_trabajo WHERE id_orden_trabajo = $1`,
-      [report.workOrderId]
+      [report.workOrderId],
     );
     const solicitudId = solResult.length > 0 ? solResult[0].id_solicitud : null;
     if (!solicitudId) return null;
@@ -136,15 +140,29 @@ export class InstallationReportPostgreSQLPersistence implements InterfaceInstall
     );
   }
 
-  async closeWorkOrder(workOrderId: string, statusId: number): Promise<void> {
-    await this.databaseService.query(
-      `UPDATE work_orders.orden_trabajo
-       SET estado = 'INSTALACION_EJECUTADA',
-           fecha_completada = NOW(),
-           updated_at = NOW()
-       WHERE id_orden_trabajo = $1::uuid`,
-      [workOrderId],
-    );
+  async closeWorkOrder(
+    workOrderId: string,
+    completedStatus: string,
+    userId: string,
+  ): Promise<void> {
+    await this.databaseService.transaction(async (client) => {
+      const res = await client.query<{ estado: string }>(`SELECT estado FROM work_orders.orden_trabajo WHERE id_orden_trabajo = $1`, [workOrderId]);
+      const currentState = res[0]?.estado;
+      
+      await client.query(
+        `UPDATE work_orders.orden_trabajo
+         SET estado = $2, fecha_completada = NOW(), updated_at = NOW()
+         WHERE id_orden_trabajo = $1`,
+        [workOrderId, completedStatus],
+      );
+
+      await client.query(
+        `INSERT INTO work_orders.historial_estado_orden_trabajo (
+           id_orden_trabajo, estado_anterior, estado_nuevo, id_usuario, descripcion_cambio
+         ) VALUES ($1, $2, $3, $4, $5)`,
+         [workOrderId, currentState, completedStatus, userId, 'Trabajo técnico finalizado en campo']
+      );
+    });
   }
 
   async getClientIdBySolicitud(solicitudId: string): Promise<string | null> {
@@ -153,5 +171,21 @@ export class InstallationReportPostgreSQLPersistence implements InterfaceInstall
       [solicitudId],
     );
     return result.length > 0 ? result[0].id_cliente : null;
+  }
+
+  async getWorkOrderInstallationDetailByOrderCodeOrRequestNumber(
+    orderCodeOrRequestNumber: string,
+  ): Promise<InstallationReportResponse | null> {
+    const result = await this.databaseService.query<SqlViewInstallationReport>(
+      `
+      SELECT * FROM work_orders.view_informe_instalacion
+            WHERE order_code = $1 OR request_number = $1;
+      `,
+      [orderCodeOrRequestNumber],
+    );
+    if (result.length === 0) return null;
+    return WorkOrderInstallationViewAdapter.mapInstallationViewToResponse(
+      result[0],
+    );
   }
 }

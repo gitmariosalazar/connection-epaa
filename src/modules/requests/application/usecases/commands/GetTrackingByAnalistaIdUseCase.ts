@@ -20,9 +20,15 @@ export class GetTrackingByAnalistaIdUseCase {
    * @param analistaId Identificador del analista (UUID)
    * @returns Listado de solicitudes asignadas al analista
    */
-  async execute(analistaId: string): Promise<TrackingSolicitudResponse[]> {
+  async execute(
+    analistaId: string,
+    isSuperAdmin = false,
+  ): Promise<TrackingSolicitudResponse[]> {
     if (!analistaId?.trim()) {
       throw new Error('analistaId es requerido');
+    }
+    if (isSuperAdmin) {
+      return this.repo.getTrackingForSuperAdmin();
     }
     return this.repo.getTrackingByAnalistaId(analistaId.trim());
   }

@@ -64,6 +64,7 @@ export interface ExpedienteSqlResult {
   numero_medidor: string | null;
   servicio_activo: boolean | null;
   fecha_activacion: Date | null;
+  historial: HistorialTrackingSqlResult[] | null;
 }
 
 export interface PhoneSqlResponse {
@@ -128,7 +129,7 @@ export interface DashboardKpisSqlResult {
 }
 
 export interface SolicitudOrdenTrabajoSqlResult {
-  work_order_id: string;  // UUID de la OT — requerido para acciones como iniciar
+  work_order_id: string; // UUID de la OT — requerido para acciones como iniciar
   tipo_orden: string;
   codigo_orden: string;
   descripcion: string;

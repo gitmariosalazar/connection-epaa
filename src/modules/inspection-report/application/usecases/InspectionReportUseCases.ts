@@ -1,12 +1,15 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import { statusCode } from '../../../../settings/environments/status-code';
 import { InterfaceInspectionReportRepository } from '../../domain/contracts/inspection-report.interface.repository';
 import { InspectionReportModel } from '../../domain/schemas/models/InspectionReportModel';
 import { INotificationPort } from '../../../../shared/notifications/notification.port';
+import { InspectionReportResponse } from '../../domain/schemas/dto/response/inspection-response';
 
 export class SubmitInspectionReportDto {
-  workOrderId: string;
-  solicitudId: string;
-  result: string;
+  workOrderId!: string;
+  solicitudId!: string;
+  result!: string;
   networkDistanceM?: number;
   connectionDiameter?: string;
   terrainConditions?: string;
@@ -15,8 +18,8 @@ export class SubmitInspectionReportDto {
   latitude?: number;
   materialCost?: number;
   laborCost?: number;
-  technicianId: string;
-  completedStatusId: number; // ID del estado "Completada" en work_orders
+  technicianId!: string;
+  completedStatus!: string; // ID del estado "Completada" en work_orders
 }
 
 /**
@@ -60,12 +63,17 @@ export class SubmitInspectionReportUseCase {
 
     // 1. Guardar informe
     const saved = await this.repository.createInspectionReport(report);
-    if (!saved) throw new NotFoundException('No se pudo guardar el informe');
+    if (!saved)
+      throw new RpcException({
+        message: 'No se pudo guardar el informe',
+        statusCode: statusCode.INTERNAL_SERVER_ERROR,
+      });
 
     // 2. Cerrar OT en work_orders
     await this.repository.closeWorkOrder(
       dto.workOrderId,
-      dto.completedStatusId,
+      dto.completedStatus,
+      dto.technicianId
     );
 
     // 3. Transición de estado (siempre via función BD)
@@ -90,10 +98,10 @@ export class SubmitInspectionReportUseCase {
 }
 
 export class ApproveInspectionReportDto {
-  reportId: string;
-  approved: boolean;
+  reportId!: string;
+  approved!: boolean;
   rejectionReason?: string;
-  approverId: string;
+  approverId!: string;
 }
 
 /**
@@ -118,7 +126,10 @@ export class ApproveInspectionReportUseCase {
       dto.approverId,
     );
     if (!result)
-      throw new NotFoundException(`Informe ${dto.reportId} no encontrado`);
+      throw new RpcException({
+        message: `Informe ${dto.reportId} no encontrado`,
+        statusCode: statusCode.NOT_FOUND,
+      });
 
     const newStatus = dto.approved ? 'INFORME_APROBADO' : 'RECHAZADA_TECNICA';
     const comment = dto.approved
@@ -151,5 +162,30 @@ export class ApproveInspectionReportUseCase {
     }
 
     return { solicitudId: result.solicitudId, newStatus };
+  }
+}
+
+@Injectable()
+export class GetWorkOrderInspectionDetailByOrderCodeOrRequestNumberUseCase {
+  constructor(
+    @Inject('InterfaceInspectionReportRepository')
+    private readonly repository: InterfaceInspectionReportRepository,
+  ) {}
+
+  async execute(
+    orderCodeOrRequestNumber: string,
+  ): Promise<InspectionReportResponse | null> {
+    const report =
+      await this.repository.getWorkOrderInspectionDetailByOrderCodeOrRequestNumber(
+        orderCodeOrRequestNumber,
+      );
+    if (!report) {
+      throw new RpcException({
+        message:
+          'Informe de inspección no encontrado para esta orden o solicitud',
+        statusCode: statusCode.NOT_FOUND,
+      });
+    }
+    return report;
   }
 }

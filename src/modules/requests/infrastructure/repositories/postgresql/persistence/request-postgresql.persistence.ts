@@ -427,7 +427,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
                mime_type = $3,
                tamano_bytes = $4,
                hash_sha256 = $5,
-               estado_validacion = 'PENDIENTE',
+               estado_validacion = 'CORREGIDO',
                observacion = NULL,
                id_validador = NULL,
                updated_at = NOW()
@@ -478,7 +478,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             EXTRACT(DAY FROM (NOW() - s.created_at))::INT AS dias_en_proceso,
             s.id_cliente AS cliente_id,
             a.username AS analista_username,
-            concat(e.nombres, ' ', e.apellidos) AS usuario_nombre,
+            concat(emp.nombres, ' ', emp.apellidos) AS analista_nombre,
 
             -- Documentos como JSON array
             COALESCE(json_agg(DISTINCT jsonb_build_object(
@@ -519,11 +519,24 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             r.numero_cuenta,
             r.numero_medidor,
             r.activo AS servicio_activo,
-            r.fecha_activacion
-
+            r.fecha_activacion,
+          -- Timeline (JSON ordenado)
+          (SELECT jsonb_agg(
+              jsonb_build_object(
+                  'estado',         h.estado_nuevo,
+                  'estadoLabel',    ces2.nombre,
+                  'estadoAnterior', h.estado_anterior,
+                  'fecha',          h.fecha_cambio,
+                  'comentario',     h.comentario
+              ) ORDER BY h.fecha_cambio
+           )
+           FROM acometidas.historial_estado h
+           JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+           WHERE h.id_solicitud = s.id_solicitud
+          ) AS historial
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a ON a.usuario_id = s.id_analista
-        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
+        LEFT JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d ON d.id_solicitud = s.id_solicitud AND d.is_deleted = FALSE
         LEFT JOIN acometidas.factura_inspeccion f ON f.id_solicitud = s.id_solicitud
         LEFT JOIN acometidas.informe_inspeccion i ON i.id_solicitud = s.id_solicitud AND i.is_deleted = FALSE
@@ -532,7 +545,7 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
         WHERE s.id_solicitud = $1
           AND s.is_deleted = FALSE
-            GROUP BY s.id_solicitud, a.username, f.id_factura, i.id_informe, c.id_contrato, r.id_registro, usuario;
+            GROUP BY s.id_solicitud, a.username, f.id_factura, i.id_informe, c.id_contrato, r.id_registro, analista_nombre;
       `,
       [solicitudId],
     );
@@ -647,7 +660,21 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
                         'emails', cc.correos
                     )
                 ELSE NULL
-            END AS person
+            END AS person,
+            -- Timeline (JSON ordenado)
+            (SELECT jsonb_agg(
+                jsonb_build_object(
+                    'estado',         h.estado_nuevo,
+                    'estadoLabel',    ces2.nombre,
+                    'estadoAnterior', h.estado_anterior,
+                    'fecha',          h.fecha_cambio,
+                    'comentario',     h.comentario
+                ) ORDER BY h.fecha_cambio
+             )
+             FROM acometidas.historial_estado h
+             JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+             WHERE h.id_solicitud = s.id_solicitud
+            ) AS historial
 
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a ON a.usuario_id = s.id_analista
@@ -777,12 +804,26 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             r.numero_cuenta,
             r.numero_medidor,
             r.activo AS servicio_activo,
-            r.fecha_activacion
+            r.fecha_activacion,
+          -- Timeline (JSON ordenado)
+          (SELECT jsonb_agg(
+              jsonb_build_object(
+                  'estado',         h.estado_nuevo,
+                  'estadoLabel',    ces2.nombre,
+                  'estadoAnterior', h.estado_anterior,
+                  'fecha',          h.fecha_cambio,
+                  'comentario',     h.comentario
+              ) ORDER BY h.fecha_cambio
+           )
+           FROM acometidas.historial_estado h
+           JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+           WHERE h.id_solicitud = s.id_solicitud
+          )                                                       AS historial
             
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a 
             ON a.usuario_id = s.id_analista
-        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
+        LEFT JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d 
             ON d.id_solicitud = s.id_solicitud 
           AND d.is_deleted = FALSE
@@ -886,12 +927,26 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             r.numero_cuenta,
             r.numero_medidor,
             r.activo AS servicio_activo,
-            r.fecha_activacion
+            r.fecha_activacion,
+          -- Timeline (JSON ordenado)
+          (SELECT jsonb_agg(
+              jsonb_build_object(
+                  'estado',         h.estado_nuevo,
+                  'estadoLabel',    ces2.nombre,
+                  'estadoAnterior', h.estado_anterior,
+                  'fecha',          h.fecha_cambio,
+                  'comentario',     h.comentario
+              ) ORDER BY h.fecha_cambio
+           )
+           FROM acometidas.historial_estado h
+           JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+           WHERE h.id_solicitud = s.id_solicitud
+          )                                                       AS historial
             
         FROM acometidas.solicitud s
         LEFT JOIN public.usuarios a 
             ON a.usuario_id = s.id_analista
-        INNER JOIN empleados emp ON a.usuario_id = emp.usuario_id
+        LEFT JOIN empleados emp ON a.usuario_id = emp.usuario_id
         LEFT JOIN acometidas.documento_adjunto d 
             ON d.id_solicitud = s.id_solicitud 
           AND d.is_deleted = FALSE
@@ -922,6 +977,131 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
             r.id_registro;
       `,
       [analistaId],
+    );
+    if (result.length === 0) return [];
+    return result.map(RequestAdapter.toExpedienteResponseFromSqlResult);
+  }
+
+  /**
+   * Mismo expediente enriquecido que getExpedientesByAnalistaId pero sin
+   * restringir por analista asignado. Uso exclusivo para el rol
+   * SUPER_ADMINISTRADOR, que debe poder ver todas las solicitudes.
+   */
+  async getAllExpedientes(): Promise<ExpedienteResponse[]> {
+    const result = await this.databaseSService.query<ExpedienteSqlResult>(
+      `
+        SELECT
+            -- Datos básicos de la solicitud
+            s.id_solicitud AS solicitud_id,
+            s.numero_solicitud AS solicitud_numero,
+            s.estado,
+            s.tipo_persona,
+            s.tipo_acometida,
+            s.uso_predio,
+            s.direccion,
+            s.clave_catastral,
+            ST_AsText(s.geom) AS coordenadas,
+            s.datos_adicionales,
+            s.created_at AS fecha_solicitud,
+            s.updated_at,
+            EXTRACT(DAY FROM (NOW() - s.created_at))::INT AS dias_en_proceso,
+            s.id_cliente AS cliente_id,
+            
+            -- Analista asignado
+            a.username AS analista_username,
+            concat(emp.nombres, ' ', emp.apellidos) AS analista_nombre,
+            
+            -- Documentos agrupados como JSON array
+            COALESCE(
+                json_agg(DISTINCT jsonb_build_object(
+                    'id', d.id_documento,
+                    'tipodocumento', d.id_tipo_documento,
+                    'url', d.url_archivo,
+                    'estadoValidacion', d.estado_validacion,
+                    'observacion', d.observacion
+                )) FILTER (WHERE d.id_documento IS NOT NULL), 
+                '[]'
+            ) AS documentos,
+            
+            -- Detalle de Factura
+            f.id_factura,
+            f.numero_factura,
+            f.monto AS monto_factura,
+            f.estado AS estado_pago,
+            f.fecha_vencimiento,
+            f.fecha_pago,
+            f.metodo_pago,
+            f.url_comprobante AS url_comprobante,
+            
+            -- Detalle del Informe de Inspección
+            i.id_informe,
+            i.resultado AS resultado_informe,
+            i.costo_materiales,
+            i.costo_mano_obra,
+            i.costo_total,
+            i.aprobado AS informe_aprobado,
+            i.motivo_rechazo,
+            
+            -- Detalle del Contrato
+            c.id_contrato,
+            c.numero_contrato AS numero_contrato,
+            c.estado_firma,
+            c.valor_total,
+            c.url_contrato_firmado,
+            
+            -- Detalle del Registro Catastral final
+            r.numero_cuenta,
+            r.numero_medidor,
+            r.activo AS servicio_activo,
+            r.fecha_activacion,
+          -- Timeline (JSON ordenado)
+          (SELECT jsonb_agg(
+              jsonb_build_object(
+                  'estado',         h.estado_nuevo,
+                  'estadoLabel',    ces2.nombre,
+                  'estadoAnterior', h.estado_anterior,
+                  'fecha',          h.fecha_cambio,
+                  'comentario',     h.comentario
+              ) ORDER BY h.fecha_cambio
+           )
+           FROM acometidas.historial_estado h
+           JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+           WHERE h.id_solicitud = s.id_solicitud
+          )                                                       AS historial
+            
+        FROM acometidas.solicitud s
+        LEFT JOIN public.usuarios a 
+            ON a.usuario_id = s.id_analista
+        LEFT JOIN empleados emp ON a.usuario_id = emp.usuario_id
+        LEFT JOIN acometidas.documento_adjunto d 
+            ON d.id_solicitud = s.id_solicitud 
+          AND d.is_deleted = FALSE
+        LEFT JOIN acometidas.factura_inspeccion f 
+            ON f.id_solicitud = s.id_solicitud
+        LEFT JOIN acometidas.informe_inspeccion i 
+            ON i.id_solicitud = s.id_solicitud 
+          AND i.is_deleted = FALSE
+        LEFT JOIN acometidas.contrato_servicio c 
+            ON c.id_solicitud = s.id_solicitud 
+          AND c.is_deleted = FALSE
+        LEFT JOIN acometidas.registro_catastral r 
+            ON r.id_solicitud = s.id_solicitud 
+          AND r.is_deleted = FALSE
+        LEFT JOIN public.cliente_usuario cu 
+            ON cu.cliente_id = s.id_cliente
+            
+        WHERE s.is_deleted = FALSE
+          
+        GROUP BY 
+            s.id_solicitud, 
+            a.username,
+            analista_nombre, 
+            f.id_factura, 
+            i.id_informe, 
+            c.id_contrato, 
+            r.id_registro;
+      `,
+      [],
     );
     if (result.length === 0) return [];
     return result.map(RequestAdapter.toExpedienteResponseFromSqlResult);
@@ -1317,6 +1497,145 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
     );
 
     // Reutilizar lógica de mapeo a TrackingSolicitudResponse
+    return rows.map((row): TrackingSolicitudResponse => {
+      const phaseInfo = RequestPostgreSQLPersistence.STEP_MAP[
+        row.estado_codigo
+      ] ?? { step: 'solicitud', index: 0 };
+      return RequestAdapter.toTrackingSolicitudResponseFromSqlResult(
+        row,
+        phaseInfo,
+      );
+    });
+  }
+
+  async getTrackingForSuperAdmin(): Promise<TrackingSolicitudResponse[]> {
+    const rows = await this.databaseSService.query<TrackingSolicitudSqlResult>(
+      `SELECT
+          -- Identificación
+          s.id_solicitud,
+          COALESCE(s.numero_solicitud, 'SOL-EPAA-' ||
+              TO_CHAR(s.created_at, 'YYYY') || '-' ||
+              LPAD(ROW_NUMBER() OVER (ORDER BY s.created_at)::TEXT, 7, '0')
+          )                                                       AS numero_solicitud,
+          s.tipo_acometida,
+          s.uso_predio,
+          s.direccion,
+          s.clave_catastral,
+
+          -- Fecha creación en español
+          LPAD(EXTRACT(DAY FROM s.created_at)::TEXT, 2, '0') ||
+          ' de ' ||
+          CASE EXTRACT(MONTH FROM s.created_at)
+              WHEN 1  THEN 'enero'      WHEN 2  THEN 'febrero'  WHEN 3  THEN 'marzo'
+              WHEN 4  THEN 'abril'      WHEN 5  THEN 'mayo'     WHEN 6  THEN 'junio'
+              WHEN 7  THEN 'julio'      WHEN 8  THEN 'agosto'   WHEN 9  THEN 'septiembre'
+              WHEN 10 THEN 'octubre'    WHEN 11 THEN 'noviembre' WHEN 12 THEN 'diciembre'
+          END ||
+          ', ' || EXTRACT(YEAR FROM s.created_at)::TEXT          AS fecha_creacion,
+
+          -- Estado actual
+          s.estado                                                AS estado_codigo,
+          ces.nombre                                              AS estado_actual_label,
+
+          -- Métricas
+          EXTRACT(DAY FROM (NOW() - s.created_at))::INT          AS dias_en_proceso,
+
+          -- Último movimiento
+          (SELECT h.fecha_cambio
+           FROM acometidas.historial_estado h
+           WHERE h.id_solicitud = s.id_solicitud
+           ORDER BY h.fecha_cambio DESC LIMIT 1)                 AS ultimo_movimiento,
+          (SELECT h.comentario
+           FROM acometidas.historial_estado h
+           WHERE h.id_solicitud = s.id_solicitud
+           ORDER BY h.fecha_cambio DESC LIMIT 1)                 AS ultimo_comentario,
+
+          -- Documentos
+          (SELECT COUNT(*) FROM acometidas.documento_adjunto d
+           WHERE d.id_solicitud = s.id_solicitud AND d.is_deleted = FALSE
+          )::INT                                                  AS docs_total,
+          (SELECT COUNT(*) FROM acometidas.documento_adjunto d
+           WHERE d.id_solicitud = s.id_solicitud
+             AND d.estado_validacion = 'VALIDO' AND d.is_deleted = FALSE
+          )::INT                                                  AS docs_aprobados,
+          (SELECT COUNT(*) FROM acometidas.documento_adjunto d
+           WHERE d.id_solicitud = s.id_solicitud
+             AND d.estado_validacion = 'INVALIDO' AND d.is_deleted = FALSE
+          )::INT                                                  AS docs_rechazados,
+
+          -- Factura
+          fi.numero_factura,
+          fi.monto                                                AS monto_inspeccion,
+          fi.estado                                               AS estado_pago,
+          fi.fecha_vencimiento,
+          fi.fecha_pago,
+          fi.metodo_pago,
+
+          -- Inspección (via orden de trabajo tipo INSPECCION)
+          ii.resultado                                            AS resultado_inspeccion,
+          ii.distancia_red_m,
+          ii.costo_total                                          AS costo_estimado,
+          ii.aprobado                                             AS informe_aprobado,
+          ii.observaciones                                        AS obs_inspeccion,
+
+          -- Contrato
+          cs.numero_contrato,
+          cs.valor_total                                          AS valor_contrato,
+          cs.estado_firma,
+          cs.fecha_firma_usuario,
+          cs.fecha_firma_epaa,
+
+          -- Instalación / Catastro
+          rc.numero_medidor,
+          rc.numero_cuenta,
+          rc.activo                                               AS servicio_activo,
+          rc.fecha_activacion,
+
+          -- Analista
+          u.username                                              AS analista,
+          concat(emp.nombres, ' ', emp.apellidos)                     AS analista_nombre,
+
+          -- Timeline (JSON ordenado)
+          (SELECT jsonb_agg(
+              jsonb_build_object(
+                  'estado',         h.estado_nuevo,
+                  'estadoLabel',    ces2.nombre,
+                  'estadoAnterior', h.estado_anterior,
+                  'fecha',          h.fecha_cambio,
+                  'comentario',     h.comentario
+              ) ORDER BY h.fecha_cambio
+           )
+           FROM acometidas.historial_estado h
+           JOIN acometidas.cat_estado_solicitud ces2 ON ces2.codigo = h.estado_nuevo
+           WHERE h.id_solicitud = s.id_solicitud
+          )                                                       AS historial,
+
+          s.created_at,
+          s.updated_at
+
+      FROM acometidas.solicitud s
+      JOIN acometidas.cat_estado_solicitud  ces ON ces.codigo = s.estado
+      LEFT JOIN public.usuarios             u   ON u.usuario_id   = s.id_analista
+      LEFT JOIN empleados                   emp   ON u.usuario_id   = emp.usuario_id
+      LEFT JOIN acometidas.factura_inspeccion fi ON fi.id_solicitud = s.id_solicitud
+      -- Informe: via orden de trabajo tipo INSPECCION
+      LEFT JOIN acometidas.solicitud_orden_trabajo sot
+             ON sot.id_solicitud = s.id_solicitud
+            AND sot.tipo_orden   = 'INSPECCION'
+      LEFT JOIN acometidas.informe_inspeccion ii
+             ON ii.id_orden_trabajo = sot.id_orden_trabajo
+            AND ii.is_deleted = FALSE
+      LEFT JOIN acometidas.contrato_servicio cs
+             ON cs.id_solicitud = s.id_solicitud
+            AND cs.is_deleted   = FALSE
+      LEFT JOIN acometidas.registro_catastral rc
+             ON rc.id_solicitud = s.id_solicitud
+            AND rc.is_deleted   = FALSE
+      LEFT JOIN public.cliente_usuario cu ON cu.cliente_id = s.id_cliente
+      WHERE s.is_deleted = FALSE
+      ORDER BY s.created_at DESC`,
+    );
+
     return rows.map((row): TrackingSolicitudResponse => {
       const phaseInfo = RequestPostgreSQLPersistence.STEP_MAP[
         row.estado_codigo

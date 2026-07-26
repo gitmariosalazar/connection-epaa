@@ -7,6 +7,7 @@ import {
   EmailResponse,
   ExpedienteResponse,
   HistorialEstadoResponse,
+  HistorialTrackingEntry,
   PhoneResponse,
   RequestDetailByClientResponse,
   SolicitudOrdenTrabajoResponse,
@@ -20,6 +21,7 @@ import {
   EmailSqlResponse,
   ExpedienteSqlResult,
   HistorialEstadoSqlResult,
+  HistorialTrackingSqlResult,
   PhoneSqlResponse,
   RequestDetailByClientSqlResult,
   RequestSqlResult,
@@ -163,6 +165,15 @@ export class RequestAdapter {
   static toExpedienteResponseFromSqlResult(
     row: ExpedienteSqlResult,
   ): ExpedienteResponse {
+        const historial = Array.isArray(row.historial)
+          ? row.historial.map((entry) => ({
+              estado: entry.estado,
+              estadoLabel: entry.estadoLabel,
+              estadoAnterior: entry.estadoAnterior ?? null,
+              fecha: entry.fecha,
+              comentario: entry.comentario ?? null,
+            }))
+          : [];
     return {
       solicitudId: row.solicitud_id,
       estado: row.estado,
@@ -205,6 +216,7 @@ export class RequestAdapter {
       servicioActivo: row.servicio_activo,
       fechaActivacion: row.fecha_activacion,
       solicitudNumero: row.solicitud_numero ?? null,
+      historial: historial,
     };
   }
 
@@ -253,13 +265,13 @@ export class RequestAdapter {
     row: SolicitudOrdenTrabajoSqlResult,
   ): SolicitudOrdenTrabajoResponse {
     return {
-      workOrderId:     row.work_order_id,
-      tipoOrden:       row.tipo_orden,
-      codigoOrden:     row.codigo_orden,
-      descripcion:     row.descripcion,
-      estadoOt:        row.estado_ot,
-      prioridad:       row.prioridad,
-      fechaCreacion:   row.fecha_creacion,
+      workOrderId: row.work_order_id,
+      tipoOrden: row.tipo_orden,
+      codigoOrden: row.codigo_orden,
+      descripcion: row.descripcion,
+      estadoOt: row.estado_ot,
+      prioridad: row.prioridad,
+      fechaCreacion: row.fecha_creacion,
       fechaAsignacion: row.fecha_asignacion,
       fechaCompletada: row.fecha_completada,
       tecnicoAsignado: row.tecnico_asignado,

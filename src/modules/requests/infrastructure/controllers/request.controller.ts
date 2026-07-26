@@ -128,8 +128,13 @@ export class RequestController {
 
   @Get(':analistaId/expedientes')
   @MessagePattern('requests.get_expedientes_by_analista')
-  async getExpedientesByAnalista(@Payload() analistaId: string) {
-    return await this.getExpedienteByAnalistaIdUseCase.execute(analistaId);
+  async getExpedientesByAnalista(
+    @Payload() payload: { analistaId: string; isSuperAdmin?: boolean },
+  ) {
+    return await this.getExpedienteByAnalistaIdUseCase.execute(
+      payload.analistaId,
+      payload.isSuperAdmin,
+    );
   }
 
   @Get(':solicitudId/historial')
@@ -204,8 +209,13 @@ export class RequestController {
 
   @Get(':analistaId/tracking-internal-user')
   @MessagePattern('requests.get_tracking_by_analista_id')
-  async getTrackingByAnalista(@Payload() analistaId: string) {
-    return await this.getTrackingByAnalistaIdUseCase.execute(analistaId);
+  async getTrackingByAnalista(
+    @Payload() payload: { analistaId: string; isSuperAdmin?: boolean },
+  ) {
+    return await this.getTrackingByAnalistaIdUseCase.execute(
+      payload.analistaId,
+      payload.isSuperAdmin ?? false,
+    );
   }
 
   @Get(':solicitudId/tracking-by-solicitud-id')

@@ -1,3 +1,4 @@
+import { InspectionReportResponse } from '../schemas/dto/response/inspection-response';
 import { InspectionReportModel } from '../schemas/models/InspectionReportModel';
 
 export interface InterfaceInspectionReportRepository {
@@ -13,7 +14,7 @@ export interface InterfaceInspectionReportRepository {
   getReportByWorkOrderId(
     workOrderId: string,
   ): Promise<InspectionReportModel | null>;
-  closeWorkOrder(workOrderId: string, completedStatusId: number): Promise<void>;
+  closeWorkOrder(workOrderId: string, completedStatus: string, userId: string): Promise<void>;
   getClientIdBySolicitud(solicitudId: string): Promise<string | null>;
   getAnalystIdBySolicitud(solicitudId: string): Promise<string | null>;
   changeRequestStatus(
@@ -22,4 +23,7 @@ export interface InterfaceInspectionReportRepository {
     userId: string,
     comment: string,
   ): Promise<void>;
+  getWorkOrderInspectionDetailByOrderCodeOrRequestNumber(
+    orderCodeOrRequestNumber: string,
+  ): Promise<InspectionReportResponse | null>;
 }

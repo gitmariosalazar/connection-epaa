@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseAbstract } from '../../../../../../shared/connections/database/abstract/abstract.database';
 import { InterfaceInspectionReportRepository } from '../../../../domain/contracts/inspection-report.interface.repository';
 import { InspectionReportModel } from '../../../../domain/schemas/models/InspectionReportModel';
+import { InspectionReportResponse } from '../../../../domain/schemas/dto/response/inspection-response';
+import { SqlViewInspectionReport } from '../../../interfaces/sql/sql-result';
+import { WorkOrderViewInspectionAdapter } from '../../../adapters/vies-adapter';
 
 @Injectable()
 export class InspectionReportPostgreSQLPersistence implements InterfaceInspectionReportRepository {
@@ -112,14 +115,27 @@ export class InspectionReportPostgreSQLPersistence implements InterfaceInspectio
 
   async closeWorkOrder(
     workOrderId: string,
-    completedStatusId: number,
+    completedStatus: string,
+    userId: string,
   ): Promise<void> {
-    await this.databaseService.query(
-      `UPDATE work_orders.orden_trabajo
-       SET fecha_completada = NOW(), updated_at = NOW()
-       WHERE id_orden_trabajo = $1`,
-      [workOrderId],
-    );
+    await this.databaseService.transaction(async (client) => {
+      const res = await client.query<{ estado: string }>(`SELECT estado FROM work_orders.orden_trabajo WHERE id_orden_trabajo = $1`, [workOrderId]);
+      const currentState = res[0]?.estado;
+      
+      await client.query(
+        `UPDATE work_orders.orden_trabajo
+         SET estado = $2, fecha_completada = NOW(), updated_at = NOW()
+         WHERE id_orden_trabajo = $1`,
+        [workOrderId, completedStatus],
+      );
+
+      await client.query(
+        `INSERT INTO work_orders.historial_estado_orden_trabajo (
+           id_orden_trabajo, estado_anterior, estado_nuevo, id_usuario, descripcion_cambio
+         ) VALUES ($1, $2, $3, $4, $5)`,
+         [workOrderId, currentState, completedStatus, userId, 'Trabajo técnico finalizado en campo']
+      );
+    });
   }
 
   async getClientIdBySolicitud(solicitudId: string): Promise<string | null> {
@@ -149,5 +165,20 @@ export class InspectionReportPostgreSQLPersistence implements InterfaceInspectio
       `SELECT acometidas.fn_cambiar_estado_solicitud($1, $2, $3, $4)`,
       [solicitudId, newStatus, userId, comment],
     );
+  }
+
+  async getWorkOrderInspectionDetailByOrderCodeOrRequestNumber(
+    orderCodeOrRequestNumber: string,
+  ): Promise<InspectionReportResponse | null> {
+    const result = await this.databaseService.query<SqlViewInspectionReport>(
+      `
+      SELECT * FROM work_orders.view_informe_inspeccion
+            WHERE order_code = $1 OR request_number = $1;
+      `,
+      [orderCodeOrRequestNumber],
+    );
+    if (result.length === 0) return null;
+    const r = result[0];
+    return WorkOrderViewInspectionAdapter.mapInspectionViewToResponse(r);
   }
 }

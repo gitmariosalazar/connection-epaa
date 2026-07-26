@@ -1,3 +1,4 @@
+import { InstallationReportResponse } from '../schemas/dto/response/installation-response';
 import { InstallationReportModel } from '../schemas/models/InstallationReportModel';
 
 export interface InterfaceInstallationReportRepository {
@@ -22,7 +23,10 @@ export interface InterfaceInstallationReportRepository {
     comment: string,
   ): Promise<void>;
 
-  closeWorkOrder(workOrderId: string, statusId: number): Promise<void>;
+  closeWorkOrder(workOrderId: string, completedStatus: string, userId: string): Promise<void>;
 
   getClientIdBySolicitud(solicitudId: string): Promise<string | null>;
+  getWorkOrderInstallationDetailByOrderCodeOrRequestNumber(
+    orderCodeOrRequestNumber: string,
+  ): Promise<InstallationReportResponse | null>;
 }

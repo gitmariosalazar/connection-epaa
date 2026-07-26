@@ -14,13 +14,19 @@ export class GetExpedienteByAnalistaIdUseCase {
     private readonly repository: InterfaceConnectionRequestRepository,
   ) {}
 
-  async execute(analistaId: string): Promise<ExpedienteResponse[]> {
-    const expediente =
-      await this.repository.getExpedientesByAnalistaId(analistaId);
+  async execute(
+    analistaId: string,
+    isSuperAdmin = false,
+  ): Promise<ExpedienteResponse[]> {
+    const expediente = isSuperAdmin
+      ? await this.repository.getAllExpedientes()
+      : await this.repository.getExpedientesByAnalistaId(analistaId);
     if (!expediente || expediente.length === 0) {
       throw new RpcException({
         statusCode: 404,
-        message: `Analista ${analistaId} no encontrado`,
+        message: isSuperAdmin
+          ? 'No se encontraron expedientes'
+          : `Analista ${analistaId} no encontrado`,
       });
     }
     return expediente;

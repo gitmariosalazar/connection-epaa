@@ -55,6 +55,8 @@ export interface InterfaceConnectionRequestRepository {
     requestNumberOrId: string,
   ): Promise<RequestDetailByClientResponse | null>;
   getExpedientesByAnalistaId(analistaId: string): Promise<ExpedienteResponse[]>;
+  /** Igual que getExpedientesByAnalistaId pero sin filtro de analista (uso exclusivo de SUPER_ADMINISTRADOR) */
+  getAllExpedientes(): Promise<ExpedienteResponse[]>;
   getExpedientesByClienteId(clienteId: string): Promise<ExpedienteResponse[]>;
   /** Timeline de cambios de estado para el stepper del frontend */
   getHistorialBySolicitudId(
@@ -83,4 +85,6 @@ export interface InterfaceConnectionRequestRepository {
   getTrackingByAnalistaId(
     analistaId: string,
   ): Promise<TrackingSolicitudResponse[]>;
+  /** Igual que getTrackingByAnalistaId pero sin filtro de analista (uso exclusivo de SUPER_ADMINISTRADOR) */
+  getTrackingForSuperAdmin(): Promise<TrackingSolicitudResponse[]>;
 }

@@ -57,6 +57,7 @@ export interface ExpedienteResponse {
   servicioActivo: boolean | null;
   fechaActivacion: Date | null;
   solicitudNumero: string | null;
+  historial: HistorialTrackingEntry[];
 }
 
 export interface PhoneResponse {
@@ -126,7 +127,7 @@ export interface DashboardKpisResponse {
 export interface SolicitudOrdenTrabajoResponse {
   /** UUID de la OT — requerido para acciones como iniciar inspección/instalación */
   workOrderId: string;
-  tipoOrden: string;        // 'INSPECCION' | 'INSTALACION'
+  tipoOrden: string; // 'INSPECCION' | 'INSTALACION'
   codigoOrden: string;
   descripcion: string;
   estadoOt: string;

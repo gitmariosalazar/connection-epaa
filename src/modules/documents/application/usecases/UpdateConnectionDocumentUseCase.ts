@@ -70,7 +70,7 @@ export class UpdateConnectionDocumentUseCase {
         sizeInBytes: fileMetadata.sizeInBytes,
         hashSha256: fileMetadata.hashSha256,
         validationStatus: request.fileBase64
-          ? 'PENDIENTE'
+          ? 'CORREGIDO'
           : (request.validationStatus ?? existingDocument.validationStatus),
         observation: request.fileBase64
           ? null

@@ -1,5 +1,6 @@
 export class SubmitInstallationReportDto {
   workOrderId!: string;
+  userId!: string;
   result!: string;
   meterNumber?: string;
   initialReading?: number;
