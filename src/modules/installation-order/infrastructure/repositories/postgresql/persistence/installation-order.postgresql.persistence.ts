@@ -22,6 +22,7 @@ export class InstallationOrderPostgreSQLPersistence implements InterfaceInstalla
       `INSERT INTO work_orders.orden_trabajo (
          origen,
          id_entidad_origen,
+          codigo_entidad_origen,
          id_tipo_trabajo,
          id_prioridad,
          id_cliente,
@@ -35,6 +36,7 @@ export class InstallationOrderPostgreSQLPersistence implements InterfaceInstalla
        ) VALUES (
          'SOLICITUD',
          $2::uuid,
+        (select sol.numero_solicitud from acometidas.solicitud sol where sol.id_solicitud = $2 limit 1),
          (SELECT id_tipo_trabajo FROM work_orders.tipo_trabajo
           WHERE UPPER(nombre) = UPPER('Instalación y Calibración de Medidor') LIMIT 1),
          $1,

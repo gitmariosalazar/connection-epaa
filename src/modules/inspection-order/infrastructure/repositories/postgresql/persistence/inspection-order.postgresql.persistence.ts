@@ -36,6 +36,7 @@ export class InspectionOrderPostgreSQLPersistence implements InterfaceInspection
       `INSERT INTO work_orders.orden_trabajo (
          origen,
          id_entidad_origen,
+         codigo_entidad_origen,
          id_tipo_trabajo,
          id_prioridad,
          id_cliente,
@@ -49,6 +50,7 @@ export class InspectionOrderPostgreSQLPersistence implements InterfaceInspection
        ) VALUES (
          'SOLICITUD',
          $2::uuid,
+         (select sol.numero_solicitud from acometidas.solicitud sol where sol.id_solicitud = $2 limit 1),
          (SELECT id_tipo_trabajo FROM work_orders.tipo_trabajo
           WHERE UPPER(nombre) = UPPER('Inspección de Factibilidad de Acometida') LIMIT 1),
          $1,
@@ -73,6 +75,7 @@ export class InspectionOrderPostgreSQLPersistence implements InterfaceInspection
         creatorId,
         technicianId,
         scheduledDate,
+        solicitudId,
       ],
     );
 
