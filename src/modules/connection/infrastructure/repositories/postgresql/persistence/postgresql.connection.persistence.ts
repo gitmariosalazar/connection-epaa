@@ -1198,7 +1198,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             a.acometida_id                AS "connection_id",
             a.cliente_id                  AS "client_id",
             a.tarifa_id                   AS "connection_rate_id",
-            ct.nombre                     AS "connection_rate_name",
+            cat.nombre                     AS "connection_rate_name",
             a.numero_medidor              AS "connection_meter_number",
             a.sector                      AS "connection_sector",
             a.cuenta                      AS "connection_account",
@@ -1303,7 +1303,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
@@ -1317,7 +1317,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         LEFT JOIN empresa e            ON e.ruc = c.cliente_id
         LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
-        INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
+        INNER JOIN categoria cat ON t.categoria_id = cat.categoria_id
         INNER JOIN public.zona z on z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         LEFT JOIN acometidas.tipo_acometida ct ON ct.codigo = a.tipo_acometida
