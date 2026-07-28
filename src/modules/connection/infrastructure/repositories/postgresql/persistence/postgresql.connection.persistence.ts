@@ -607,7 +607,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                 est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
                 a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
                 a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.zona_code, a.zona_name,
-                a.tipo_acometida, pct.nombre
+                a.tipo_acometida, pct.nombre, ct.nombre
       ORDER BY a.created_at DESC,a.acometida_id
       LIMIT ? OFFSET ?;
     `;
@@ -686,7 +686,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                 est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
                 a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
                 a.zona_geometrica, a.predio_clave_catastral, a.zona_id, a.created_at,
-                a.tipo_acometida, pct.nombre
+                a.tipo_acometida, pct.nombre, ct.nombre
         ORDER BY a.created_at DESC,a.acometida_id
         LIMIT ? OFFSET ?;
       `;
