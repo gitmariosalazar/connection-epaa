@@ -48,6 +48,8 @@ export interface InterfaceConnectionRepository {
   ): Promise<ConnectionAndPropertyResponse | null>;
   findConnectionAndPropertyByCadastralKeyOrCardId(
     searchValue: string,
+    limit: number,
+    offset: number,
   ): Promise<ConnectionAndPropertyResponse[]>;
   findConnectionWithPropertyByCadastralKey(
     cadastralKey: string,

@@ -324,6 +324,8 @@ export class ConnectionService implements InterfaceConnectionUseCase {
 
   async findConnectionAndPropertyByCadastralKeyOrCardId(
     searchValue: string,
+    limit: number,
+    offset: number,
   ): Promise<ConnectionAndPropertyResponse[]> {
     try {
       if (!searchValue || searchValue.trim() === '') {
@@ -336,6 +338,8 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       const connectionsAndProperties =
         await this.connectionRepository.findConnectionAndPropertyByCadastralKeyOrCardId(
           searchValue,
+          limit,
+          offset,
         );
 
       if (!connectionsAndProperties || connectionsAndProperties.length === 0) {

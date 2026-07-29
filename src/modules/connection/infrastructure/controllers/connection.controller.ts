@@ -116,9 +116,18 @@ export class ConnectionController {
 
   @Get('find-connection-by-cadastral-key-or-card-id/:searchValue')
   @MessagePattern('connections.find-connection-by-cadastral-key-or-card-id')
-  async getConnectionByCadastralKeyOrCardId(@Payload() searchValue: string) {
+  async getConnectionByCadastralKeyOrCardId(
+    @Payload()
+    payload: {
+      searchValue: string;
+      limit?: number;
+      offset?: number;
+    },
+  ) {
     return this.connectionService.findConnectionAndPropertyByCadastralKeyOrCardId(
-      searchValue,
+      payload.searchValue,
+      payload.limit ?? 100,
+      payload.offset ?? 0,
     );
   }
 

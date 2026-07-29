@@ -1038,6 +1038,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
 
   async findConnectionAndPropertyByCadastralKeyOrCardId(
     searchValue: string,
+    limit: number,
+    offset: number,
   ): Promise<ConnectionAndPropertyResponse[]> {
     try {
       const query: string = `
@@ -1180,9 +1182,16 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             ORDER BY sub_hm.estado ASC, sub_hm.fecha_instalacion DESC
             LIMIT 1
         ) hm ON TRUE
-        WHERE a.acometida_id = ? OR a.cliente_id = ? OR a.numero_medidor = ?;
+        WHERE a.acometida_id = ? OR a.cliente_id = ? OR a.numero_medidor = ?
+        LIMIT ? OFFSET ?;
       `;
-      const params: string[] = [searchValue, searchValue, searchValue];
+      const params: (string | number)[] = [
+        searchValue,
+        searchValue,
+        searchValue,
+        limit,
+        offset,
+      ];
       const result =
         await this.databaseService.query<ConnectionAndPropertySqlResponse>(
           query,
