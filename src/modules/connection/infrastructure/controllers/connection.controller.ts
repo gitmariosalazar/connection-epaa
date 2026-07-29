@@ -260,4 +260,16 @@ export class ConnectionController {
       data.offset ?? 0,
     );
   }
+
+  @Get('get-dashboard-connections-by-client-id/:clientId')
+  @MessagePattern('connections.get-dashboard-connections-by-client-id')
+  async getDashboardConnectionsByClientId(@Payload() clientId: string) {
+    return this.connectionService.getDashboardConnectionsByClientId(clientId);
+  }
+
+  @Get('get-dashboard-global-client-id/:clientId')
+  @MessagePattern('connections.get-dashboard-global-client-id')
+  async getDashboardGlobalClientId(@Payload() clientId: string) {
+    return this.connectionService.getDashboardGlobalClientId(clientId);
+  }
 }

@@ -37,6 +37,15 @@ import {
 } from '../../../../../../shared/connections/database/abstract/abstract.database';
 import { CustomerDashboardResponseDto } from '../../../../domain/schemas/dto/response/customer-dashboard.dto';
 import { CustomerDashboardMapper } from '../../../../application/mappers/customer-dashboard.mapper';
+import {
+  ClientDashboardResponse,
+  ConnectionDashboardResponse,
+} from '../../../../domain/schemas/dto/response/view-dashboard.response';
+import {
+  ClientDashboardSqlResult,
+  ConnectionDashboardSqlResult,
+} from '../../../interfaces/sql/view-dashboard.sql-result';
+import { DashboardViewAdapter } from '../../../adapters/view-adapter';
 
 @Injectable()
 export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
@@ -2051,6 +2060,56 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           row,
         ),
       );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDashboardConnectionsByClientId(
+    clientId: string,
+  ): Promise<ConnectionDashboardResponse[]> {
+    try {
+      const query = `
+        select * from view_dashboard_acometidas where client_id = ?;
+      `;
+      const params: any[] = [clientId];
+      const result =
+        await this.databaseService.query<ConnectionDashboardSqlResult>(
+          query,
+          params,
+        );
+
+      const dashboardResponses: ConnectionDashboardResponse[] = result.map(
+        (row) => DashboardViewAdapter.toConnectionDashboardResponse(row),
+      );
+
+      return dashboardResponses;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDashboardGlobalClientId(
+    clientId: string,
+  ): Promise<ClientDashboardResponse | null> {
+    try {
+      const query = `
+        select * from view_dashboard_clientes where client_id = ?;
+      `;
+      const params: any[] = [clientId];
+      const result = await this.databaseService.query<ClientDashboardSqlResult>(
+        query,
+        params,
+      );
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      const dashboardResponse: ClientDashboardResponse =
+        DashboardViewAdapter.toClientDashboardResponse(result[0]);
+
+      return dashboardResponse;
     } catch (error) {
       throw error;
     }

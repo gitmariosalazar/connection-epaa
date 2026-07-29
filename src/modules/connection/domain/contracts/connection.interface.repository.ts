@@ -17,10 +17,16 @@ import {
   ConnectionStateResponse,
   StateSummaryResponse,
 } from '../schemas/dto/response/connection-state.response';
+import {
+  ClientDashboardResponse,
+  ConnectionDashboardResponse,
+} from '../schemas/dto/response/view-dashboard.response';
 import { CustomerDashboardResponseDto } from '../schemas/dto/response/customer-dashboard.dto';
 
 export interface InterfaceConnectionRepository {
-  getCustomerDashboard(clientId: string): Promise<CustomerDashboardResponseDto | null>;
+  getCustomerDashboard(
+    clientId: string,
+  ): Promise<CustomerDashboardResponseDto | null>;
   getAdvanceDashboardStats(): Promise<DashboardAdvanceResponse>;
   getLiveUpdateMapConnections(): Promise<LiveMapConnectionResponse[]>;
   updateConnection(
@@ -111,4 +117,11 @@ export interface InterfaceConnectionRepository {
     userId: string,
     motivo: string,
   ): Promise<BulkStateChangeResponse>;
+  getDashboardGlobalClientId(
+    clientId: string,
+  ): Promise<ClientDashboardResponse | null>;
+
+  getDashboardConnectionsByClientId(
+    clientId: string,
+  ): Promise<ConnectionDashboardResponse[]>;
 }

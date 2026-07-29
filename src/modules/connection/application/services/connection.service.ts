@@ -28,6 +28,10 @@ import {
   ConnectionStateResponse,
   StateSummaryResponse,
 } from '../../domain/schemas/dto/response/connection-state.response';
+import {
+  ClientDashboardResponse,
+  ConnectionDashboardResponse,
+} from '../../domain/schemas/dto/response/view-dashboard.response';
 
 @Injectable()
 export class ConnectionService implements InterfaceConnectionUseCase {
@@ -36,7 +40,9 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     private readonly connectionRepository: InterfaceConnectionRepository,
   ) {}
 
-  async getCustomerDashboard(clientId: string): Promise<CustomerDashboardResponseDto | null> {
+  async getCustomerDashboard(
+    clientId: string,
+  ): Promise<CustomerDashboardResponseDto | null> {
     try {
       if (!clientId || clientId.trim() === '') {
         throw new RpcException({
@@ -45,7 +51,8 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      const dashboard = await this.connectionRepository.getCustomerDashboard(clientId);
+      const dashboard =
+        await this.connectionRepository.getCustomerDashboard(clientId);
 
       if (!dashboard) {
         throw new RpcException({
@@ -686,6 +693,62 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return propertiesWithClient;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDashboardGlobalClientId(
+    clientId: string,
+  ): Promise<ClientDashboardResponse | null> {
+    try {
+      if (!clientId || clientId.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid clientId provided',
+        });
+      }
+
+      const dashboard =
+        await this.connectionRepository.getDashboardGlobalClientId(clientId);
+
+      if (!dashboard) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Dashboard data not found for client id ${clientId}`,
+        });
+      }
+
+      return dashboard;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDashboardConnectionsByClientId(
+    clientId: string,
+  ): Promise<ConnectionDashboardResponse[]> {
+    try {
+      if (!clientId || clientId.trim() === '') {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'Invalid clientId provided',
+        });
+      }
+
+      const connections =
+        await this.connectionRepository.getDashboardConnectionsByClientId(
+          clientId,
+        );
+
+      if (!connections || connections.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `No connections found for client id ${clientId}`,
+        });
+      }
+
+      return connections;
     } catch (error) {
       throw error;
     }
