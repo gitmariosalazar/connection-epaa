@@ -66,6 +66,9 @@ export interface ConnectionAndPropertySqlResponse {
   zone_id: number;
   zone_code: string;
   zone_name: string;
+  incidents: number; // Total incidents associated with the connection
+  connection_type: string | null;
+  connection_type_name: string | null;
   // Client Data
   company: CompanySqlResponse | null;
   person: ClientSqlResponse | null;
@@ -188,6 +191,9 @@ export interface ConnectionWithoutPropertySqlResponse {
   zone_id: number;
   zone_code: string;
   zone_name: string;
+  incidents: number; // Total incidents associated with the connection
+  connection_type: string | null;
+  connection_type_name: string | null;
   // Client Data
   company: CompanySqlResponse | null;
   person: ClientSqlResponse | null;

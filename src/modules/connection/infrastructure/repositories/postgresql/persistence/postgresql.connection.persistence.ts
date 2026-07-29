@@ -1073,6 +1073,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             a.zona_id                    AS "zone_id",
             z.codigo                     AS "zone_code",
             z.nombre                     AS "zone_name",
+            a.tipo_acometida              AS "connection_type",
+            cta.nombre                     AS "connection_type_name",
+            (
+              SELECT COUNT(*)
+              FROM public.incidente_medidor sub_im
+              WHERE sub_im.acometida_id = a.acometida_id
+                AND (sub_im.estado IS NULL OR sub_im.estado <> 'RESUELTO')
+            ) AS incidents,
             -- Client Data
             CASE
                 WHEN e.ruc IS NOT NULL THEN
@@ -1146,7 +1154,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                        lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
@@ -1164,6 +1172,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
         INNER JOIN public.zona z    ON z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        LEFT JOIN acometidas.tipo_acometida cta ON a.tipo_acometida = cta.codigo
         LEFT JOIN LATERAL (
             SELECT sub_hm.numero_medidor_nuevo, sub_hm.numero_medidor_anterior
             FROM public.historial_medidores sub_hm
@@ -1233,7 +1242,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             z.codigo                      AS "zone_code",
             z.nombre                      AS "zone_name",
             a.tipo_acometida              AS "connection_type",
-            ct.nombre                     AS "connection_type_name",
+            cta.nombre                     AS "connection_type_name",
+            (
+              SELECT COUNT(*)
+              FROM public.incidente_medidor sub_im
+              WHERE sub_im.acometida_id = a.acometida_id
+                AND (sub_im.estado IS NULL OR sub_im.estado <> 'RESUELTO')
+            ) AS incidents,
             CASE
                 WHEN e.ruc IS NOT NULL THEN
                     jsonb_build_object(
@@ -1329,7 +1344,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN categoria cat ON t.categoria_id = cat.categoria_id
         INNER JOIN public.zona z on z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
-        LEFT JOIN acometidas.tipo_acometida ct ON ct.codigo = a.tipo_acometida
+        LEFT JOIN acometidas.tipo_acometida cta ON cta.codigo = a.tipo_acometida
+        
         WHERE a.acometida_id = ?;
       `;
       const params: string[] = [cadastralKey];
@@ -1383,7 +1399,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         paramCounter++;
       }
 
-      const querySql: string = `
+      const querySql: string = /*sql*/ `
         SELECT
             -- Connection Data
             a.acometida_id                AS "connection_id",
@@ -1414,7 +1430,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             a.zona_id                    AS "zone_id",
             z.codigo                     AS "zone_code",
             z.nombre                     AS "zone_name",
-
+            a.tipo_acometida              AS "connection_type",
+            cta.nombre                     AS "connection_type_name",
+            (
+              SELECT COUNT(*)
+              FROM public.incidente_medidor sub_im
+              WHERE sub_im.acometida_id = a.acometida_id
+                AND (sub_im.estado IS NULL OR sub_im.estado <> 'RESUELTO')
+            ) AS incidents,
             -- Company Data (if applicable)
             CASE
                 WHEN e.ruc IS NOT NULL THEN
@@ -1468,7 +1491,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                           lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
@@ -1485,6 +1508,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN categoria ct ON t.categoria_id = ct.categoria_id
         INNER JOIN public.zona z       ON z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
+        LEFT JOIN acometidas.tipo_acometida cta ON cta.codigo = a.tipo_acometida
         ${whereClause}
         ORDER BY a.acometida_id
         LIMIT $${paramCounter} OFFSET $${paramCounter + 1};
@@ -1636,7 +1660,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         havingClause = `HAVING COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END), 0) = 0`;
       }
 
-      const sql = `
+      const sql = /*sql*/ `
       SELECT
         a.acometida_id AS "connection_id",
         a.cliente_id AS "client_id",
@@ -1666,7 +1690,12 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         a.zona_id AS "zone_id",
         z.codigo AS "zone_code",
         z.nombre AS "zone_name",
-        COALESCE(count(CASE WHEN im.estado <> 'RESUELTO' THEN 1 END), 0) AS incidents,
+        (
+          SELECT COUNT(*)
+          FROM public.incidente_medidor sub_im
+          WHERE sub_im.acometida_id = a.acometida_id
+            AND (sub_im.estado IS NULL OR sub_im.estado <> 'RESUELTO')
+        ) AS incidents,
         a.tipo_acometida AS "connection_type",
         pct.nombre AS "connection_type_name"
       FROM acometida a
