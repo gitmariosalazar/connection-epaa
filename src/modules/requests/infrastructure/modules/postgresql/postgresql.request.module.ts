@@ -17,7 +17,7 @@ import { KafkaServiceModule } from '../../../../../shared/kafka/kafka-service.mo
 import { DatabasePersistenceModule } from '../../../../../shared/connections/database/database-persistence.module';
 import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
 import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
-import { KafkaNotificationAdapter } from '../../../../../shared/notifications/kafka-notification.adapter';
+import { NotificationSharedModule } from '../../../../../shared/notifications/notification-shared.module';
 import { GetExpedienteByClienteIdUseCase } from '../../../application/usecases/commands/GetExpedienteByClienteIdUseCase';
 import { GetTrackingByClienteIdUseCase } from '../../../application/usecases/commands/GetTrackingByClienteIdUseCase';
 import { GetExpedienteByAnalistaIdUseCase } from '../../../application/usecases/commands/GetExpedienteByAnalistaIdUseCase';
@@ -28,7 +28,11 @@ import { GetNotificationValidationMatrixUseCase } from '../../../application/use
 import { GetDashboardKpisByClientIdUseCase } from '../../../application/usecases/commands/GetDashboardKpisByClientIdUseCase';
 
 @Module({
-  imports: [KafkaServiceModule, DatabasePersistenceModule],
+  imports: [
+    KafkaServiceModule,
+    DatabasePersistenceModule,
+    NotificationSharedModule,
+  ],
   controllers: [RequestController],
   providers: [
     CreateRequestUseCase,
@@ -55,10 +59,6 @@ import { GetDashboardKpisByClientIdUseCase } from '../../../application/usecases
     {
       provide: 'InterfaceFileStorageService',
       useClass: LocalFileStorageService,
-    },
-    {
-      provide: 'INotificationPort',
-      useClass: KafkaNotificationAdapter,
     },
     {
       provide: 'InterfaceConnectionRequestRepository',
