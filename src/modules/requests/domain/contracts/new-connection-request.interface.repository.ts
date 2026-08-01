@@ -46,6 +46,16 @@ export interface InterfaceConnectionRequestRepository {
    */
   submitCorrections(dto: SubmitCorrectionsRequest): Promise<void>;
 
+  /**
+   * Asignación MANUAL de analista (elegida desde el frontend). Solo aplica si
+   * la solicitud aún no tiene analista asignado; no toca la autoasignación/
+   * round-robin que ya ocurre en submitWithDocuments.
+   */
+  assignAnalystToRequest(
+    solicitudId: string,
+    analystId: string,
+  ): Promise<{ solicitudId: string; analystId: string }>;
+
   // ── Consultas enriquecidas para el frontend ──────────────────────────────
   /** Expediente completo de una solicitud (todos los módulos en un solo query) */
   getExpedienteBySolicitudId(

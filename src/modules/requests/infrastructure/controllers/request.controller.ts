@@ -20,8 +20,10 @@ import { GetOrdenesTrabajoUseCase } from '../../application/usecases/commands/Ge
 import { SubmitRequestUseCase } from '../../application/usecases/commands/SubmitRequestUseCase';
 import { SubmitWithDocumentsUseCase } from '../../application/usecases/commands/SubmitWithDocumentsUseCase';
 import { SubmitCorrectionsUseCase } from '../../application/usecases/commands/SubmitCorrectionsUseCase';
+import { AssignAnalystToRequestUseCase } from '../../application/usecases/commands/AssignAnalystToRequestUseCase';
 import { SubmitWithDocumentsRequest } from '../../application/dto/request/submit-with-documents.request';
 import { SubmitCorrectionsRequest } from '../../application/dto/request/submit-corrections.request';
+import { AssignAnalystToRequestRequest } from '../../application/dto/request/assign-analyst.request';
 import { RequestResponse } from '../../application/dto/response/request.response';
 import { CreateRequestRequest } from '../../application/dto/request/create-request.request';
 import { UpdateRequestRequest } from '../../application/dto/request/update-request.request';
@@ -52,6 +54,7 @@ export class RequestController {
     private readonly submitRequestUseCase: SubmitRequestUseCase,
     private readonly submitWithDocumentsUseCase: SubmitWithDocumentsUseCase,
     private readonly submitCorrectionsUseCase: SubmitCorrectionsUseCase,
+    private readonly assignAnalystToRequestUseCase: AssignAnalystToRequestUseCase,
     private readonly getTrackingByClienteIdUseCase: GetTrackingByClienteIdUseCase,
     private readonly getTrackingByAnalistaIdUseCase: GetTrackingByAnalistaIdUseCase,
     private readonly getTrackingBySolicitudIdUseCase: GetTrackingBySolicitudIdUseCase,
@@ -194,6 +197,17 @@ export class RequestController {
   @MessagePattern('requests.submit_corrections')
   async submitCorrections(@Payload() dto: SubmitCorrectionsRequest) {
     return await this.submitCorrectionsUseCase.execute(dto);
+  }
+
+  /**
+   * Asignación MANUAL de analista, elegida desde el frontend. Solo aplica si
+   * la solicitud aún no tiene analista asignado (no reemplaza la
+   * autoasignación/round-robin de submit-with-documents).
+   */
+  @Put(':solicitudId/assign-analyst')
+  @MessagePattern('requests.assign_analyst')
+  async assignAnalyst(@Payload() dto: AssignAnalystToRequestRequest) {
+    return await this.assignAnalystToRequestUseCase.execute(dto);
   }
 
   /**

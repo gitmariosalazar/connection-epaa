@@ -12,6 +12,7 @@ import { GetOrdenesTrabajoUseCase } from '../../../application/usecases/commands
 import { SubmitRequestUseCase } from '../../../application/usecases/commands/SubmitRequestUseCase';
 import { SubmitWithDocumentsUseCase } from '../../../application/usecases/commands/SubmitWithDocumentsUseCase';
 import { SubmitCorrectionsUseCase } from '../../../application/usecases/commands/SubmitCorrectionsUseCase';
+import { AssignAnalystToRequestUseCase } from '../../../application/usecases/commands/AssignAnalystToRequestUseCase';
 import { RequestPostgreSQLPersistence } from '../../repositories/postgresql/persistence/request-postgresql.persistence';
 import { KafkaServiceModule } from '../../../../../shared/kafka/kafka-service.module';
 import { DatabasePersistenceModule } from '../../../../../shared/connections/database/database-persistence.module';
@@ -47,6 +48,7 @@ import { GetDashboardKpisByClientIdUseCase } from '../../../application/usecases
     SubmitRequestUseCase,
     SubmitWithDocumentsUseCase,
     SubmitCorrectionsUseCase,
+    AssignAnalystToRequestUseCase,
     GetExpedienteByClienteIdUseCase,
     GetTrackingByClienteIdUseCase,
     GetExpedienteByAnalistaIdUseCase,

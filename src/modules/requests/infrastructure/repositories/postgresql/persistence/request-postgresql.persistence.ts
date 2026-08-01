@@ -256,6 +256,56 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
   }
 
   /**
+   * Asignación MANUAL de analista, elegida desde el frontend. Solo tiene
+   * efecto si la solicitud aún no tiene analista (no pisa la autoasignación/
+   * round-robin de submitWithDocuments) y si el usuario indicado es
+   * realmente un analista activo (mismas reglas que el round-robin).
+   */
+  async assignAnalystToRequest(
+    solicitudId: string,
+    analystId: string,
+  ): Promise<{ solicitudId: string; analystId: string }> {
+    return this.databaseSService.transaction(async (client) => {
+      const solicitudRows = await client.query<{
+        id_analista: string | null;
+      }>(
+        `SELECT id_analista FROM acometidas.solicitud WHERE id_solicitud = $1 FOR UPDATE`,
+        [solicitudId],
+      );
+      if (solicitudRows.length === 0) {
+        throw new Error(`Solicitud ${solicitudId} no encontrada`);
+      }
+      if (solicitudRows[0].id_analista) {
+        throw new Error(
+          `La solicitud ${solicitudId} ya tiene un analista asignado`,
+        );
+      }
+
+      const analystRows = await client.query<{ usuario_id: string }>(
+        `SELECT e.usuario_id
+         FROM public.empleados e
+         INNER JOIN public.usuarios u ON u.usuario_id = e.usuario_id
+         WHERE e.usuario_id = $1
+           AND e.cargo_id = 14
+           AND e.estado_empleado_id = 1
+           AND u.activo = TRUE
+         LIMIT 1`,
+        [analystId],
+      );
+      if (analystRows.length === 0) {
+        throw new Error(`El usuario ${analystId} no es un analista activo`);
+      }
+
+      await client.query(
+        `UPDATE acometidas.solicitud SET id_analista = $1 WHERE id_solicitud = $2`,
+        [analystId, solicitudId],
+      );
+
+      return { solicitudId, analystId };
+    });
+  }
+
+  /**
    * Transición de estado segura: SIEMPRE via fn_cambiar_estado_solicitud.
    * Nunca usar UPDATE acometidas.solicitud SET estado = ... directamente.
    */
