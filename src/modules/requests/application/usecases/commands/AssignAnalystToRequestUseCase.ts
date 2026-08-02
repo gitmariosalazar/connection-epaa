@@ -1,12 +1,8 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InterfaceConnectionRequestRepository } from '../../../domain/contracts/new-connection-request.interface.repository';
 import { AssignAnalystToRequestRequest } from '../../dto/request/assign-analyst.request';
+import { statusCode } from '../../../../../settings/environments/status-code';
 
 /**
  * Asignación MANUAL de analista, elegida desde el frontend.
@@ -26,10 +22,16 @@ export class AssignAnalystToRequestUseCase {
     dto: AssignAnalystToRequestRequest,
   ): Promise<{ solicitudId: string; analystId: string }> {
     if (!dto.solicitudId?.trim()) {
-      throw new BadRequestException('solicitudId es requerido');
+      throw new RpcException({
+        statusCode: statusCode.BAD_REQUEST,
+        message: 'solicitudId es requerido',
+      });
     }
     if (!dto.analystId?.trim()) {
-      throw new BadRequestException('analystId es requerido');
+      throw new RpcException({
+        statusCode: statusCode.BAD_REQUEST,
+        message: 'analystId es requerido',
+      });
     }
 
     try {
@@ -38,15 +40,27 @@ export class AssignAnalystToRequestUseCase {
         dto.analystId.trim(),
       );
     } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
       const message = (error as Error).message ?? '';
       if (message.includes('no encontrada')) {
-        throw new NotFoundException(message);
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message,
+        });
       }
       if (message.includes('ya tiene un analista asignado')) {
-        throw new ConflictException(message);
+        throw new RpcException({
+          statusCode: statusCode.CONFLICT,
+          message,
+        });
       }
       if (message.includes('no es un analista activo')) {
-        throw new BadRequestException(message);
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message,
+        });
       }
       throw error;
     }

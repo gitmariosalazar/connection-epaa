@@ -75,7 +75,6 @@ export class InspectionOrderPostgreSQLPersistence implements InterfaceInspection
         creatorId,
         technicianId,
         scheduledDate,
-        solicitudId,
       ],
     );
 

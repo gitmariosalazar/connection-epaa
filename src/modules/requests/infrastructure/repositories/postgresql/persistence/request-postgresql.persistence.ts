@@ -407,10 +407,11 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
 
       // PASO 4: Guardar cada archivo en storage y hacer INSERT batch
       for (const doc of dto.documents ?? []) {
-        // Subir al storage local → obtiene fileUrl real
+        // Si viene fileUrl ya no se vuelve a guardar: solo se registra la referencia
         const stored = await this.uploadFileService.uploadDocument({
           fileBase64: (doc as any).fileBase64,
           fileUrl: (doc as any).fileUrl,
+          hashSha256: (doc as any).hashSha256,
           originalName: doc.originalName,
           mimeType: doc.mimeType,
           sizeInBytes: doc.sizeInBytes,
@@ -461,10 +462,11 @@ export class RequestPostgreSQLPersistence implements InterfaceConnectionRequestR
     return this.databaseSService.transaction(async (client) => {
       // 1. Guardar cada archivo corregido y actualizar el registro existente en documento_adjunto
       for (const doc of dto.documents ?? []) {
-        // Subir al storage local → obtiene fileUrl real
+        // Si viene fileUrl ya no se vuelve a guardar: solo se registra la referencia
         const stored = await this.uploadFileService.uploadDocument({
           fileBase64: (doc as any).fileBase64,
-          fileUrl: (doc as any).fileUrl, // En correcciones suele subirse desde cero
+          fileUrl: (doc as any).fileUrl,
+          hashSha256: (doc as any).hashSha256,
           originalName: doc.originalName,
           mimeType: doc.mimeType,
           sizeInBytes: doc.sizeInBytes,

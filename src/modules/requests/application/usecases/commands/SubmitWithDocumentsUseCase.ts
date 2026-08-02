@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InterfaceConnectionRequestRepository } from '../../../domain/contracts/new-connection-request.interface.repository';
 import { INotificationPort } from '../../../../../shared/notifications/notification.port';
+import { statusCode } from '../../../../../settings/environments/status-code';
 import {
   SubmitWithDocumentsRequest,
   SubmitWithDocumentsResponse,
@@ -27,7 +29,19 @@ export class SubmitWithDocumentsUseCase {
   ): Promise<SubmitWithDocumentsResponse> {
     // Transacción atómica: INSERT solicitud + round-robin analista + documentos + cambio de estado
     //console.log('Ejecutando SubmitWithDocumentsUseCase con DTO:', dto);
-    const result = await this.repository.submitWithDocuments(dto);
+    let result: SubmitWithDocumentsResponse;
+    try {
+      result = await this.repository.submitWithDocuments(dto);
+    } catch (error) {
+      const message = (error as Error).message ?? '';
+      if (message.includes('no existe en public.usuarios')) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: `El userId enviado (${dto.userId}) no corresponde a un usuario o cliente válido.`,
+        });
+      }
+      throw error;
+    }
 
     // Datos de la solicitud que se usan en AMBOS templates (analista y cliente)
     const solicitudData = {
