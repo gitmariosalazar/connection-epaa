@@ -32,12 +32,20 @@ import {
   ClientDashboardResponse,
   ConnectionDashboardResponse,
 } from '../../domain/schemas/dto/response/view-dashboard.response';
+import {
+  MeterChangeDetail,
+  MeterChangePhotoInput,
+  UploadedMeterChangePhoto,
+} from '../../domain/schemas/dto/request/change-meter.connection.request';
+import { MeterChangeResponse } from '../../domain/schemas/dto/response/meter-change.response';
+import { UploadFileService } from '../../../documents/application/services/upload-file.service';
 
 @Injectable()
 export class ConnectionService implements InterfaceConnectionUseCase {
   constructor(
     @Inject('ConnectionRepository')
     private readonly connectionRepository: InterfaceConnectionRepository,
+    private readonly uploadFileService: UploadFileService,
   ) {}
 
   async getCustomerDashboard(
@@ -753,6 +761,61 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       }
 
       return connections;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ── Meter Change ─────────────────────────────────────────────────────────────────
+  async changeMeter(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    images: MeterChangePhotoInput[],
+  ): Promise<MeterChangeResponse> {
+    try {
+      if (!connectionId?.trim()) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'connectionId is required',
+        });
+      }
+      if (!changeDetail?.medidor_nuevo?.numero_medidor?.trim()) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'changeDetail.medidor_nuevo.numero_medidor is required',
+        });
+      }
+
+      const exists =
+        await this.connectionRepository.verifyConnectionExists(connectionId);
+      if (!exists) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection ${connectionId} not found`,
+        });
+      }
+
+      const uploadedPhotos: UploadedMeterChangePhoto[] = [];
+      for (const image of images) {
+        const stored = await this.uploadFileService.uploadDocument({
+          fileBase64: image.fileBase64,
+          fileUrl: image.fileUrl,
+          originalName: image.originalName,
+          mimeType: image.mimeType,
+          sizeInBytes: image.sizeInBytes,
+          hashSha256: image.hashSha256,
+        });
+        uploadedPhotos.push({
+          fileUrl: stored.fileUrl,
+          description: image.description ?? null,
+        });
+      }
+
+      return await this.connectionRepository.registerMeterChange(
+        connectionId,
+        changeDetail,
+        uploadedPhotos,
+      );
     } catch (error) {
       throw error;
     }

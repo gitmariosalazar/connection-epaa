@@ -22,6 +22,11 @@ import {
   ConnectionDashboardResponse,
 } from '../schemas/dto/response/view-dashboard.response';
 import { CustomerDashboardResponseDto } from '../schemas/dto/response/customer-dashboard.dto';
+import {
+  MeterChangeDetail,
+  UploadedMeterChangePhoto,
+} from '../schemas/dto/request/change-meter.connection.request';
+import { MeterChangeResponse } from '../schemas/dto/response/meter-change.response';
 
 export interface InterfaceConnectionRepository {
   getCustomerDashboard(
@@ -126,4 +131,11 @@ export interface InterfaceConnectionRepository {
   getDashboardConnectionsByClientId(
     clientId: string,
   ): Promise<ConnectionDashboardResponse[]>;
+
+  // ── Meter Change ──────────────────────────────────────────────────────
+  registerMeterChange(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    photos: UploadedMeterChangePhoto[],
+  ): Promise<MeterChangeResponse>;
 }

@@ -11,14 +11,14 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
   async recordMeterChange(
     client: IDatabaseClient,
     context: MeterChangeContext,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const { connectionId, clientId, operation } = context;
     const previous = this.normalize(context.previousMeterNumber);
     const next = this.normalize(context.newMeterNumber);
 
     // Mismas reglas de omisión que el antiguo trigger fn_registrar_historial_medidor
-    if (operation === 'UPDATE' && previous === next) return;
-    if (operation === 'INSERT' && next === null) return;
+    if (operation === 'UPDATE' && previous === next) return null;
+    if (operation === 'INSERT' && next === null) return null;
 
     const now = new Date();
     const meterBefore =
@@ -36,12 +36,13 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
       [now, now, connectionId],
     );
 
-    await client.query(
+    const inserted = await client.query<{ id_historial_medidor: string }>(
       `INSERT INTO public.historial_medidores (
          id_cliente, id_acometida, numero_medidor_anterior, numero_medidor_nuevo,
          fecha_instalacion, fecha_desinstalacion, estado, observacion, detalles_cambio,
          created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, NULL, 'ACTIVO', ?, ?::jsonb, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, NULL, 'ACTIVO', ?, ?::jsonb, ?, ?)
+       RETURNING id_historial_medidor`,
       [
         clientId,
         connectionId,
@@ -54,6 +55,8 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
         now,
       ],
     );
+
+    return inserted[0]?.id_historial_medidor ?? null;
   }
 
   private normalize(value: string | null | undefined): string | null {

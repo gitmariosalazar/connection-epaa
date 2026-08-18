@@ -47,6 +47,11 @@ import {
   ConnectionDashboardSqlResult,
 } from '../../../interfaces/sql/view-dashboard.sql-result';
 import { DashboardViewAdapter } from '../../../adapters/view-adapter';
+import {
+  MeterChangeDetail,
+  UploadedMeterChangePhoto,
+} from '../../../../domain/schemas/dto/request/change-meter.connection.request';
+import { MeterChangeResponse } from '../../../../domain/schemas/dto/response/meter-change.response';
 
 @Injectable()
 export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
@@ -2196,6 +2201,106 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         DashboardViewAdapter.toClientDashboardResponse(result[0]);
 
       return dashboardResponse;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // METER CHANGE
+  // ─────────────────────────────────────────────────────────────────
+
+  async registerMeterChange(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    photos: UploadedMeterChangePhoto[],
+  ): Promise<MeterChangeResponse> {
+    try {
+      return await this.databaseService.transaction(
+        async (client: IDatabaseClient) => {
+          const newMeterNumber =
+            changeDetail.medidor_nuevo.numero_medidor?.trim();
+          if (!newMeterNumber) {
+            throw new RpcException({
+              statusCode: statusCode.BAD_REQUEST,
+              message: 'medidor_nuevo.numero_medidor es obligatorio.',
+            });
+          }
+
+          // Bloquea la fila y captura el medidor/cliente actuales antes de actualizar
+          const currentRows = await client.query<{
+            numero_medidor: string | null;
+            cliente_id: string | null;
+          }>(
+            `SELECT numero_medidor, cliente_id FROM acometida WHERE acometida_id = ? FOR UPDATE`,
+            [connectionId],
+          );
+          if (currentRows.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.NOT_FOUND,
+              message: `Connection ${connectionId} not found.`,
+            });
+          }
+          const previousMeterNumber = currentRows[0].numero_medidor;
+          const clientId = currentRows[0].cliente_id;
+
+          if (
+            previousMeterNumber &&
+            previousMeterNumber.trim() === newMeterNumber
+          ) {
+            throw new RpcException({
+              statusCode: statusCode.CONFLICT,
+              message: `El número de medidor ${newMeterNumber} ya está asignado a esta acometida.`,
+            });
+          }
+
+          const updateRows = await client.query<{ numero_medidor: string }>(
+            `UPDATE acometida SET numero_medidor = ?, updated_at = NOW() WHERE acometida_id = ? RETURNING numero_medidor`,
+            [newMeterNumber, connectionId],
+          );
+          if (updateRows.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.INTERNAL_SERVER_ERROR,
+              message: `Failed to update meter number for connection ${connectionId}.`,
+            });
+          }
+
+          const historialMedidorId =
+            await this.meterHistoryRecorder.recordMeterChange(client, {
+              connectionId,
+              clientId,
+              previousMeterNumber,
+              newMeterNumber,
+              operation: 'UPDATE',
+              changeDetails: changeDetail,
+            });
+          if (!historialMedidorId) {
+            throw new RpcException({
+              statusCode: statusCode.INTERNAL_SERVER_ERROR,
+              message:
+                'No se pudo registrar el cambio de medidor en el historial.',
+            });
+          }
+
+          for (const photo of photos) {
+            await client.query(
+              `INSERT INTO public.foto_cambio_medidor (historial_medidor_id, imagen_url, descripcion) VALUES (?, ?, ?)`,
+              [historialMedidorId, photo.fileUrl, photo.description ?? null],
+            );
+          }
+
+          return {
+            connectionId,
+            previousMeterNumber,
+            newMeterNumber,
+            historialMedidorId,
+            photos: photos.map((photo) => ({
+              imageUrl: photo.fileUrl,
+              description: photo.description ?? null,
+            })),
+          };
+        },
+      );
     } catch (error) {
       throw error;
     }

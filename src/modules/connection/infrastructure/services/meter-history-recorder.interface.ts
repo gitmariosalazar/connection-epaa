@@ -9,7 +9,7 @@ export interface MeterChangeContext {
   newMeterNumber: string | null;
   operation: MeterHistoryOperation;
   // Metadatos adicionales del cambio (p. ej. lecturas anterior/nueva); se persiste tal cual en detalles_cambio
-  changeDetails?: Record<string, unknown> | null;
+  changeDetails?: unknown;
 }
 
 /**
@@ -19,8 +19,9 @@ export interface MeterChangeContext {
  * acometida INSERT/UPDATE that triggers it.
  */
 export interface IMeterHistoryRecorder {
+  /** Devuelve el id_historial_medidor creado, o null si no se registró ningún cambio. */
   recordMeterChange(
     client: IDatabaseClient,
     context: MeterChangeContext,
-  ): Promise<void>;
+  ): Promise<string | null>;
 }

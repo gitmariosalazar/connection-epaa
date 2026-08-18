@@ -3,6 +3,10 @@ import { Controller, Get, Post, Put, Delete } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateConnectionRequest } from '../../domain/schemas/dto/request/create.connection.request';
 import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update.connection.request';
+import {
+  MeterChangeDetail,
+  MeterChangePhotoInput,
+} from '../../domain/schemas/dto/request/change-meter.connection.request';
 
 @Controller('connections')
 export class ConnectionController {
@@ -12,6 +16,24 @@ export class ConnectionController {
   @MessagePattern('connections.get-customer-dashboard')
   async getCustomerDashboard(@Payload() clientId: string) {
     return this.connectionService.getCustomerDashboard(clientId);
+  }
+
+  // ── Meter Change ──────────────────────────────────────────────────────────────
+  @Post('change-meter/:connectionId')
+  @MessagePattern('connections.change-meter')
+  async changeMeter(
+    @Payload()
+    data: {
+      connectionId: string;
+      changeDetail: MeterChangeDetail;
+      images?: MeterChangePhotoInput[];
+    },
+  ) {
+    return this.connectionService.changeMeter(
+      data.connectionId,
+      data.changeDetail,
+      data.images ?? [],
+    );
   }
 
   @Get('dashboard/advancement-stats')
