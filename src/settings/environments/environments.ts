@@ -54,7 +54,7 @@ const environmentsSchema = Joi.object<EnvironmentsVariables>({
   DATABASE_TYPE: Joi.string().valid('mysql', 'postgres').default('postgres'),
   CONNECTION_DOCUMENTS_UPLOAD_DIR: Joi.string()
     .optional()
-    .default('/usr/src/app/uploads/connection-documents'),
+    .default('/home/sigepaa/sigepaa/documents/connection-documents'),
 }).unknown(true);
 
 const { error, value: envVars } = environmentsSchema.validate(process.env);
