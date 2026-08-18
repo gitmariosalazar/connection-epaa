@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InterfaceConnectionRepository } from '../../../../domain/contracts/connection.interface.repository';
+import { IMeterHistoryRecorder } from '../../../services/meter-history-recorder.interface';
 import {
   ConnectionAndPropertyResponse,
   ConnectionResponse,
@@ -49,7 +50,11 @@ import { DashboardViewAdapter } from '../../../adapters/view-adapter';
 
 @Injectable()
 export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
-  constructor(private readonly databaseService: DatabaseAbstract) {}
+  constructor(
+    private readonly databaseService: DatabaseAbstract,
+    @Inject('MeterHistoryRecorder')
+    private readonly meterHistoryRecorder: IMeterHistoryRecorder,
+  ) {}
 
   async getCustomerDashboard(
     clientId: string,
@@ -742,9 +747,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      console.log(`Connection Model`, connection);
-
-      const query: string = `
+      return await this.databaseService.transaction(
+        async (client: IDatabaseClient) => {
+          const query: string = `
         INSERT INTO acometida (
           acometida_id,
           cliente_id,
@@ -803,43 +808,56 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           '' as "connection_type_name"
           ;
       `;
-      const params: any[] = [
-        connection.getConnectionId(),
-        connection.getClientId(),
-        connection.getConnectionRateId(),
-        connection.getConnectionMeterNumber(),
-        connection.getConnectionSector(),
-        connection.getConnectionAccount(),
-        connection.getConnectionCadastralKey(),
-        connection.getConnectionContractNumber(),
-        connection.getConnectionSewerage(),
-        connection.getConnectionStatus(),
-        connection.getConnectionAddress(),
-        connection.getConnectionInstallationDate(),
-        connection.getConnectionPeopleNumber(),
-        connection.getConnectionZone(),
-        connection.getConnectionCoordinates(),
-        connection.getConnectionReference(),
-        connection.getConnectionMetaData(),
-        connection.getConnectionAltitude(),
-        connection.getConnectionPrecision(),
-        connection.getConnectionGeolocationDate(),
-        connection.getPropertyCadastralKey(),
-        connection.getZoneId(),
-      ];
+          const params: any[] = [
+            connection.getConnectionId(),
+            connection.getClientId(),
+            connection.getConnectionRateId(),
+            connection.getConnectionMeterNumber(),
+            connection.getConnectionSector(),
+            connection.getConnectionAccount(),
+            connection.getConnectionCadastralKey(),
+            connection.getConnectionContractNumber(),
+            connection.getConnectionSewerage(),
+            connection.getConnectionStatus(),
+            connection.getConnectionAddress(),
+            connection.getConnectionInstallationDate(),
+            connection.getConnectionPeopleNumber(),
+            connection.getConnectionZone(),
+            connection.getConnectionCoordinates(),
+            connection.getConnectionReference(),
+            connection.getConnectionMetaData(),
+            connection.getConnectionAltitude(),
+            connection.getConnectionPrecision(),
+            connection.getConnectionGeolocationDate(),
+            connection.getPropertyCadastralKey(),
+            connection.getZoneId(),
+          ];
 
-      const result = await this.databaseService.query<ConnectionSqlResponse>(
-        query,
-        params,
-      );
-      if (result.length === 0) {
-        throw new RpcException({
-          statusCode: statusCode.INTERNAL_SERVER_ERROR,
-          message: `Failed to create connection.`,
-        });
-      }
-      return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-        result[0],
+          const result = await client.query<ConnectionSqlResponse>(
+            query,
+            params,
+          );
+          if (result.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.INTERNAL_SERVER_ERROR,
+              message: `Failed to create connection.`,
+            });
+          }
+          const created = result[0];
+
+          // Registra el medidor inicial en el historial dentro de la misma transacción
+          await this.meterHistoryRecorder.recordMeterChange(client, {
+            connectionId: created.connection_id,
+            clientId: created.client_id ?? connection.getClientId() ?? null,
+            previousMeterNumber: null,
+            newMeterNumber: created.connection_meter_number ?? null,
+            operation: 'INSERT',
+          });
+
+          return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+            created,
+          );
+        },
       );
     } catch (error) {
       throw error;
@@ -851,7 +869,24 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      const query: string = `
+      return await this.databaseService.transaction(
+        async (client: IDatabaseClient) => {
+          // Bloquea la fila y captura el medidor previo antes de actualizar
+          const currentRows = await client.query<{
+            numero_medidor: string | null;
+          }>(
+            `SELECT numero_medidor FROM acometida WHERE acometida_id = ? FOR UPDATE`,
+            [connectionId],
+          );
+          if (currentRows.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.INTERNAL_SERVER_ERROR,
+              message: `Failed to update connection with ID ${connectionId}.`,
+            });
+          }
+          const previousMeterNumber = currentRows[0].numero_medidor;
+
+          const query: string = `
         UPDATE acometida SET
           cliente_id = COALESCE(?, cliente_id),
           tarifa_id = COALESCE(?, tarifa_id),
@@ -905,43 +940,56 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           tipo_acometida as "connection_type",
           '' as "connection_type_name";
       `;
-      const params: any[] = [
-        connection.getClientId(),
-        connection.getConnectionRateId(),
-        connection.getConnectionMeterNumber(),
-        connection.getConnectionSector(),
-        connection.getConnectionAccount(),
-        connection.getConnectionCadastralKey(),
-        connection.getConnectionContractNumber(),
-        connection.getConnectionSewerage(),
-        connection.getConnectionStatus(),
-        connection.getConnectionAddress(),
-        connection.getConnectionInstallationDate(),
-        connection.getConnectionPeopleNumber(),
-        connection.getConnectionZone(),
-        connection.getConnectionCoordinates(),
-        connection.getConnectionReference(),
-        connection.getConnectionMetaData(),
-        connection.getConnectionAltitude(),
-        connection.getConnectionPrecision(),
-        connection.getConnectionGeolocationDate(),
-        connection.getPropertyCadastralKey(),
-        connection.getZoneId(),
-        connectionId,
-      ];
+          const params: any[] = [
+            connection.getClientId(),
+            connection.getConnectionRateId(),
+            connection.getConnectionMeterNumber(),
+            connection.getConnectionSector(),
+            connection.getConnectionAccount(),
+            connection.getConnectionCadastralKey(),
+            connection.getConnectionContractNumber(),
+            connection.getConnectionSewerage(),
+            connection.getConnectionStatus(),
+            connection.getConnectionAddress(),
+            connection.getConnectionInstallationDate(),
+            connection.getConnectionPeopleNumber(),
+            connection.getConnectionZone(),
+            connection.getConnectionCoordinates(),
+            connection.getConnectionReference(),
+            connection.getConnectionMetaData(),
+            connection.getConnectionAltitude(),
+            connection.getConnectionPrecision(),
+            connection.getConnectionGeolocationDate(),
+            connection.getPropertyCadastralKey(),
+            connection.getZoneId(),
+            connectionId,
+          ];
 
-      const result = await this.databaseService.query<ConnectionSqlResponse>(
-        query,
-        params,
-      );
-      if (result.length === 0) {
-        throw new RpcException({
-          statusCode: statusCode.INTERNAL_SERVER_ERROR,
-          message: `Failed to update connection with ID ${connectionId}.`,
-        });
-      }
-      return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
-        result[0],
+          const result = await client.query<ConnectionSqlResponse>(
+            query,
+            params,
+          );
+          if (result.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.INTERNAL_SERVER_ERROR,
+              message: `Failed to update connection with ID ${connectionId}.`,
+            });
+          }
+          const updated = result[0];
+
+          // Registra el cambio de medidor en el historial dentro de la misma transacción
+          await this.meterHistoryRecorder.recordMeterChange(client, {
+            connectionId,
+            clientId: updated.client_id ?? connection.getClientId() ?? null,
+            previousMeterNumber,
+            newMeterNumber: updated.connection_meter_number ?? null,
+            operation: 'UPDATE',
+          });
+
+          return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
+            updated,
+          );
+        },
       );
     } catch (error) {
       throw error;
