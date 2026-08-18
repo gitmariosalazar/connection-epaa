@@ -13,8 +13,8 @@ import { environments } from '../../../../../settings/environments/environments'
 @Injectable()
 export class LocalFileStorageService implements InterfaceFileStorageService {
   private readonly diskUploadDir: string =
-    environments.CONNECTION_DOCUMENTS_UPLOAD_DIR ??
-    join(process.cwd(), 'uploads', 'connection-documents');
+    environments.CONNECTION_DOCUMENTS_UPLOAD_DIR ||
+    '/home/sigepaa/sigepaa/documents/connection-documents';
   private readonly publicUploadPrefix =
     environments.CONNECTION_DOCUMENTS_PUBLIC_PREFIX;
 
