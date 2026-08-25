@@ -1005,7 +1005,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     cadastralKey: string,
   ): Promise<ConnectionAndPropertyResponse | null> {
     try {
-      const query: string = `
+      const query: string = /*sql*/ `
         SELECT
             -- Connection Data
             a.acometida_id                AS "connection_id",
@@ -1095,7 +1095,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     offset: number,
   ): Promise<ConnectionAndPropertyResponse[]> {
     try {
-      const query: string = `
+      const query: string = /*sql*/ `
         SELECT
             -- Connection Data
             a.acometida_id                AS "connection_id",
@@ -1272,7 +1272,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     cadastralKey: string,
   ): Promise<ConnectionWithPropertyResponse | null> {
     try {
-      const query: string = `
+      const query: string = /*sql*/ `
         SELECT
             -- Connection Data
             a.acometida_id                AS "connection_id",
