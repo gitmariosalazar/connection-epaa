@@ -361,6 +361,17 @@ export class ConnectionSqlAdapter {
             novelty: reading.novelty,
           }))
         : null,
+      historyMeters: connection.history_meters
+        ? connection.history_meters.map((meter) => ({
+            cadastralKey: meter.cadastral_key,
+            previousMeter: meter.previous_meter,
+            newMeter: meter.new_meter,
+            installationDate: meter.installation_date,
+            uninstallationDate: meter.uninstallation_date,
+            status: meter.status,
+            observation: meter.observation,
+          }))
+        : null,
     };
   }
 

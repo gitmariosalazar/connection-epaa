@@ -1559,7 +1559,29 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
                     LIMIT 10
                 ) sub_lr
-            ) AS "last_readings"
+            ) AS "last_readings",
+              -- Ultimos 10 cambios
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'cadastral_key', mts.id_acometida,
+                        'previous_meter', mts.numero_medidor_anterior,
+                        'new_meter', mts.numero_medidor_nuevo,
+                        'installation_date', mts.fecha_instalacion,
+                        'uninstallation_date', mts.fecha_desinstalacion,
+                        'status', mts.estado,
+                        'observation', mts.observacion
+                    ) ORDER BY mts.fecha_instalacion DESC
+                )
+                FROM (
+                    SELECT hmts.id_acometida, hmts.numero_medidor_anterior, hmts.numero_medidor_nuevo, hmts.fecha_instalacion,
+                           hmts.fecha_desinstalacion, hmts.estado, hmts.observacion
+                    FROM public.historial_medidores hmts
+                    WHERE hmts.id_acometida = a.acometida_id
+                    ORDER BY hmts.fecha_instalacion DESC
+                    LIMIT 10
+                ) mts
+            ) AS "history_meters"
 
         FROM acometida a
         INNER JOIN cliente c           ON c.cliente_id = a.cliente_id

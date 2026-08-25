@@ -197,6 +197,17 @@ export interface ConnectionWithoutPropertyResponse {
   company: CompanyResponse | null;
   person: ClientResponse | null;
   lastReadings: LastReadingResponse[] | null;
+  historyMeters?: HistoryMeters[] | null;
+}
+
+export interface HistoryMeters {
+  cadastralKey: string;
+  previousMeter: string | null;
+  newMeter: string | null;
+  installationDate: string | Date | null;
+  uninstallationDate: string | Date | null;
+  status: string | null;
+  observation: string | null;
 }
 
 export interface ClientResponse {
