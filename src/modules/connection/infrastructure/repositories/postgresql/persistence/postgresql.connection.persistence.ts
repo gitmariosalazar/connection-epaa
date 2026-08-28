@@ -857,6 +857,10 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             previousMeterNumber: null,
             newMeterNumber: created.connection_meter_number ?? null,
             operation: 'INSERT',
+            changeDetails: {
+              reason: 'Initial meter assignment during connection creation',
+            },
+            userId: connection.getUserId() ?? null,
           });
 
           return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
@@ -989,6 +993,22 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             previousMeterNumber,
             newMeterNumber: updated.connection_meter_number ?? null,
             operation: 'UPDATE',
+            changeDetails: {
+              medidor_nuevo: {
+                numero_medidor: updated.connection_meter_number ?? null,
+                fecha_ultima_lectura:
+                  updated.connection_geolocation_date ?? null,
+              },
+              observaciones: 'Medidor nuevo',
+              numero_medidor: updated.connection_meter_number ?? null,
+              clave_catastral: updated.connection_cadastral_key ?? null,
+              medidor_anterior: {
+                numero_medidor: previousMeterNumber ?? null,
+                ultima_lectura: null,
+                fecha_ultima_lectura: null,
+              },
+            },
+            userId: connection.getUserId() ?? null,
           });
 
           return ConnectionSqlAdapter.fromConnectionSqlResponseToConnectionResponse(
@@ -2295,6 +2315,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
               newMeterNumber,
               operation: 'UPDATE',
               changeDetails: changeDetail,
+              userId: changeDetail.user_id || null,
             });
           if (!historialMedidorId) {
             throw new RpcException({

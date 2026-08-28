@@ -24,6 +24,7 @@ export class ConnectionModel {
   private connectionGeometricZone: string;
   private propertyCadastralKey: string;
   private zoneId: number;
+  private userId?: string; // ID del usuario que realiza la acción, si aplica
 
   // ✅ Único constructor (simula vacío o completo)
   constructor(
@@ -51,6 +52,7 @@ export class ConnectionModel {
     connectionGeometricZone: string = '',
     propertyCadastralKey: string = '',
     zoneId: number = 0,
+    userId?: string,
   ) {
     this.connectionId = connectionId;
     this.clientId = clientId;
@@ -76,80 +78,184 @@ export class ConnectionModel {
     this.connectionGeometricZone = connectionGeometricZone;
     this.propertyCadastralKey = propertyCadastralKey;
     this.zoneId = zoneId;
+    this.userId = userId;
   }
 
   // --- Getters y Setters ---
-  public getConnectionId(): string { return this.connectionId; }
-  public setConnectionId(value: string): void { this.connectionId = value; }
+  public getConnectionId(): string {
+    return this.connectionId;
+  }
+  public setConnectionId(value: string): void {
+    this.connectionId = value;
+  }
 
-  public getClientId(): string { return this.clientId; }
-  public setClientId(value: string): void { this.clientId = value; }
+  public getClientId(): string {
+    return this.clientId;
+  }
+  public setClientId(value: string): void {
+    this.clientId = value;
+  }
 
-  public getConnectionRateId(): number { return this.connectionRateId; }
-  public setConnectionRateId(value: number): void { this.connectionRateId = value; }
+  public getConnectionRateId(): number {
+    return this.connectionRateId;
+  }
+  public setConnectionRateId(value: number): void {
+    this.connectionRateId = value;
+  }
 
-  public getConnectionRateName(): string { return this.connectionRateName; }
-  public setConnectionRateName(value: string): void { this.connectionRateName = value; }
+  public getConnectionRateName(): string {
+    return this.connectionRateName;
+  }
+  public setConnectionRateName(value: string): void {
+    this.connectionRateName = value;
+  }
 
-  public getConnectionMeterNumber(): string { return this.connectionMeterNumber; }
-  public setConnectionMeterNumber(value: string): void { this.connectionMeterNumber = value; }
+  public getConnectionMeterNumber(): string {
+    return this.connectionMeterNumber;
+  }
+  public setConnectionMeterNumber(value: string): void {
+    this.connectionMeterNumber = value;
+  }
 
-  public getConnectionSector(): number { return this.connectionSector; }
-  public setConnectionSector(value: number): void { this.connectionSector = value; }
+  public getConnectionSector(): number {
+    return this.connectionSector;
+  }
+  public setConnectionSector(value: number): void {
+    this.connectionSector = value;
+  }
 
-  public getConnectionAccount(): number { return this.connectionAccount; }
-  public setConnectionAccount(value: number): void { this.connectionAccount = value; }
+  public getConnectionAccount(): number {
+    return this.connectionAccount;
+  }
+  public setConnectionAccount(value: number): void {
+    this.connectionAccount = value;
+  }
 
-  public getConnectionCadastralKey(): string { return this.connectionCadastralKey; }
-  public setConnectionCadastralKey(value: string): void { this.connectionCadastralKey = value; }
+  public getConnectionCadastralKey(): string {
+    return this.connectionCadastralKey;
+  }
+  public setConnectionCadastralKey(value: string): void {
+    this.connectionCadastralKey = value;
+  }
 
-  public getConnectionContractNumber(): string { return this.connectionContractNumber; }
-  public setConnectionContractNumber(value: string): void { this.connectionContractNumber = value; }
+  public getConnectionContractNumber(): string {
+    return this.connectionContractNumber;
+  }
+  public setConnectionContractNumber(value: string): void {
+    this.connectionContractNumber = value;
+  }
 
-  public getConnectionSewerage(): boolean { return this.connectionSewerage; }
-  public setConnectionSewerage(value: boolean): void { this.connectionSewerage = value; }
+  public getConnectionSewerage(): boolean {
+    return this.connectionSewerage;
+  }
+  public setConnectionSewerage(value: boolean): void {
+    this.connectionSewerage = value;
+  }
 
-  public getConnectionStatus(): boolean { return this.connectionStatus; }
-  public setConnectionStatus(value: boolean): void { this.connectionStatus = value; }
+  public getConnectionStatus(): boolean {
+    return this.connectionStatus;
+  }
+  public setConnectionStatus(value: boolean): void {
+    this.connectionStatus = value;
+  }
 
-  public getConnectionAddress(): string { return this.connectionAddress; }
-  public setConnectionAddress(value: string): void { this.connectionAddress = value; }
+  public getConnectionAddress(): string {
+    return this.connectionAddress;
+  }
+  public setConnectionAddress(value: string): void {
+    this.connectionAddress = value;
+  }
 
-  public getConnectionInstallationDate(): Date { return this.connectionInstallationDate; }
-  public setConnectionInstallationDate(value: Date): void { this.connectionInstallationDate = value; }
+  public getConnectionInstallationDate(): Date {
+    return this.connectionInstallationDate;
+  }
+  public setConnectionInstallationDate(value: Date): void {
+    this.connectionInstallationDate = value;
+  }
 
-  public getConnectionPeopleNumber(): number { return this.connectionPeopleNumber; }
-  public setConnectionPeopleNumber(value: number): void { this.connectionPeopleNumber = value; }
+  public getConnectionPeopleNumber(): number {
+    return this.connectionPeopleNumber;
+  }
+  public setConnectionPeopleNumber(value: number): void {
+    this.connectionPeopleNumber = value;
+  }
 
-  public getConnectionZone(): number { return this.connectionZone; }
-  public setConnectionZone(value: number): void { this.connectionZone = value; }
+  public getConnectionZone(): number {
+    return this.connectionZone;
+  }
+  public setConnectionZone(value: number): void {
+    this.connectionZone = value;
+  }
 
-  public getConnectionCoordinates(): string { return this.connectionCoordinates; }
-  public setConnectionCoordinates(value: string): void { this.connectionCoordinates = value; }
+  public getConnectionCoordinates(): string {
+    return this.connectionCoordinates;
+  }
+  public setConnectionCoordinates(value: string): void {
+    this.connectionCoordinates = value;
+  }
 
-  public getConnectionReference(): string { return this.connectionReference; }
-  public setConnectionReference(value: string): void { this.connectionReference = value; }
+  public getConnectionReference(): string {
+    return this.connectionReference;
+  }
+  public setConnectionReference(value: string): void {
+    this.connectionReference = value;
+  }
 
-  public getConnectionMetaData(): Record<string, any> { return this.connectionMetaData; }
-  public setConnectionMetaData(value: Record<string, any>): void { this.connectionMetaData = value; }
+  public getConnectionMetaData(): Record<string, any> {
+    return this.connectionMetaData;
+  }
+  public setConnectionMetaData(value: Record<string, any>): void {
+    this.connectionMetaData = value;
+  }
 
-  public getConnectionAltitude(): number { return this.connectionAltitude; }
-  public setConnectionAltitude(value: number): void { this.connectionAltitude = value; }
+  public getConnectionAltitude(): number {
+    return this.connectionAltitude;
+  }
+  public setConnectionAltitude(value: number): void {
+    this.connectionAltitude = value;
+  }
 
-  public getConnectionPrecision(): number { return this.connectionPrecision; }
-  public setConnectionPrecision(value: number): void { this.connectionPrecision = value; }
+  public getConnectionPrecision(): number {
+    return this.connectionPrecision;
+  }
+  public setConnectionPrecision(value: number): void {
+    this.connectionPrecision = value;
+  }
 
-  public getConnectionGeolocationDate(): Date { return this.connectionGeolocationDate; }
-  public setConnectionGeolocationDate(value: Date): void { this.connectionGeolocationDate = value; }
+  public getConnectionGeolocationDate(): Date {
+    return this.connectionGeolocationDate;
+  }
+  public setConnectionGeolocationDate(value: Date): void {
+    this.connectionGeolocationDate = value;
+  }
 
-  public getConnectionGeometricZone(): string { return this.connectionGeometricZone; }
-  public setConnectionGeometricZone(value: string): void { this.connectionGeometricZone = value; }
+  public getConnectionGeometricZone(): string {
+    return this.connectionGeometricZone;
+  }
+  public setConnectionGeometricZone(value: string): void {
+    this.connectionGeometricZone = value;
+  }
 
-  public getPropertyCadastralKey(): string { return this.propertyCadastralKey; }
-  public setPropertyCadastralKey(value: string): void { this.propertyCadastralKey = value; }
+  public getPropertyCadastralKey(): string {
+    return this.propertyCadastralKey;
+  }
+  public setPropertyCadastralKey(value: string): void {
+    this.propertyCadastralKey = value;
+  }
 
-  public getZoneId(): number { return this.zoneId; }
-  public setZoneId(value: number): void { this.zoneId = value; }
+  public getZoneId(): number {
+    return this.zoneId;
+  }
+  public setZoneId(value: number): void {
+    this.zoneId = value;
+  }
+
+  public getUserId(): string | undefined {
+    return this.userId;
+  }
+  public setUserId(value: string | undefined): void {
+    this.userId = value;
+  }
 
   // --- Conversión a JSON ---
   public toJSON(): Record<string, any> {
@@ -177,6 +283,8 @@ export class ConnectionModel {
       connectionGeolocationDate: this.connectionGeolocationDate,
       connectionGeometricZone: this.connectionGeometricZone,
       propertyCadastralKey: this.propertyCadastralKey,
+      zoneId: this.zoneId,
+      userId: this.userId,
     };
   }
 

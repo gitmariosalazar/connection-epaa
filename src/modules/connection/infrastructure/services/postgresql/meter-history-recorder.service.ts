@@ -31,17 +31,17 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
 
     await client.query(
       `UPDATE public.historial_medidores
-         SET estado = 'INACTIVO', fecha_desinstalacion = ?, updated_at = ?
+         SET estado = 'INACTIVO', fecha_desinstalacion = ?, updated_at = ?, user_updated = ?
        WHERE id_acometida = ? AND estado = 'ACTIVO'`,
-      [now, now, connectionId],
+      [now, now, context.userId ?? null, connectionId],
     );
 
     const inserted = await client.query<{ id_historial_medidor: string }>(
       `INSERT INTO public.historial_medidores (
          id_cliente, id_acometida, numero_medidor_anterior, numero_medidor_nuevo,
-         fecha_instalacion, fecha_desinstalacion, estado, observacion, detalles_cambio,
+         fecha_instalacion, fecha_desinstalacion, estado, observacion, detalles_cambio, user_created,
          created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, NULL, 'ACTIVO', ?, ?::jsonb, ?, ?)
+       ) VALUES (?, ?, ?, ?, ?, NULL, 'ACTIVO', ?, ?::jsonb, ?, ?, ?)
        RETURNING id_historial_medidor`,
       [
         clientId,
@@ -51,6 +51,7 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
         now,
         observation,
         JSON.stringify(context.changeDetails ?? {}),
+        context.userId ?? null,
         now,
         now,
       ],

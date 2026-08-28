@@ -1,3 +1,5 @@
+import { UUID } from 'crypto';
+
 export interface PreviousMeterDetail {
   numero_medidor?: string;
   ultima_lectura?: number;
@@ -21,6 +23,7 @@ export interface MeterChangeDetail {
   observaciones?: string;
   medidor_anterior?: PreviousMeterDetail;
   medidor_nuevo: NewMeterDetail;
+  user_id?: UUID; // ID del usuario que realiza el cambio, si aplica
 }
 
 export interface MeterChangePhotoInput {

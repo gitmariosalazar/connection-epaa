@@ -10,6 +10,7 @@ export interface MeterChangeContext {
   operation: MeterHistoryOperation;
   // Metadatos adicionales del cambio (p. ej. lecturas anterior/nueva); se persiste tal cual en detalles_cambio
   changeDetails?: unknown;
+  userId: string | null; // ID del usuario que realiza el cambio, si aplica
 }
 
 /**

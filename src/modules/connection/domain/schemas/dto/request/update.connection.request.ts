@@ -24,6 +24,7 @@ export class UpdateConnectionRequest {
   connectionGeometricZone: string;
   propertyCadastralKey: string;
   zoneId: number;
+  userId?: string; // ID del usuario que realiza la actualización, si aplica
 
   constructor(
     connectionId: string,
@@ -51,6 +52,7 @@ export class UpdateConnectionRequest {
     connectionGeometricZone: string,
     propertyCadastralKey: string,
     zoneId: number,
+    userId?: string,
   ) {
     this.connectionId = connectionId;
     this.clientId = clientId;
@@ -77,5 +79,6 @@ export class UpdateConnectionRequest {
     this.connectionGeometricZone = connectionGeometricZone;
     this.propertyCadastralKey = propertyCadastralKey;
     this.zoneId = zoneId;
+    this.userId = userId;
   }
 }
