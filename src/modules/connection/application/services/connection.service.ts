@@ -820,4 +820,59 @@ export class ConnectionService implements InterfaceConnectionUseCase {
       throw error;
     }
   }
+
+  // ── Meter Change By Reader ─────────────────────────────────────────────────────────────────
+  async updateMeterNumberByReader(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    images: MeterChangePhotoInput[],
+  ): Promise<MeterChangeResponse> {
+    try {
+      if (!connectionId?.trim()) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'connectionId is required',
+        });
+      }
+      if (!changeDetail?.medidor_nuevo?.numero_medidor?.trim()) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'changeDetail.medidor_nuevo.numero_medidor is required',
+        });
+      }
+
+      const exists =
+        await this.connectionRepository.verifyConnectionExists(connectionId);
+      if (!exists) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection ${connectionId} not found`,
+        });
+      }
+
+      const uploadedPhotos: UploadedMeterChangePhoto[] = [];
+      for (const image of images) {
+        const stored = await this.uploadFileService.uploadDocument({
+          fileBase64: image.fileBase64,
+          fileUrl: image.fileUrl,
+          originalName: image.originalName,
+          mimeType: image.mimeType,
+          sizeInBytes: image.sizeInBytes,
+          hashSha256: image.hashSha256,
+        });
+        uploadedPhotos.push({
+          fileUrl: stored.fileUrl,
+          description: image.description ?? null,
+        });
+      }
+
+      return await this.connectionRepository.updateMeterNumberByReader(
+        connectionId,
+        changeDetail,
+        uploadedPhotos,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -139,4 +139,10 @@ export interface InterfaceConnectionUseCase {
     changeDetail: MeterChangeDetail,
     images: MeterChangePhotoInput[],
   ): Promise<MeterChangeResponse>;
+
+  updateMeterNumberByReader(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    images: MeterChangePhotoInput[],
+  ): Promise<MeterChangeResponse>;
 }

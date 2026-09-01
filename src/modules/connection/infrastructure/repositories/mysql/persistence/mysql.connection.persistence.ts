@@ -1722,4 +1722,14 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
         'registerMeterChange is not supported by the MySQL connection persistence.',
     });
   }
+
+  async updateMeterNumberByReader(): Promise<MeterChangeResponse> {
+    // El registro de historial_medidores/foto_cambio_medidor solo est\u00e1 implementado
+    // para la persistencia PostgreSQL, que es la que se usa en producci\u00f3n.
+    throw new RpcException({
+      statusCode: statusCode.INTERNAL_SERVER_ERROR,
+      message:
+        'updateMeterNumberByReader is not supported by the MySQL connection persistence.',
+    });
+  }
 }

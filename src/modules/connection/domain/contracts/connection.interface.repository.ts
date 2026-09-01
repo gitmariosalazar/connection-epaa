@@ -138,4 +138,10 @@ export interface InterfaceConnectionRepository {
     changeDetail: MeterChangeDetail,
     photos: UploadedMeterChangePhoto[],
   ): Promise<MeterChangeResponse>;
+
+  updateMeterNumberByReader(
+    connectionId: string,
+    changeDetail: MeterChangeDetail,
+    photos: UploadedMeterChangePhoto[],
+  ): Promise<MeterChangeResponse>;
 }

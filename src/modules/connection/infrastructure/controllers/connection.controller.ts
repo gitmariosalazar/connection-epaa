@@ -36,6 +36,24 @@ export class ConnectionController {
     );
   }
 
+  // ── Meter Change By Reader ──────────────────────────────────────────────────────────────
+  @Post('update-meter-by-reader/:connectionId')
+  @MessagePattern('connections.update-meter-by-reader')
+  async changeMeterByReader(
+    @Payload()
+    data: {
+      connectionId: string;
+      changeDetail: MeterChangeDetail;
+      images?: MeterChangePhotoInput[];
+    },
+  ) {
+    return this.connectionService.updateMeterNumberByReader(
+      data.connectionId,
+      data.changeDetail,
+      data.images ?? [],
+    );
+  }
+
   @Get('dashboard/advancement-stats')
   @MessagePattern('connections.get-advance-dashboard-stats')
   async getAdvanceDashboardStats() {
