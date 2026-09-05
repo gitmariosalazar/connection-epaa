@@ -2297,8 +2297,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           }
 
           const updateRows = await client.query<{ numero_medidor: string }>(
-            `UPDATE acometida SET numero_medidor = ?, updated_at = NOW() WHERE acometida_id = ? RETURNING numero_medidor`,
-            [newMeterNumber, connectionId],
+            `UPDATE acometida SET numero_medidor = ?, updated_at = NOW(),nuevo_numero_medidor = ?, fecha_actualizacion_medidor = NOW(), estado_actualizacion = true WHERE acometida_id = ? RETURNING numero_medidor`,
+            [newMeterNumber, newMeterNumber, connectionId],
           );
           if (updateRows.length === 0) {
             throw new RpcException({
@@ -2398,7 +2398,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           }
 
           const updateRows = await client.query<{ numero_medidor: string }>(
-            `UPDATE acometida SET nuevo_numero_medidor = ?, fecha_actualizacion_medidor = NOW() WHERE acometida_id = ? RETURNING numero_medidor`,
+            `UPDATE acometida SET nuevo_numero_medidor = ?, fecha_actualizacion_medidor = NOW(), estado_actualizacion = true WHERE acometida_id = ? RETURNING numero_medidor`,
             [newMeterNumber, connectionId],
           );
           if (updateRows.length === 0) {

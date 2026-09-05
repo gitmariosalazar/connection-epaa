@@ -7,6 +7,7 @@ import { KafkaServiceModule } from '../../../../../shared/kafka/kafka-service.mo
 import { DatabasePersistenceModule } from '../../../../../shared/connections/database/database-persistence.module';
 import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
 import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
+import { KafkaMeterEventPublisher } from '../../publishers/kafka-meter-event.publisher';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -25,6 +26,10 @@ import { LocalFileStorageService } from '../../../../documents/infrastructure/se
     {
       provide: 'InterfaceFileStorageService',
       useClass: LocalFileStorageService,
+    },
+    {
+      provide: 'MeterEventPublisher',
+      useClass: KafkaMeterEventPublisher,
     },
   ],
   exports: [],

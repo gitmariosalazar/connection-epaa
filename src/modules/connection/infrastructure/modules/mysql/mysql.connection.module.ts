@@ -7,6 +7,7 @@ import { DatabasePersistenceModule } from '../../../../../shared/connections/dat
 import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
 import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
 import { MeterHistoryMySQLRecorder } from '../../services/mysql/meter-history-recorder.service';
+import { KafkaMeterEventPublisher } from '../../publishers/kafka-meter-event.publisher';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -25,6 +26,10 @@ import { MeterHistoryMySQLRecorder } from '../../services/mysql/meter-history-re
     {
       provide: 'InterfaceFileStorageService',
       useClass: LocalFileStorageService,
+    },
+    {
+      provide: 'MeterEventPublisher',
+      useClass: KafkaMeterEventPublisher,
     },
   ],
   exports: [],

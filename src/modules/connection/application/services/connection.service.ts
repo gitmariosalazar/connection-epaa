@@ -2,6 +2,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InterfaceConnectionRepository } from '../../domain/contracts/connection.interface.repository';
 import { InterfaceConnectionUseCase } from '../usecases/connection.use-case.interface';
+import { IMeterEventPublisher } from '../../domain/contracts/meter-event.publisher.interface';
 import {
   ConnectionAndPropertyResponse,
   ConnectionResponse,
@@ -46,6 +47,8 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     @Inject('ConnectionRepository')
     private readonly connectionRepository: InterfaceConnectionRepository,
     private readonly uploadFileService: UploadFileService,
+    @Inject('MeterEventPublisher')
+    private readonly meterEventPublisher: IMeterEventPublisher,
   ) {}
 
   async getCustomerDashboard(
@@ -786,9 +789,9 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      const exists =
-        await this.connectionRepository.verifyConnectionExists(connectionId);
-      if (!exists) {
+      const connection =
+        await this.connectionRepository.getConnectionById(connectionId);
+      if (!connection) {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
           message: `Connection ${connectionId} not found`,
@@ -811,11 +814,23 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      return await this.connectionRepository.registerMeterChange(
+      const response = await this.connectionRepository.registerMeterChange(
         connectionId,
         changeDetail,
         uploadedPhotos,
       );
+
+      // Emit event to Kafka (or any other message broker via the Interface) so readings microservice can generate initial reading
+      this.meterEventPublisher.publishMeterChangedEvent({
+        acometidaId: connectionId,
+        nuevoNumeroMedidor: changeDetail.medidor_nuevo.numero_medidor,
+        sector: connection.connectionSector,
+        cuenta: connection.connectionAccount,
+        claveCatastral: connection.connectionCadastralKey,
+        fechaInicioLecturas: connection.connectionInstallationDate,
+      });
+
+      return response;
     } catch (error) {
       throw error;
     }
@@ -841,9 +856,9 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      const exists =
-        await this.connectionRepository.verifyConnectionExists(connectionId);
-      if (!exists) {
+      const connection =
+        await this.connectionRepository.getConnectionById(connectionId);
+      if (!connection) {
         throw new RpcException({
           statusCode: statusCode.NOT_FOUND,
           message: `Connection ${connectionId} not found`,
@@ -866,11 +881,24 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      return await this.connectionRepository.updateMeterNumberByReader(
-        connectionId,
-        changeDetail,
-        uploadedPhotos,
-      );
+      const response =
+        await this.connectionRepository.updateMeterNumberByReader(
+          connectionId,
+          changeDetail,
+          uploadedPhotos,
+        );
+
+      // Emit event to Kafka (or any other message broker via the Interface) so readings microservice can generate initial reading
+      this.meterEventPublisher.publishMeterChangedEvent({
+        acometidaId: connectionId,
+        nuevoNumeroMedidor: changeDetail.medidor_nuevo.numero_medidor,
+        sector: connection.connectionSector,
+        cuenta: connection.connectionAccount,
+        claveCatastral: connection.connectionCadastralKey,
+        fechaInicioLecturas: connection.connectionInstallationDate,
+      });
+
+      return response;
     } catch (error) {
       throw error;
     }
