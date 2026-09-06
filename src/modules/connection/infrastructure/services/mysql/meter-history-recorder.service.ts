@@ -17,7 +17,7 @@ export class MeterHistoryMySQLRecorder implements IMeterHistoryRecorder {
     const next = this.normalize(context.newMeterNumber);
 
     // Mismas reglas de omisión que el antiguo trigger fn_registrar_historial_medidor
-    if (operation === 'UPDATE' && previous === next) return null;
+    // if (operation === 'UPDATE' && previous === next) return null;
     if (operation === 'INSERT' && next === null) return null;
 
     const now = new Date();

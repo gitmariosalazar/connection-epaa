@@ -2318,6 +2318,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
               changeDetails: changeDetail,
               userId: changeDetail.user_id || null,
             });
+          console.log(`Historial medidor ID: ${historialMedidorId}`);
           if (!historialMedidorId) {
             throw new RpcException({
               statusCode: statusCode.INTERNAL_SERVER_ERROR,
