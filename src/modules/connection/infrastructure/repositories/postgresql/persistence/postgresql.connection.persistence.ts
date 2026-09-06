@@ -1424,7 +1424,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         LEFT JOIN cliente_contacto cc  ON cc.cliente_id = c.cliente_id
         INNER JOIN tarifa t            ON t.tarifa_id = a.tarifa_id
         INNER JOIN categoria cat ON t.categoria_id = cat.categoria_id
-        INNER JOIN public.zona z on z.zona_id = a.zona_id
+        LEFT JOIN public.zona z on z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         LEFT JOIN acometidas.tipo_acometida cta ON cta.codigo = a.tipo_acometida
         
