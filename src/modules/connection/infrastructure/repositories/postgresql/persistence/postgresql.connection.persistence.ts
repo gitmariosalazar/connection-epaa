@@ -2285,7 +2285,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
           }
           const previousMeterNumber = currentRows[0].numero_medidor;
           const clientId = currentRows[0].cliente_id;
-
+          /*
           if (
             previousMeterNumber &&
             previousMeterNumber.trim() === newMeterNumber
@@ -2295,6 +2295,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
               message: `El número de medidor ${newMeterNumber} ya está asignado a esta acometida.`,
             });
           }
+          */
 
           const updateRows = await client.query<{ numero_medidor: string }>(
             `UPDATE acometida SET numero_medidor = ?, updated_at = NOW(),nuevo_numero_medidor = ?, fecha_actualizacion_medidor = NOW(), estado_actualizacion = true WHERE acometida_id = ? RETURNING numero_medidor`,
