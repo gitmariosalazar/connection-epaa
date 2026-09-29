@@ -28,6 +28,8 @@ import {
   MeterChangePhotoInput,
 } from '../../domain/schemas/dto/request/change-meter.connection.request';
 import { MeterChangeResponse } from '../../domain/schemas/dto/response/meter-change.response';
+import { UpdateConnectionBasicRequest } from '../../domain/schemas/dto/request/update.connection_basic.request';
+import { UpdateConnectionBasicResponse } from '../../domain/schemas/dto/response/update.connection_basic.response';
 
 export interface InterfaceConnectionUseCase {
   getCustomerDashboard(
@@ -145,4 +147,9 @@ export interface InterfaceConnectionUseCase {
     changeDetail: MeterChangeDetail,
     images: MeterChangePhotoInput[],
   ): Promise<MeterChangeResponse>;
+
+  // ── Basic Update (meterNumber + facade/meter photos) ──────────────────
+  updateConnectionBasic(
+    request: UpdateConnectionBasicRequest,
+  ): Promise<UpdateConnectionBasicResponse>;
 }

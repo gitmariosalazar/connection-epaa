@@ -27,6 +27,7 @@ import {
   UploadedMeterChangePhoto,
 } from '../schemas/dto/request/change-meter.connection.request';
 import { MeterChangeResponse } from '../schemas/dto/response/meter-change.response';
+import { UpdateConnectionBasicResponse } from '../schemas/dto/response/update.connection_basic.response';
 
 export interface InterfaceConnectionRepository {
   getCustomerDashboard(
@@ -144,4 +145,14 @@ export interface InterfaceConnectionRepository {
     changeDetail: MeterChangeDetail,
     photos: UploadedMeterChangePhoto[],
   ): Promise<MeterChangeResponse>;
+
+  // ── Basic Update (meterNumber + facade/meter photos) ──────────────────
+  updateConnectionBasic(
+    connectionId: string,
+    meterNumber: string | undefined,
+    photosFacade: UploadedMeterChangePhoto[],
+    photosMeter: UploadedMeterChangePhoto[],
+    userId?: string,
+    description?: string,
+  ): Promise<UpdateConnectionBasicResponse>;
 }

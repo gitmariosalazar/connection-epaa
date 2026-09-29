@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { UUID } from 'crypto';
 import { InterfaceConnectionRepository } from '../../../../domain/contracts/connection.interface.repository';
 import { IMeterHistoryRecorder } from '../../../services/meter-history-recorder.interface';
 import {
@@ -52,6 +53,10 @@ import {
   UploadedMeterChangePhoto,
 } from '../../../../domain/schemas/dto/request/change-meter.connection.request';
 import { MeterChangeResponse } from '../../../../domain/schemas/dto/response/meter-change.response';
+import {
+  UpdateConnectionBasicResponse,
+  UpdatedBasicConnectionPhoto,
+} from '../../../../domain/schemas/dto/response/update.connection_basic.response';
 
 @Injectable()
 export class PostgresqlConnectionPersistence implements InterfaceConnectionRepository {
@@ -2444,6 +2449,151 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
               imageUrl: photo.fileUrl,
               description: photo.description ?? null,
             })),
+          };
+        },
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // BASIC UPDATE (meterNumber + facade/meter photos)
+  // Independent flow, reuses the same historial_medidores recording as
+  // registerMeterChange/updateMeterNumberByReader when meterNumber changes.
+  // Photos are inserted into foto_acometida with tipo_foto = 'FACHADA' | 'MEDIDOR'
+  // (separate from foto_cambio_medidor, which only stores meter-change evidence).
+  // ─────────────────────────────────────────────────────────────────
+  async updateConnectionBasic(
+    connectionId: string,
+    meterNumber: string | undefined,
+    photosFacade: UploadedMeterChangePhoto[],
+    photosMeter: UploadedMeterChangePhoto[],
+    userId?: string,
+    description?: string,
+  ): Promise<UpdateConnectionBasicResponse> {
+    try {
+      return await this.databaseService.transaction(
+        async (client: IDatabaseClient) => {
+          const currentRows = await client.query<{
+            numero_medidor: string | null;
+            cliente_id: string | null;
+            clave_catastral: string | null;
+          }>(
+            `SELECT numero_medidor, cliente_id, clave_catastral FROM acometida WHERE acometida_id = ? FOR UPDATE`,
+            [connectionId],
+          );
+          if (currentRows.length === 0) {
+            throw new RpcException({
+              statusCode: statusCode.NOT_FOUND,
+              message: `Connection ${connectionId} not found.`,
+            });
+          }
+
+          const previousMeterNumber = currentRows[0].numero_medidor;
+          const clientId = currentRows[0].cliente_id;
+          const cadastralKey = currentRows[0].clave_catastral;
+          let finalMeterNumber = previousMeterNumber;
+          let historialMedidorId: string | null = null;
+
+          const meterNumberChanged =
+            !!meterNumber &&
+            meterNumber.trim() !== (previousMeterNumber ?? '').trim();
+
+          if (meterNumberChanged) {
+            const updateRows = await client.query<{
+              numero_medidor: string;
+            }>(
+              `UPDATE acometida SET numero_medidor = ?, updated_at = NOW() WHERE acometida_id = ? RETURNING numero_medidor`,
+              [meterNumber, connectionId],
+            );
+            if (updateRows.length === 0) {
+              throw new RpcException({
+                statusCode: statusCode.INTERNAL_SERVER_ERROR,
+                message: `Failed to update meter number for connection ${connectionId}.`,
+              });
+            }
+            finalMeterNumber = updateRows[0].numero_medidor;
+
+            const changeDetails: MeterChangeDetail = {
+              clave_catastral: cadastralKey ?? undefined,
+              numero_medidor: finalMeterNumber,
+              observaciones: description ?? 'Actualización básica de conexión',
+              medidor_anterior: {
+                numero_medidor: previousMeterNumber ?? undefined,
+                ultima_lectura: undefined,
+                fecha_ultima_lectura: undefined,
+              },
+              medidor_nuevo: {
+                numero_medidor: finalMeterNumber,
+                fecha_ultima_lectura: new Date().toISOString(),
+              },
+              user_id: userId ? (userId as UUID) : undefined,
+            };
+
+            historialMedidorId =
+              await this.meterHistoryRecorder.recordMeterChange(client, {
+                connectionId,
+                clientId,
+                previousMeterNumber,
+                newMeterNumber: finalMeterNumber,
+                operation: 'UPDATE',
+                changeDetails,
+                userId: userId ?? null,
+              });
+            if (!historialMedidorId) {
+              throw new RpcException({
+                statusCode: statusCode.INTERNAL_SERVER_ERROR,
+                message:
+                  'No se pudo registrar el cambio de medidor en el historial.',
+              });
+            }
+          }
+
+          const insertPhotos = async (
+            photos: UploadedMeterChangePhoto[],
+            tipoFoto: 'FACHADA' | 'MEDIDOR',
+          ): Promise<UpdatedBasicConnectionPhoto[]> => {
+            const inserted: UpdatedBasicConnectionPhoto[] = [];
+            for (const photo of photos) {
+              const rows = await client.query<{
+                foto_acometida_id: number;
+              }>(
+                `INSERT INTO public.foto_acometida (acometida_id, imagen_url, descripcion, tipo_foto)
+                 VALUES (?, ?, ?, ?)
+                 RETURNING foto_acometida_id`,
+                [
+                  connectionId,
+                  photo.fileUrl,
+                  photo.description ?? null,
+                  tipoFoto,
+                ],
+              );
+              inserted.push({
+                photoConnectionId: rows[0]?.foto_acometida_id,
+                photoUrl: photo.fileUrl,
+                photoType: tipoFoto,
+                description: photo.description ?? null,
+              });
+            }
+            return inserted;
+          };
+
+          const insertedPhotosFacade = await insertPhotos(
+            photosFacade,
+            'FACHADA',
+          );
+          const insertedPhotosMeter = await insertPhotos(
+            photosMeter,
+            'MEDIDOR',
+          );
+
+          return {
+            connectionId,
+            meterNumber: finalMeterNumber,
+            historialMedidorId,
+            photosFacade: insertedPhotosFacade,
+            photosMeter: insertedPhotosMeter,
           };
         },
       );

@@ -40,6 +40,8 @@ import {
 } from '../../domain/schemas/dto/request/change-meter.connection.request';
 import { MeterChangeResponse } from '../../domain/schemas/dto/response/meter-change.response';
 import { UploadFileService } from '../../../documents/application/services/upload-file.service';
+import { UpdateConnectionBasicRequest } from '../../domain/schemas/dto/request/update.connection_basic.request';
+import { UpdateConnectionBasicResponse } from '../../domain/schemas/dto/response/update.connection_basic.response';
 
 @Injectable()
 export class ConnectionService implements InterfaceConnectionUseCase {
@@ -897,6 +899,69 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         claveCatastral: connection.connectionCadastralKey,
         fechaInicioLecturas: connection.connectionInstallationDate,
       });
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ── Basic Update (meterNumber + facade/meter photos) ─────────────────────────
+  // Independent, additive feature: does NOT touch changeMeter/updateMeterNumberByReader
+  // nor the historial_medidores flow. Photos are stored in foto_acometida (tipo_foto).
+  async updateConnectionBasic(
+    request: UpdateConnectionBasicRequest,
+  ): Promise<UpdateConnectionBasicResponse> {
+    try {
+      const connectionId = request.connectionId?.trim();
+      if (!connectionId) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: 'connectionId is required',
+        });
+      }
+
+      const verified =
+        await this.connectionRepository.verifyConnectionExists(connectionId);
+      if (!verified) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Connection with id ${connectionId} not found`,
+        });
+      }
+
+      const uploadPhotos = async (
+        photos?: MeterChangePhotoInput[],
+      ): Promise<UploadedMeterChangePhoto[]> => {
+        const uploaded: UploadedMeterChangePhoto[] = [];
+        for (const photo of photos ?? []) {
+          const stored = await this.uploadFileService.uploadDocument({
+            fileBase64: photo.fileBase64,
+            fileUrl: photo.fileUrl,
+            originalName: photo.originalName,
+            mimeType: photo.mimeType,
+            sizeInBytes: photo.sizeInBytes,
+            hashSha256: photo.hashSha256,
+          });
+          uploaded.push({
+            fileUrl: stored.fileUrl,
+            description: photo.description ?? null,
+          });
+        }
+        return uploaded;
+      };
+
+      const uploadedPhotosFacade = await uploadPhotos(request.photosFacade);
+      const uploadedPhotosMeter = await uploadPhotos(request.photosMeter);
+
+      const response = await this.connectionRepository.updateConnectionBasic(
+        connectionId,
+        request.meterNumber?.trim() || undefined,
+        uploadedPhotosFacade,
+        uploadedPhotosMeter,
+        request.userId,
+        request.description,
+      );
 
       return response;
     } catch (error) {

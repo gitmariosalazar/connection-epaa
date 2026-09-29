@@ -7,6 +7,7 @@ import {
   MeterChangeDetail,
   MeterChangePhotoInput,
 } from '../../domain/schemas/dto/request/change-meter.connection.request';
+import { UpdateConnectionBasicRequest } from '../../domain/schemas/dto/request/update.connection_basic.request';
 
 @Controller('connections')
 export class ConnectionController {
@@ -320,5 +321,14 @@ export class ConnectionController {
   @MessagePattern('connections.get-dashboard-global-client-id')
   async getDashboardGlobalClientId(@Payload() clientId: string) {
     return this.connectionService.getDashboardGlobalClientId(clientId);
+  }
+
+  // ── Basic Update (meterNumber + facade/meter photos) ────────────────────────
+  @Put('update-connection-basic/:connectionId')
+  @MessagePattern('connections.update-connection-basic')
+  async updateConnectionBasic(
+    @Payload() request: UpdateConnectionBasicRequest,
+  ) {
+    return this.connectionService.updateConnectionBasic(request);
   }
 }

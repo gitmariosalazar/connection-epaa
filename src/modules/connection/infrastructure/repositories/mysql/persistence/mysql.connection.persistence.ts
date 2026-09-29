@@ -44,6 +44,7 @@ import {
   ConnectionDashboardSqlResult,
 } from '../../../interfaces/sql/view-dashboard.sql-result';
 import { MeterChangeResponse } from '../../../../domain/schemas/dto/response/meter-change.response';
+import { UpdateConnectionBasicResponse } from '../../../../domain/schemas/dto/response/update.connection_basic.response';
 import { DashboardViewAdapter } from '../../../adapters/view-adapter';
 
 @Injectable()
@@ -1730,6 +1731,16 @@ WHERE a.acometida_id = ? OR a.cliente_id = ?;
       statusCode: statusCode.INTERNAL_SERVER_ERROR,
       message:
         'updateMeterNumberByReader is not supported by the MySQL connection persistence.',
+    });
+  }
+
+  async updateConnectionBasic(): Promise<UpdateConnectionBasicResponse> {
+    // foto_acometida.tipo_foto y este flujo solo est\u00e1n implementados
+    // para la persistencia PostgreSQL, que es la que se usa en producci\u00f3n.
+    throw new RpcException({
+      statusCode: statusCode.INTERNAL_SERVER_ERROR,
+      message:
+        'updateConnectionBasic is not supported by the MySQL connection persistence.',
     });
   }
 }
