@@ -34,6 +34,15 @@ export interface ConnectionSqlResponse {
   connection_type_name: string | null;
 }
 
+export interface PhotoSqlResponse {
+  id: string;
+  cadastral_key: string;
+  image_path: string;
+  description: string | null;
+  photo_type: string;
+  date: string | Date;
+}
+
 export interface ConnectionAndPropertySqlResponse {
   // Connection Data
   connection_id: string;
@@ -75,6 +84,8 @@ export interface ConnectionAndPropertySqlResponse {
   // Property Data
   property: PropertyResponse | null;
   last_readings: LastReadingResponse[] | null;
+  photo_facade: PhotoSqlResponse[] | null;
+  photo_meter: PhotoSqlResponse[] | null;
 }
 
 export interface LastReadingResponse {
@@ -199,6 +210,8 @@ export interface ConnectionWithoutPropertySqlResponse {
   person: ClientSqlResponse | null;
   last_readings: LastReadingResponse[] | null;
   history_meters: HistoryMetersSqlResponse[] | null;
+  photo_facade: PhotoSqlResponse[] | null;
+  photo_meter: PhotoSqlResponse[] | null;
 }
 
 export interface HistoryMetersSqlResponse {
@@ -249,7 +262,6 @@ export interface EmailSqlResponse {
   correo_electronico_id: number;
   correo: string;
 }
-
 export interface LiveMapConnectionSqlResponse {
   connection_id: string;
   cadastral_key: string;

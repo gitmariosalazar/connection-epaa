@@ -34,6 +34,15 @@ export interface ConnectionResponse {
   connectionTypeName: string | null;
 }
 
+export interface PhotoResponse {
+  id: string;
+  cadastralKey: string;
+  imagePath: string;
+  description: string | null;
+  photoType: string;
+  date: string | Date;
+}
+
 export interface ConnectionAndPropertyResponse {
   // Connection Data
   connectionId: string;
@@ -75,6 +84,8 @@ export interface ConnectionAndPropertyResponse {
   // Property Data
   property: PropertyResponse | null;
   lastReadings: LastReadingResponse[] | null;
+  photoFacade: PhotoResponse[] | null;
+  photoMeter: PhotoResponse[] | null;
 }
 
 export interface LastReadingResponse {
@@ -198,6 +209,8 @@ export interface ConnectionWithoutPropertyResponse {
   person: ClientResponse | null;
   lastReadings: LastReadingResponse[] | null;
   historyMeters?: HistoryMeters[] | null;
+  photoFacade: PhotoResponse[] | null;
+  photoMeter: PhotoResponse[] | null;
 }
 
 export interface HistoryMeters {

@@ -1240,7 +1240,45 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
                     LIMIT 10
                 ) sub_lr
-            ) AS "last_readings"
+            ) AS "last_readings",
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'id', sub_ft.acometida_id,
+                        'cadastral_key', sub_ft.created_at,
+                        'image_path', sub_ft.imagen_url,
+                        'description', sub_ft.descripcion,
+                        'photo_type', sub_ft.tipo_foto,
+                        'date', sub_ft.created_at
+                    ) ORDER BY sub_ft.created_at DESC
+                )
+                FROM (
+                    SELECT ft.foto_acometida_id, ft.acometida_id, ft.imagen_url, ft.descripcion, ft.tipo_foto, ft.created_at
+                    FROM public.foto_acometida ft
+                    WHERE ft.acometida_id = a.acometida_id AND ft.tipo_foto = 'FACHADA'
+                    ORDER BY ft.created_at DESC
+                    LIMIT 10
+                ) sub_ft
+            ) AS "photo_facade",
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'id', sub_ft.acometida_id,
+                        'cadastral_key', sub_ft.created_at,
+                        'image_path', sub_ft.imagen_url,
+                        'description', sub_ft.descripcion,
+                        'photo_type', sub_ft.tipo_foto,
+                        'date', sub_ft.created_at
+                    ) ORDER BY sub_ft.created_at DESC
+                )
+                FROM (
+                    SELECT ft.foto_acometida_id, ft.acometida_id, ft.imagen_url, ft.descripcion, ft.tipo_foto, ft.created_at
+                    FROM public.foto_acometida ft
+                    WHERE ft.acometida_id = a.acometida_id AND ft.tipo_foto = 'MEDIDOR'
+                    ORDER BY ft.created_at DESC
+                    LIMIT 10
+                ) sub_ft
+            ) AS "photo_meter"
         FROM acometida a
         INNER JOIN cliente c       ON c.cliente_id = a.cliente_id
         LEFT JOIN predio p         ON p.clave_catastral = a.predio_clave_catastral
@@ -1606,8 +1644,45 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                     ORDER BY hmts.fecha_instalacion DESC
                     LIMIT 10
                 ) mts
-            ) AS "history_meters"
-
+            ) AS "history_meters",
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'id', sub_ft.acometida_id,
+                        'cadastral_key', sub_ft.created_at,
+                        'image_path', sub_ft.imagen_url,
+                        'description', sub_ft.descripcion,
+                        'photo_type', sub_ft.tipo_foto,
+                        'date', sub_ft.created_at
+                    ) ORDER BY sub_ft.created_at DESC
+                )
+                FROM (
+                    SELECT ft.foto_acometida_id, ft.acometida_id, ft.imagen_url, ft.descripcion, ft.tipo_foto, ft.created_at
+                    FROM public.foto_acometida ft
+                    WHERE ft.acometida_id = a.acometida_id AND ft.tipo_foto = 'FACHADA'
+                    ORDER BY ft.created_at DESC
+                    LIMIT 10
+                ) sub_ft
+            ) AS "photo_facade",
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'id', sub_ft.acometida_id,
+                        'cadastral_key', sub_ft.created_at,
+                        'image_path', sub_ft.imagen_url,
+                        'description', sub_ft.descripcion,
+                        'photo_type', sub_ft.tipo_foto,
+                        'date', sub_ft.created_at
+                    ) ORDER BY sub_ft.created_at DESC
+                )
+                FROM (
+                    SELECT ft.foto_acometida_id, ft.acometida_id, ft.imagen_url, ft.descripcion, ft.tipo_foto, ft.created_at
+                    FROM public.foto_acometida ft
+                    WHERE ft.acometida_id = a.acometida_id AND ft.tipo_foto = 'MEDIDOR'
+                    ORDER BY ft.created_at DESC
+                    LIMIT 10
+                ) sub_ft
+            ) AS "photo_meter"
         FROM acometida a
         INNER JOIN cliente c           ON c.cliente_id = a.cliente_id
         LEFT JOIN ciudadano ci         ON ci.ciudadano_id = c.cliente_id

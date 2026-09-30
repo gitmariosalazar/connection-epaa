@@ -223,6 +223,26 @@ export class ConnectionSqlAdapter {
             novelty: reading.novelty,
           }))
         : null,
+      photoFacade: connection.photo_facade
+        ? connection.photo_facade.map((photo) => ({
+            id: photo.id,
+            cadastralKey: photo.cadastral_key,
+            imagePath: photo.image_path,
+            description: photo.description,
+            photoType: photo.photo_type,
+            date: photo.date,
+          }))
+        : null,
+      photoMeter: connection.photo_meter
+        ? connection.photo_meter.map((photo) => ({
+            id: photo.id,
+            cadastralKey: photo.cadastral_key,
+            imagePath: photo.image_path,
+            description: photo.description,
+            photoType: photo.photo_type,
+            date: photo.date,
+          }))
+        : null,
     };
   }
 
@@ -372,7 +392,28 @@ export class ConnectionSqlAdapter {
             observation: meter.observation,
           }))
         : null,
+      photoFacade: connection.photo_facade
+        ? connection.photo_facade.map((photo) => ({
+            id: photo.id,
+            cadastralKey: photo.cadastral_key,
+            imagePath: photo.image_path,
+            description: photo.description,
+            photoType: photo.photo_type,
+            date: photo.date,
+          }))
+        : null,
+      photoMeter: connection.photo_meter
+        ? connection.photo_meter.map((photo) => ({
+            id: photo.id,
+            cadastralKey: photo.cadastral_key,
+            imagePath: photo.image_path,
+            description: photo.description,
+            photoType: photo.photo_type,
+            date: photo.date,
+          }))
+        : null,
     };
+      
   }
 
   static toResponse(
