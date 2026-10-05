@@ -1512,13 +1512,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       // Si hay query de búsqueda, agregamos el filtro
       if (query && query.trim()) {
         whereClause = `
-        WHERE (
-          a.clave_catastral ILIKE $${paramCounter} OR
-          a.numero_medidor ILIKE $${paramCounter} OR
-          ci.nombres ILIKE $${paramCounter} OR
-          ci.apellidos ILIKE $${paramCounter} OR
-          a.cliente_id::text ILIKE $${paramCounter}
-        )
+          WHERE (
+            a.acometida_id::text ILIKE $${paramCounter} OR
+            a.clave_catastral ILIKE $${paramCounter} OR
+            a.numero_medidor ILIKE $${paramCounter} OR
+            ci.nombres ILIKE $${paramCounter} OR
+            ci.apellidos ILIKE $${paramCounter} OR
+            a.cliente_id::text ILIKE $${paramCounter}
+          )
       `;
         paramsQuery.push(`%${query.trim()}%`);
         paramCounter++;
