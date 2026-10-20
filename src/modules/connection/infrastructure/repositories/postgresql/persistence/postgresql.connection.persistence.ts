@@ -1088,7 +1088,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
         LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
         LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
-        INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+        LEFT JOIN public.zona z    ON z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         WHERE a.acometida_id = ?;
       `;
@@ -1288,7 +1288,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         INNER JOIN tarifa t        ON t.tarifa_id = a.tarifa_id
         LEFT JOIN categoria ct ON t.categoria_id = ct.categoria_id
         LEFT JOIN tipo_predio tp    ON tp.tipo_predio_id = p.tipo_predio_id
-        INNER JOIN public.zona z    ON z.zona_id = a.zona_id
+        LEFT JOIN public.zona z     ON z.zona_id = a.zona_id
         LEFT JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
         LEFT JOIN acometidas.tipo_acometida cta ON a.tipo_acometida = cta.codigo
         LEFT JOIN LATERAL (
