@@ -1906,8 +1906,6 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
 
-      console.log('SQL Query:', whereClause);
-
       paramsQuery.push(limit, offset);
 
       const result = await this.databaseService.query<ConnectionSqlResponse>(
@@ -2399,7 +2397,6 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
               changeDetails: changeDetail,
               userId: changeDetail.user_id || null,
             });
-          console.log(`Historial medidor ID: ${historialMedidorId}`);
           if (!historialMedidorId) {
             throw new RpcException({
               statusCode: statusCode.INTERNAL_SERVER_ERROR,

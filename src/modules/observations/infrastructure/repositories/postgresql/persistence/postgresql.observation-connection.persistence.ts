@@ -11,9 +11,7 @@ import {
 import { ObservationConnectionSqlAdapter } from '../../../adapters/observation-connection.postgresql.adapter';
 
 @Injectable()
-export class ObservationConnectionPostgreSqlPersistence
-  implements InterfaceObservationConnectionRepository
-{
+export class ObservationConnectionPostgreSqlPersistence implements InterfaceObservationConnectionRepository {
   // Implement repository methods here
   constructor(private readonly postgreSqlService: DatabaseServicePostgreSQL) {}
 
@@ -35,7 +33,6 @@ export class ObservationConnectionPostgreSqlPersistence
         insertObservationQuery,
         insertObservationParams,
       );
-      console.log(`result`, result);
       const observationId: number = result[0].observation_id;
 
       const insertObservationConnectionQuery: string = `

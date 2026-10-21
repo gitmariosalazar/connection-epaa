@@ -57,8 +57,6 @@ export class MeterHistoryPostgresRecorder implements IMeterHistoryRecorder {
       ],
     );
 
-    //console.log('DEBUG inserted result in meter history:', inserted);
-
     return (
       inserted[0]?.id_historial_medidor ??
       inserted[0]?.historial_medidor_id ??

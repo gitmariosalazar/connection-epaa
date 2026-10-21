@@ -557,8 +557,6 @@ export class MySQLConnectionPersistence implements InterfaceConnectionRepository
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      console.log(`Connection Model`, connection);
-
       const query: string = `
         INSERT INTO acometida (
           acometida_id,
@@ -662,7 +660,6 @@ export class MySQLConnectionPersistence implements InterfaceConnectionRepository
     connection: ConnectionModel,
   ): Promise<ConnectionResponse | null> {
     try {
-      console.log(`Connection Model: `, connection);
       const query: string = `
         UPDATE acometida SET
           cliente_id = COALESCE(?, cliente_id),

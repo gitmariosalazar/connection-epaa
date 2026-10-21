@@ -28,7 +28,6 @@ export class SubmitWithDocumentsUseCase {
     dto: SubmitWithDocumentsRequest,
   ): Promise<SubmitWithDocumentsResponse> {
     // Transacción atómica: INSERT solicitud + round-robin analista + documentos + cambio de estado
-    //console.log('Ejecutando SubmitWithDocumentsUseCase con DTO:', dto);
     let result: SubmitWithDocumentsResponse;
     try {
       result = await this.repository.submitWithDocuments(dto);

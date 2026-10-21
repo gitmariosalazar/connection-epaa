@@ -12,9 +12,7 @@ import { ObservationConnectionSqlAdapter } from '../../../adapters/observation-c
 import { DatabaseServiceMySQL } from '../../../../../../shared/connections/database/mysql/mysql.service';
 
 @Injectable()
-export class ObservationConnectionMySqlPersistence
-  implements InterfaceObservationConnectionRepository
-{
+export class ObservationConnectionMySqlPersistence implements InterfaceObservationConnectionRepository {
   // Implement repository methods here
   constructor(private readonly mySqlService: DatabaseServiceMySQL) {}
 
@@ -35,7 +33,6 @@ export class ObservationConnectionMySqlPersistence
         insertObservationQuery,
         insertObservationParams,
       );
-      console.log(`result`, result);
       const observationId: number = result.insertId;
 
       const insertObservationConnectionQuery: string = `
@@ -46,11 +43,10 @@ export class ObservationConnectionMySqlPersistence
         observation.getConnectionId(),
       ];
 
-      const resultObservationConnection: any =
-        await this.mySqlService.query(
-          insertObservationConnectionQuery,
-          insertObservationConnectionParams,
-        );
+      const resultObservationConnection: any = await this.mySqlService.query(
+        insertObservationConnectionQuery,
+        insertObservationConnectionParams,
+      );
 
       const observationConnectionId: number =
         resultObservationConnection.insertId;

@@ -67,10 +67,6 @@ export class InstallationOrderPostgreSQLPersistence implements InterfaceInstalla
     const workOrderId = otResult[0].id_orden_trabajo;
     const codigoOrden = otResult[0].codigo_orden;
 
-    console.log(
-      `OT creada con ID: ${workOrderId} y código: ${codigoOrden} para solicitud: ${solicitudId}`,
-    );
-
     // 2. Vincular con la solicitud como tipo INSTALACION
     await this.databaseService.query(
       `INSERT INTO acometidas.solicitud_orden_trabajo (id_solicitud, id_orden_trabajo, tipo_orden, numero_orden)
