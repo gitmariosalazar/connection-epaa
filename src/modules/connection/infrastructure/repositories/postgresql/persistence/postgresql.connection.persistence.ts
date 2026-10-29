@@ -70,7 +70,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     clientId: string,
   ): Promise<CustomerDashboardResponseDto | null> {
     try {
-      const query = `
+      const query = /*sql*/ `
         SELECT jsonb_build_object(
             
             -- 1. PERFIL DEL CLIENTE (Identidad y Contacto)
@@ -1229,12 +1229,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                         'reading_month', sub_lr.mes_lectura,
                         'reading_value_current', sub_lr.lectura_actual,
                         'reading_value_preview', sub_lr.lectura_anterior,
-                        'novelty', sub_lr.novedad
+                        'novelty', sub_lr.novedad,
+                        'location_reading', sub_lr.ubicacion_captura
                     ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                        lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                        lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.ubicacion_captura, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
@@ -1447,12 +1448,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                         'reading_month', sub_lr.mes_lectura,
                         'reading_value_current', sub_lr.lectura_actual,
                         'reading_value_preview', sub_lr.lectura_anterior,
-                        'novelty', sub_lr.novedad
+                        'novelty', sub_lr.novedad,
+                        'location_reading', sub_lr.ubicacion_captura
                     ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.ubicacion_captura, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC
@@ -1612,12 +1614,13 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
                         'reading_month', sub_lr.mes_lectura,
                         'reading_value_current', sub_lr.lectura_actual,
                         'reading_value_preview', sub_lr.lectura_anterior,
-                        'novelty', sub_lr.novedad
+                        'novelty', sub_lr.novedad,
+                        'location_reading', sub_lr.ubicacion_captura
                     ) ORDER BY sub_lr.fecha_lectura DESC, sub_lr.hora_lectura DESC NULLS LAST, sub_lr.lectura_id DESC
                 )
                 FROM (
                     SELECT lr.clave_catastral, lr.fecha_lectura, lr.hora_lectura, lr.mes_lectura,
-                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.lectura_id
+                      lr.lectura_actual, lr.lectura_anterior, lr.novedad, lr.ubicacion_captura, lr.lectura_id
                     FROM public.lectura lr
                     WHERE lr.acometida_id = a.acometida_id AND lr.fecha_lectura IS NOT NULL
                     ORDER BY lr.fecha_lectura DESC, lr.hora_lectura DESC NULLS LAST, lr.lectura_id DESC

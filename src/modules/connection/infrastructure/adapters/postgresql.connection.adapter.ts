@@ -221,6 +221,7 @@ export class ConnectionSqlAdapter {
             readingValueCurrent: reading.reading_value_current,
             readingValuePreview: reading.reading_value_preview,
             novelty: reading.novelty,
+            locationReading: reading.location_reading,
           }))
         : null,
       photoFacade: connection.photo_facade
@@ -318,6 +319,7 @@ export class ConnectionSqlAdapter {
             readingValueCurrent: reading.reading_value_current,
             readingValuePreview: reading.reading_value_preview,
             novelty: reading.novelty,
+            locationReading: reading.location_reading,
           }))
         : null,
     };
@@ -379,6 +381,7 @@ export class ConnectionSqlAdapter {
             readingValueCurrent: reading.reading_value_current,
             readingValuePreview: reading.reading_value_preview,
             novelty: reading.novelty,
+            locationReading: reading.location_reading,
           }))
         : null,
       historyMeters: connection.history_meters
@@ -413,7 +416,6 @@ export class ConnectionSqlAdapter {
           }))
         : null,
     };
-      
   }
 
   static toResponse(

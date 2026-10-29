@@ -96,6 +96,7 @@ export interface LastReadingResponse {
   reading_value_current: number | null;
   reading_value_preview: number | null;
   novelty: string | null;
+  location_reading: string | null;
 }
 
 export interface PropertyResponse {
