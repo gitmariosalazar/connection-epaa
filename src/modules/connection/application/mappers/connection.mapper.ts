@@ -51,6 +51,16 @@ export class ConnectionMapper {
     connection: Partial<CreateConnectionRequest>,
     existingConnection: ConnectionModel,
   ): ConnectionModel {
+    const coordinates =
+      connection.longitude !== undefined &&
+      connection.longitude !== null &&
+      connection.latitude !== undefined &&
+      connection.latitude !== null
+        ? `POINT(${connection.longitude} ${connection.latitude})`
+        : (connection as any).connectionCoordinates ||
+          existingConnection.getConnectionCoordinates() ||
+          null;
+
     const connectionModel = new ConnectionModel(
       connection.connectionId || existingConnection['connectionId'],
       connection.clientId || existingConnection['clientId'],
@@ -79,7 +89,7 @@ export class ConnectionMapper {
       connection.connectionPeopleNumber ||
         existingConnection['connectionPeopleNumber'],
       connection.connectionZone || existingConnection['connectionZone'],
-      `POINT(${connection.longitude || existingConnection['longitude']} ${connection.latitude || existingConnection['latitude']})`,
+      coordinates,
       connection.connectionReference ||
         existingConnection['connectionReference'],
       connection.ConnectionMetaData !== undefined
