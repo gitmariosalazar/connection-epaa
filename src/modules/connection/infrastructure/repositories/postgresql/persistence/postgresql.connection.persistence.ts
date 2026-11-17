@@ -1852,6 +1852,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       SELECT
         a.acometida_id AS "connection_id",
         a.cliente_id AS "client_id",
+        COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social) AS "client_name",
+        COALESCE(ci.direccion, e.direccion)                        AS "client_address",
         a.tarifa_id AS "connection_rate_id",
         ct.nombre AS "connection_rate_name",
         a.numero_medidor AS "connection_meter_number",
@@ -1903,7 +1905,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
         a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
         a.zona_geometrica, a.predio_clave_catastral, a.zona_id, z.codigo, z.nombre,
-        a.tipo_acometida, pct.nombre
+        a.tipo_acometida, pct.nombre,
+        COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social), -- ✅ Corregido
+        COALESCE(ci.direccion, e.direccion)
       ${havingClause}
       ORDER BY a.updated_at DESC, a.acometida_id
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}

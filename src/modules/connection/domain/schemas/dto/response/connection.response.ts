@@ -3,6 +3,8 @@ import { UUID } from 'crypto';
 export interface ConnectionResponse {
   connectionId: string;
   clientId: string;
+  clientName: string;
+  clientAddress: string;
   connectionRateId: number;
   connectionRateName: string;
   connectionMeterNumber: string;

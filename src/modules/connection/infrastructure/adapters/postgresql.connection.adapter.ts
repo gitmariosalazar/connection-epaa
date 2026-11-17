@@ -30,6 +30,8 @@ export class ConnectionSqlAdapter {
     return {
       connectionId: connection.connection_id,
       clientId: connection.client_id,
+      clientName: connection.client_name,
+      clientAddress: connection.client_address,
       connectionRateId: connection.connection_rate_id,
       connectionRateName: connection.connection_rate_name,
       connectionMeterNumber: connection.connection_meter_number,
