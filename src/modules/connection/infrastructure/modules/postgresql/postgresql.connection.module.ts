@@ -8,6 +8,7 @@ import { DatabasePersistenceModule } from '../../../../../shared/connections/dat
 import { UploadFileService } from '../../../../documents/application/services/upload-file.service';
 import { LocalFileStorageService } from '../../../../documents/infrastructure/services/storage/local-file-storage.service';
 import { KafkaMeterEventPublisher } from '../../publishers/kafka-meter-event.publisher';
+import { KafkaLegacySuspensionPublisher } from '../../publishers/kafka-legacy-suspension.publisher';
 
 @Module({
   imports: [KafkaServiceModule, DatabasePersistenceModule],
@@ -30,6 +31,10 @@ import { KafkaMeterEventPublisher } from '../../publishers/kafka-meter-event.pub
     {
       provide: 'MeterEventPublisher',
       useClass: KafkaMeterEventPublisher,
+    },
+    {
+      provide: 'LegacySuspensionEventPublisher',
+      useClass: KafkaLegacySuspensionPublisher,
     },
   ],
   exports: [],

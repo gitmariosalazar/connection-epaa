@@ -42,6 +42,7 @@ import { MeterChangeResponse } from '../../domain/schemas/dto/response/meter-cha
 import { UploadFileService } from '../../../documents/application/services/upload-file.service';
 import { UpdateConnectionBasicRequest } from '../../domain/schemas/dto/request/update.connection_basic.request';
 import { UpdateConnectionBasicResponse } from '../../domain/schemas/dto/response/update.connection_basic.response';
+import { ILegacySuspensionEventPublisher } from '../../domain/contracts/legacy-suspension-event.publisher.interface';
 
 @Injectable()
 export class ConnectionService implements InterfaceConnectionUseCase {
@@ -51,6 +52,8 @@ export class ConnectionService implements InterfaceConnectionUseCase {
     private readonly uploadFileService: UploadFileService,
     @Inject('MeterEventPublisher')
     private readonly meterEventPublisher: IMeterEventPublisher,
+    @Inject('LegacySuspensionEventPublisher')
+    private readonly legacySuspensionPublisher: ILegacySuspensionEventPublisher,
   ) {}
 
   async getCustomerDashboard(
@@ -557,13 +560,63 @@ export class ConnectionService implements InterfaceConnectionUseCase {
         });
       }
 
-      return this.connectionRepository.changeConnectionState(
+      const result = await this.connectionRepository.changeConnectionState(
         connectionId,
         newStateId,
         userId,
         motivo,
         detallesTecnicos,
       );
+
+      // ── DISPARAR EVENTO A EPAA-LEGACY SI ES SUSPENSIÓN ─────────────
+      // Estados: 13 (SUSPENDIDO GENERAL), 3 (VOLUNTARIA), 4 (CORTADA POR MORA), etc.
+      const SUSPENSION_STATES = [3, 4, 13, 14, 15, 5];
+      if (SUSPENSION_STATES.includes(newStateId)) {
+        let sector: number | null = null;
+        let account: number | null = null;
+
+        if (connectionId.includes('-')) {
+          const [sectorStr, accountStr] = connectionId.split('-');
+          const s = Number(sectorStr);
+          const a = Number(accountStr);
+          if (!isNaN(s) && !isNaN(a)) {
+            sector = s;
+            account = a;
+          }
+        }
+
+        if (sector === null || account === null) {
+          try {
+            const conn =
+              await this.connectionRepository.getConnectionById(connectionId);
+            if (conn) {
+              const connAny = conn as any;
+              sector = Number(connAny.connection_sector ?? connAny.sector);
+              account = Number(
+                connAny.connection_account ?? connAny.cuenta ?? connAny.account,
+              );
+            }
+          } catch {
+            // Silencioso si falla la consulta complementaria
+          }
+        }
+
+        if (
+          sector !== null &&
+          account !== null &&
+          !isNaN(sector) &&
+          !isNaN(account)
+        ) {
+          this.legacySuspensionPublisher.publishSuspensionToLegacy({
+            sector,
+            account,
+            state: 'SUSPENDIDO',
+            description: motivo || 'SUSPENDIDO DESDE SIGEPAA',
+          });
+        }
+      }
+
+      return result;
     } catch (error) {
       throw error;
     }

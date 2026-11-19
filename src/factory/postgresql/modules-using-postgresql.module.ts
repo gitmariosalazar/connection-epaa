@@ -15,6 +15,7 @@ import { CadastralPostgreSQLModule } from '../../modules/cadastral/infrastructur
 import { InspectionOrderPostgreSQLModule } from '../../modules/inspection-order/infrastructure/modules/postgresql/inspection-order.postgresql.module';
 import { InstallationOrderPostgreSQLModule } from '../../modules/installation-order/infrastructure/modules/postgresql/installation-order.postgresql.module';
 import { InstallationReportPostgreSQLModule } from '../../modules/installation-report/infrastructure/modules/postgresql/installation-report.postgresql.module';
+import { StateHistoryPostgreSQLModule } from '../../modules/state-history/infrastructure/modules/postgresql/state-history.postgresql.module';
 
 @Module({
   imports: [
@@ -36,6 +37,8 @@ import { InstallationReportPostgreSQLModule } from '../../modules/installation-r
     InspectionOrderPostgreSQLModule,
     InstallationOrderPostgreSQLModule,
     InstallationReportPostgreSQLModule,
+    // Módulo de Auditoría y Ledger de Estados (SIGEPAA 2.2)
+    StateHistoryPostgreSQLModule,
   ],
   controllers: [],
   providers: [],

@@ -1,5 +1,5 @@
 import { ConnectionService } from '../../application/services/connection.service';
-import { Controller, Get, Post, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateConnectionRequest } from '../../domain/schemas/dto/request/create.connection.request';
 import { UpdateConnectionRequest } from '../../domain/schemas/dto/request/update.connection.request';
@@ -11,6 +11,8 @@ import { UpdateConnectionBasicRequest } from '../../domain/schemas/dto/request/u
 
 @Controller('connections')
 export class ConnectionController {
+  private readonly logger: Logger = new Logger(ConnectionController.name);
+
   constructor(private readonly connectionService: ConnectionService) {}
 
   @Get('get-customer-dashboard/:clientId')
@@ -219,16 +221,23 @@ export class ConnectionController {
       newStateId: number;
       userId: string;
       motivo: string;
-      detallesTecnicos?: Record<string, any>;
+      detallesTecnicos?: Record<string, unknown>;
     },
   ) {
-    return this.connectionService.changeConnectionState(
+    this.logger.log(
+      `📥 [CONNECTION-SERVICE <- KAFKA] Pattern: 'connections.change-connection-state' | Connection: ${data.connectionId} -> Target State: ${data.newStateId} | User: ${data.userId}`,
+    );
+    const result = await this.connectionService.changeConnectionState(
       data.connectionId,
       data.newStateId,
       data.userId,
       data.motivo,
       data.detallesTecnicos,
     );
+    this.logger.log(
+      `📤 [CONNECTION-SERVICE -> KAFKA-RPC] Completed 'connections.change-connection-state' for ${data.connectionId} -> New State: ${result.currentStateName} (ID: ${result.currentStateId})`,
+    );
+    return result;
   }
 
   @Get('get-connection-state-history')
@@ -241,6 +250,9 @@ export class ConnectionController {
       offset?: number;
     },
   ) {
+    this.logger.log(
+      `📥 [CONNECTION-SERVICE <- KAFKA] Pattern: 'connections.get-connection-state-history' | Connection: ${data.connectionId} | Limit: ${data.limit ?? 50}`,
+    );
     return this.connectionService.getConnectionStateHistory(
       data.connectionId,
       data.limit ?? 50,
@@ -259,6 +271,9 @@ export class ConnectionController {
       offset?: number;
     },
   ) {
+    this.logger.log(
+      `📥 [CONNECTION-SERVICE <- KAFKA] Pattern: 'connections.get-connections-by-state' | State ID: ${data.stateId} | Sector: ${data.sector ?? 'ALL'} | Limit: ${data.limit ?? 100}`,
+    );
     return this.connectionService.getConnectionsByState(
       data.stateId,
       data.sector,
@@ -270,6 +285,7 @@ export class ConnectionController {
   @Get('get-state-summary-dashboard')
   @MessagePattern('connections.get-state-summary-dashboard')
   async getStateSummaryDashboard() {
+    this.logger.log(`📥 [CONNECTION-SERVICE <- KAFKA] Pattern: 'connections.get-state-summary-dashboard'`);
     return this.connectionService.getStateSummaryDashboard();
   }
 
@@ -284,12 +300,19 @@ export class ConnectionController {
       motivo: string;
     },
   ) {
-    return this.connectionService.bulkChangeConnectionState(
+    this.logger.log(
+      `📥 [CONNECTION-SERVICE <- KAFKA] Pattern: 'connections.bulk-change-connection-state' | Connections: ${data.connectionIds?.length} | Target State: ${data.newStateId} | User: ${data.userId}`,
+    );
+    const result = await this.connectionService.bulkChangeConnectionState(
       data.connectionIds,
       data.newStateId,
       data.userId,
       data.motivo,
     );
+    this.logger.log(
+      `📤 [CONNECTION-SERVICE -> KAFKA-RPC] Completed 'connections.bulk-change-connection-state' | Updated: ${result.updatedCount} connections to ${result.stateName}`,
+    );
+    return result;
   }
 
   @Get('find-property-with-client-by-cadastral-key-or-card-id-or-like-name')

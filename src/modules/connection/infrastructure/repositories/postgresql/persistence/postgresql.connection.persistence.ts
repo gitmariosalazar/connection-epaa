@@ -1937,9 +1937,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Cambia el estado de una acometida insertando en historial_estados_acometida.
-   * El trigger fn_actualizar_estado_activo se encarga de sincronizar acometida.estado_id
-   * y de desactivar el historial anterior automáticamente.
+   * Cambia el estado de una acometida insertando en acometidas.acometida_estado_historial.
+   * El trigger acometidas.trg_sync_acometida_estado se encarga de sincronizar acometida.estado_id
+   * y acometida.estado automáticamente.
    */
   async changeConnectionState(
     connectionId: string,
@@ -1949,24 +1949,95 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     detallesTecnicos?: Record<string, any>,
   ): Promise<ConnectionStateResponse> {
     try {
+      // 1. Verificar existencia y estado actual de la acometida
+      const current = await this.databaseService.query<{ estado_id: number }>(
+        'SELECT estado_id FROM public.acometida WHERE acometida_id = ?',
+        [connectionId],
+      );
+
+      if (current.length === 0) {
+        throw new RpcException({
+          statusCode: statusCode.NOT_FOUND,
+          message: `Acometida ${connectionId} no encontrada`,
+        });
+      }
+
+      const previousStateId = current[0].estado_id;
+      if (previousStateId !== null && Number(previousStateId) === Number(newStateId)) {
+        throw new RpcException({
+          statusCode: statusCode.BAD_REQUEST,
+          message: `La acometida ${connectionId} ya se encuentra en el estado ${newStateId}`,
+        });
+      }
+
+      // 2. Extraer datos de soporte técnico u observaciones si existen
+      let documentoRespaldo: string | null = null;
+      if (detallesTecnicos?.evidencia) {
+        documentoRespaldo = String(detallesTecnicos.evidencia).slice(0, 50);
+      } else if (detallesTecnicos?.documento_respaldo) {
+        documentoRespaldo = String(detallesTecnicos.documento_respaldo).slice(0, 50);
+      } else if (detallesTecnicos?.supportDocument) {
+        documentoRespaldo = String(detallesTecnicos.supportDocument).slice(0, 50);
+      }
+
+      let observaciones: string | null = null;
+      if (detallesTecnicos?.observaciones) {
+        observaciones = String(detallesTecnicos.observaciones);
+      } else if (detallesTecnicos?.archivoUrl) {
+        observaciones = `[Evidencia: ${detallesTecnicos.archivoUrl}]`;
+      } else if (detallesTecnicos && Object.keys(detallesTecnicos).length > 0) {
+        observaciones = JSON.stringify(detallesTecnicos);
+      }
+
+      const origen =
+        detallesTecnicos?.origen &&
+        ['SISTEMA', 'APP_MOVIL', 'WEB', 'CUADRILLA', 'INTEGRACION', 'MIGRACION'].includes(
+          String(detallesTecnicos.origen),
+        )
+          ? String(detallesTecnicos.origen)
+          : 'WEB';
+
+      const isUUID =
+        documentoRespaldo &&
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          documentoRespaldo,
+        );
+
       const query = `
-        INSERT INTO historial_estados_acometida
-          (acometida_id, estado_id, usuario_id, motivo, activo, detalles_tecnicos)
-        VALUES (?, ?, ?::uuid, ?, TRUE, ?::jsonb)
+        INSERT INTO acometidas.acometida_estado_historial (
+          acometida_id,
+          estado_anterior_id,
+          estado_nuevo_id,
+          fecha_cambio,
+          fecha_efectiva,
+          motivo,
+          documento_respaldo,
+          id_documento,
+          observaciones,
+          usuario_id,
+          origen,
+          es_reverso,
+          historial_origen_id
+        )
+        VALUES (?, ?, ?, NOW(), NOW(), ?, ?, ?::uuid, ?, ?::uuid, ?, FALSE, NULL)
         RETURNING
-          historial_estados_acometida.id             AS "historialId",
-          historial_estados_acometida.acometida_id   AS "connectionId",
-          historial_estados_acometida.estado_id      AS "stateId",
-          historial_estados_acometida.fecha_cambio   AS "changedAt",
-          historial_estados_acometida.motivo         AS "motivo";
+          historial_id             AS "historialId",
+          acometida_id             AS "connectionId",
+          estado_nuevo_id          AS "stateId",
+          fecha_efectiva           AS "changedAt",
+          motivo                   AS "motivo";
       `;
 
       const result = await this.databaseService.query<any>(query, [
         connectionId,
+        previousStateId,
         newStateId,
-        userId,
         motivo,
-        JSON.stringify(detallesTecnicos ?? {}),
+        documentoRespaldo,
+        isUUID ? documentoRespaldo : null,
+        observaciones,
+        userId,
+        origen,
       ]);
 
       if (result.length === 0) {
@@ -2010,23 +2081,28 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     try {
       const query = `
         SELECT
-          h.id                        AS "historialId",
+          h.historial_id              AS "historialId",
           h.acometida_id              AS "connectionId",
-          h.estado_id                 AS "stateId",
+          h.estado_nuevo_id           AS "stateId",
           est.nombre                  AS "stateName",
           est.permite_facturar        AS "allowsBilling",
           est.permite_lectura         AS "allowsReading",
-          h.fecha_cambio              AS "changedAt",
+          h.fecha_efectiva            AS "changedAt",
           h.usuario_id::text          AS "userId",
           u.email                     AS "userEmail",
           h.motivo                    AS "motivo",
-          h.activo                    AS "active",
-          COALESCE(h.detalles_tecnicos, '{}'::jsonb) AS "technicalDetails"
-        FROM historial_estados_acometida h
-        JOIN cat_estados_acometida est ON est.id_estado = h.estado_id
+          (h.es_reverso = FALSE)      AS "active",
+          json_build_object(
+            'documento_respaldo', h.documento_respaldo,
+            'origen', h.origen,
+            'es_reverso', h.es_reverso,
+            'observaciones', h.observaciones
+          )                           AS "technicalDetails"
+        FROM acometidas.acometida_estado_historial h
+        JOIN public.cat_estados_acometida est ON est.id_estado = h.estado_nuevo_id
         LEFT JOIN public.usuarios u ON u.usuario_id = h.usuario_id
         WHERE h.acometida_id = ?
-        ORDER BY h.fecha_cambio DESC
+        ORDER BY h.fecha_efectiva DESC, h.historial_id DESC
         LIMIT ? OFFSET ?;
       `;
 
@@ -2053,6 +2129,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
     offset: number = 0,
   ): Promise<ConnectionsByStateResponse[]> {
     try {
+      const params: (number | string)[] = [stateId];
+      let sectorCondition = '';
+      if (sector !== undefined && sector !== null && !isNaN(Number(sector))) {
+        sectorCondition = ' AND a.sector = ?';
+        params.push(Number(sector));
+      }
+      params.push(Number(limit) || 100, Number(offset) || 0);
+
       const query = `
         SELECT
           a.acometida_id                                     AS "connectionId",
@@ -2066,27 +2150,27 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
             'Sin nombre'
           )                                                  AS "clientName",
           est.nombre                                         AS "stateName",
-          h.fecha_cambio                                     AS "stateChangedAt"
+          h.fecha_efectiva                                   AS "stateChangedAt"
         FROM acometida a
         JOIN cat_estados_acometida est ON a.estado_id = est.id_estado
-        JOIN historial_estados_acometida h
-          ON h.acometida_id = a.acometida_id AND h.activo = TRUE
+        LEFT JOIN LATERAL (
+          SELECT fecha_efectiva
+          FROM acometidas.acometida_estado_historial
+          WHERE acometida_id = a.acometida_id
+          ORDER BY fecha_efectiva DESC, historial_id DESC
+          LIMIT 1
+        ) h ON true
         LEFT JOIN cliente c ON c.cliente_id = a.cliente_id
         LEFT JOIN ciudadano ci ON ci.ciudadano_id = c.cliente_id
         LEFT JOIN empresa e ON e.ruc = c.cliente_id
         WHERE est.id_estado = ?
-          AND (?::int IS NULL OR a.sector = ?)
-        ORDER BY h.fecha_cambio DESC
+          ${sectorCondition}
+        ORDER BY h.fecha_efectiva DESC NULLS LAST, a.acometida_id ASC
         LIMIT ? OFFSET ?;
       `;
 
       const result =
-        await this.databaseService.query<ConnectionsByStateResponse>(query, [
-          stateId,
-          sector ?? null,
-          limit,
-          offset,
-        ]);
+        await this.databaseService.query<ConnectionsByStateResponse>(query, params);
 
       return result;
     } catch (error) {
@@ -2131,6 +2215,8 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
   /**
    * Cambia el estado de múltiples acometidas en una sola operación transaccional.
    * Útil para suspensión masiva de morosos o reconexiones grupales.
+   * Inserta en acometidas.acometida_estado_historial ordenando canónicamente los IDs
+   * para prevenir deadlocks en alta concurrencia (Sección 8.2 de la guía técnica).
    */
   async bulkChangeConnectionState(
     connectionIds: string[],
@@ -2146,22 +2232,39 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         });
       }
 
-      // Insertar en historial para cada acometida — el trigger sincroniza acometida.estado_id
+      // 1. Ordenar alfabéticamente para prevenir deadlocks (guía técnica sección 8.2)
+      const sortedIds = [...new Set(connectionIds.map((id) => String(id).trim()))].sort();
+
       const query = `
-        INSERT INTO historial_estados_acometida
-          (acometida_id, estado_id, usuario_id, motivo, activo)
+        INSERT INTO acometidas.acometida_estado_historial (
+          acometida_id,
+          estado_anterior_id,
+          estado_nuevo_id,
+          fecha_cambio,
+          fecha_efectiva,
+          motivo,
+          usuario_id,
+          origen
+        )
         SELECT
-          unnest(?::varchar[]),
+          a.acometida_id,
+          a.estado_id,
+          ?,
+          NOW(),
+          NOW(),
           ?,
           ?::uuid,
-          ?,
-          TRUE
+          'SISTEMA'
+        FROM public.acometida a
+        WHERE a.acometida_id = ANY(?::varchar[])
+          AND (a.estado_id IS NULL OR a.estado_id <> ?)
+        ORDER BY a.acometida_id ASC
         RETURNING acometida_id AS "connectionId";
       `;
 
       const result = await this.databaseService.query<{ connectionId: string }>(
         query,
-        [connectionIds, newStateId, userId, motivo],
+        [newStateId, motivo, userId, sortedIds, newStateId],
       );
 
       const stateInfo = await this.databaseService.query<any>(
