@@ -1880,6 +1880,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         a.zona_id AS "zone_id",
         z.codigo AS "zone_code",
         z.nombre AS "zone_name",
+        a.tiene_fachada AS "connection_has_facade",
         (
           SELECT COUNT(*)
           FROM public.incidente_medidor sub_im
@@ -1905,7 +1906,7 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
         est.nombre, est.permite_lectura, a.direccion, a.fecha_instalacion, a.numero_personas,
         a.zona, a.coordenadas, a.referencia, a.metadata, a.altitud, a.precision, a.fecha_geolocalizacion,
         a.zona_geometrica, a.predio_clave_catastral, a.zona_id, z.codigo, z.nombre,
-        a.tipo_acometida, pct.nombre,
+        a.tipo_acometida, pct.nombre, a.tiene_fachada,
         COALESCE(ci.nombres || ' ' || ci.apellidos, e.razon_social), -- ✅ Corregido
         COALESCE(ci.direccion, e.direccion)
       ${havingClause}
@@ -1963,7 +1964,10 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       }
 
       const previousStateId = current[0].estado_id;
-      if (previousStateId !== null && Number(previousStateId) === Number(newStateId)) {
+      if (
+        previousStateId !== null &&
+        Number(previousStateId) === Number(newStateId)
+      ) {
         throw new RpcException({
           statusCode: statusCode.BAD_REQUEST,
           message: `La acometida ${connectionId} ya se encuentra en el estado ${newStateId}`,
@@ -1975,9 +1979,15 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       if (detallesTecnicos?.evidencia) {
         documentoRespaldo = String(detallesTecnicos.evidencia).slice(0, 50);
       } else if (detallesTecnicos?.documento_respaldo) {
-        documentoRespaldo = String(detallesTecnicos.documento_respaldo).slice(0, 50);
+        documentoRespaldo = String(detallesTecnicos.documento_respaldo).slice(
+          0,
+          50,
+        );
       } else if (detallesTecnicos?.supportDocument) {
-        documentoRespaldo = String(detallesTecnicos.supportDocument).slice(0, 50);
+        documentoRespaldo = String(detallesTecnicos.supportDocument).slice(
+          0,
+          50,
+        );
       }
 
       let observaciones: string | null = null;
@@ -1991,9 +2001,14 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
 
       const origen =
         detallesTecnicos?.origen &&
-        ['SISTEMA', 'APP_MOVIL', 'WEB', 'CUADRILLA', 'INTEGRACION', 'MIGRACION'].includes(
-          String(detallesTecnicos.origen),
-        )
+        [
+          'SISTEMA',
+          'APP_MOVIL',
+          'WEB',
+          'CUADRILLA',
+          'INTEGRACION',
+          'MIGRACION',
+        ].includes(String(detallesTecnicos.origen))
           ? String(detallesTecnicos.origen)
           : 'WEB';
 
@@ -2170,7 +2185,10 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       `;
 
       const result =
-        await this.databaseService.query<ConnectionsByStateResponse>(query, params);
+        await this.databaseService.query<ConnectionsByStateResponse>(
+          query,
+          params,
+        );
 
       return result;
     } catch (error) {
@@ -2233,7 +2251,9 @@ export class PostgresqlConnectionPersistence implements InterfaceConnectionRepos
       }
 
       // 1. Ordenar alfabéticamente para prevenir deadlocks (guía técnica sección 8.2)
-      const sortedIds = [...new Set(connectionIds.map((id) => String(id).trim()))].sort();
+      const sortedIds = [
+        ...new Set(connectionIds.map((id) => String(id).trim())),
+      ].sort();
 
       const query = `
         INSERT INTO acometidas.acometida_estado_historial (

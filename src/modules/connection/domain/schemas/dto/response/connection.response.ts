@@ -31,6 +31,7 @@ export interface ConnectionResponse {
   zoneId: number;
   zoneCode: string;
   zoneName: string;
+  connectionHasFacade: boolean;
   incidents: number; // Total incidents associated with the connection
   connectionType: string | null;
   connectionTypeName: string | null;

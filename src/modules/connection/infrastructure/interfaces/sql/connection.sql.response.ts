@@ -31,6 +31,7 @@ export interface ConnectionSqlResponse {
   zone_id: number;
   zone_code: string;
   zone_name: string;
+  connection_has_facade: boolean;
   incidents: number; // Total incidents associated with the connection
   connection_type: string | null;
   connection_type_name: string | null;
